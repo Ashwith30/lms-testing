@@ -1,11 +1,137 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Poppins', 'Inter', sans-serif;
+
+  /* Brand Palette (Custom variables for reference and direct use) */
+  --color-canvas: #F8FAFC;
+  --color-panel: #FFFFFF;
+  --color-brand-primary: #0977bb;
+  --color-brand-secondary: #386bb1;
+  --color-light-tint: #D9E9F2;
+  --color-accent-cta: #E26212;
+  --color-accent-muted: #E08852;
+  --color-typography: #0F172A;
+
+  /* Overriding standard Tailwind utility classes to match the palette */
+  
+  /* 1. White and panel elements */
+  --color-white: #FFFFFF;
+
+  /* 2. Page backgrounds & Neutral elements (slate / gray / zinc / neutral / stone) */
+  --color-slate-50: #F8FAFC;
+  --color-slate-100: #F8FAFC;
+  --color-slate-200: #D9E9F2;
+  --color-slate-300: #386bb1;
+  --color-slate-400: #386bb1;
+  --color-slate-500: #386bb1;
+  --color-slate-600: #386bb1;
+  --color-slate-700: #386bb1;
+  --color-slate-800: #0F172A;
+  --color-slate-900: #0F172A;
+  --color-slate-950: #0F172A;
+
+  --color-gray-50: #F8FAFC;
+  --color-gray-100: #F8FAFC;
+  --color-gray-200: #D9E9F2;
+  --color-gray-300: #386bb1;
+  --color-gray-400: #386bb1;
+  --color-gray-500: #386bb1;
+  --color-gray-600: #386bb1;
+  --color-gray-700: #386bb1;
+  --color-gray-800: #0F172A;
+  --color-gray-900: #0F172A;
+
+  --color-zinc-50: #F8FAFC;
+  --color-zinc-100: #F8FAFC;
+  --color-zinc-200: #D9E9F2;
+  --color-zinc-300: #386bb1;
+  --color-zinc-400: #386bb1;
+  --color-zinc-500: #386bb1;
+  --color-zinc-600: #386bb1;
+  --color-zinc-700: #386bb1;
+  --color-zinc-800: #0F172A;
+  --color-zinc-900: #0F172A;
+
+  /* 3. Blue/Indigo (Primary brand elements & Highlights) */
+  --color-blue-50: #D9E9F2;
+  --color-blue-100: #D9E9F2;
+  --color-blue-200: #D9E9F2;
+  --color-blue-300: #386bb1;
+  --color-blue-400: #386bb1;
+  --color-blue-500: #0977bb;
+  --color-blue-600: #0977bb;
+  --color-blue-700: #0977bb;
+  --color-blue-800: #386bb1;
+  --color-blue-900: #0F172A;
+
+  --color-indigo-50: #D9E9F2;
+  --color-indigo-100: #D9E9F2;
+  --color-indigo-200: #D9E9F2;
+  --color-indigo-300: #386bb1;
+  --color-indigo-400: #386bb1;
+  --color-indigo-500: #0977bb;
+  --color-indigo-600: #0977bb;
+  --color-indigo-700: #386bb1;
+  --color-indigo-800: #386bb1;
+  --color-indigo-900: #0F172A;
+
+  /* 4. Purple/Violet (Muted status / Review / Accent states) */
+  --color-purple-50: #D9E9F2;
+  --color-purple-100: #D9E9F2;
+  --color-purple-200: #E08852;
+  --color-purple-300: #E08852;
+  --color-purple-400: #E08852;
+  --color-purple-500: #E26212;
+  --color-purple-600: #E26212;
+  --color-purple-700: #E26212;
+  --color-purple-800: #E26212;
+  --color-purple-900: #0F172A;
+
+  --color-violet-50: #D9E9F2;
+  --color-violet-100: #D9E9F2;
+  --color-violet-200: #E08852;
+  --color-violet-300: #E08852;
+  --color-violet-400: #E08852;
+  --color-violet-500: #E26212;
+  --color-violet-600: #E26212;
+  --color-violet-700: #E26212;
+
+  /* 5. Emerald/Green (Successful / Complete states mapped to Primary/Secondary brand elements) */
+  --color-green-50: #D9E9F2;
+  --color-green-100: #D9E9F2;
+  --color-green-500: #386bb1;
+  --color-green-600: #0977bb;
+  --color-green-700: #0977bb;
+
+  --color-emerald-50: #D9E9F2;
+  --color-emerald-100: #D9E9F2;
+  --color-emerald-500: #386bb1;
+  --color-emerald-600: #0977bb;
+  --color-emerald-700: #0977bb;
+
+  /* 6. Red/Amber (Warning / Alert / Error states mapped to Accent / CTA) */
+  --color-red-50: #F8FAFC;
+  --color-red-100: #D9E9F2;
+  --color-red-500: #E08852;
+  --color-red-600: #E26212;
+  --color-red-700: #E26212;
+  --color-red-800: #E26212;
+
+  --color-amber-50: #F8FAFC;
+  --color-amber-100: #D9E9F2;
+  --color-amber-500: #E08852;
+  --color-amber-600: #E26212;
+  --color-amber-700: #E26212;
+  --color-amber-800: #E26212;
+}
+
 @layer base {
   body {
-    @apply bg-slate-50/50 text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900;
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    @apply bg-canvas text-typography antialiased selection:bg-light-tint selection:text-brand-secondary;
+    font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 }
 
@@ -15,7 +141,7 @@
     animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
   
-  /* Premium Scrollbar */
+  /* Premium Scrollbar styled to match approved palette */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -26,12 +152,12 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--color-light-tint);
     border-radius: 9999px;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--color-brand-secondary);
   }
   
   @keyframes fadeIn {

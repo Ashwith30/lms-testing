@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { Logo } from '../../components/ui/Logo';
 
 export const StudentLogin = () => {
   const [studentId, setStudentId] = useState('LMS001');
@@ -36,11 +37,9 @@ export const StudentLogin = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md animate-in">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md animate-in flex flex-col items-center justify-center">
         <Link to="/">
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-blue-600 tracking-tight">
-            LMS
-          </h2>
+          <Logo size="lg" className="justify-center mt-6" />
         </Link>
         <h2 className="mt-2 text-center text-2xl font-bold text-slate-900">
           Sign in to your student account
@@ -68,16 +67,23 @@ export const StudentLogin = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />
-              <Button type="submit" className="w-full bg-slate-900 hover:bg-slate-800" isLoading={isLoading}>
+              <Button type="submit" className="w-full" isLoading={isLoading}>
                 Login as Student
               </Button>
             </form>
 
-            <div className="mt-6 border-t border-slate-100 pt-6 text-center text-sm">
-              <span className="text-slate-500">New student?</span>{' '}
-              <Link to="/student/register" className="font-semibold text-blue-600 hover:text-blue-500">
-                Register here
-              </Link>
+            <div className="mt-6 border-t border-slate-100 pt-6 text-center text-sm flex flex-col gap-2">
+              <div>
+                <span className="text-slate-500">New student?</span>{' '}
+                <Link to="/student/register" className="font-semibold text-blue-600 hover:text-blue-500">
+                  Register here
+                </Link>
+              </div>
+              <div>
+                <Link to="/" className="font-semibold text-blue-600 hover:text-blue-500">
+                  Return home
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -6,6 +6,7 @@ import { testService } from '../../services/testService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Test, Question, Attempt } from '../../types';
+import { Logo } from '../../components/ui/Logo';
 
 export const TestAttempt = () => {
   const { id } = useParams<{ id: string }>();
@@ -216,7 +217,7 @@ export const TestAttempt = () => {
       <header className="h-16 bg-slate-900 text-white flex items-center justify-between px-6 shrink-0 shadow-md z-10">
         <div className="flex items-center gap-4">
           <h1 className="font-bold tracking-tight text-lg hidden md:block">{test.title}</h1>
-          <h1 className="font-bold tracking-tight text-lg md:hidden">LMS</h1>
+          <Logo size="sm" variant="light" className="md:hidden" />
         </div>
         
         <div className="flex items-center gap-6">

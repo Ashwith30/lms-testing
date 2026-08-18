@@ -13,6 +13,7 @@ import {
   LogOut 
 } from 'lucide-react';
 import { cn } from '../ui/Button';
+import { Logo } from '../ui/Logo';
 
 export const TrainerSidebar = () => {
   const { logout } = useAuth();
@@ -37,7 +38,7 @@ export const TrainerSidebar = () => {
   return (
     <div className="flex flex-col w-64 bg-white border-r border-slate-200 h-screen sticky top-0">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-blue-600 tracking-tight">LMS</h1>
+        <Logo size="md" />
       </div>
       
       <div className="flex-1 overflow-y-auto py-4">

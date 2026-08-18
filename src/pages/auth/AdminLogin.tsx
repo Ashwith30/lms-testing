@@ -6,6 +6,7 @@ import { Card, CardContent } from '../../components/ui/Card';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { Logo } from '../../components/ui/Logo';
 
 export const AdminLogin = () => {
   const { login } = useAuth();
@@ -46,8 +47,10 @@ export const AdminLogin = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link to="/" className="font-bold text-3xl text-blue-600 tracking-tight">LMS</Link>
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center flex flex-col items-center justify-center">
+        <Link to="/">
+          <Logo size="lg" className="justify-center" />
+        </Link>
         <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-slate-900">
           Admin Portal
         </h2>
