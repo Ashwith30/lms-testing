@@ -9,9 +9,10 @@ import {
   Calendar, 
   Users, 
   BarChart, 
-  Settings, 
+  BookMarked,
   LogOut 
 } from 'lucide-react';
+
 import { cn } from '../ui/Button';
 import { Logo } from '../ui/Logo';
 
@@ -25,15 +26,16 @@ export const TrainerSidebar = () => {
   };
 
   const navItems = [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/trainer/dashboard' },
-    { label: 'Question Banks', icon: Database, path: '/trainer/question-bank' },
-    { label: 'Upload Questions', icon: Upload, path: '/trainer/question-bank/upload' },
-    { label: 'Tests', icon: FileText, path: '/trainer/tests' },
-    { label: 'Schedule Test', icon: Calendar, path: '/trainer/tests/schedule' },
-    { label: 'Students', icon: Users, path: '/trainer/students' },
-    { label: 'Results', icon: BarChart, path: '/trainer/results' },
-    { label: 'Settings', icon: Settings, path: '/trainer/settings' },
+    { label: 'Dashboard',       icon: LayoutDashboard, path: '/trainer/dashboard' },
+    { label: 'Question Banks',  icon: Database,        path: '/trainer/question-bank' },
+    { label: 'Upload Questions',icon: Upload,          path: '/trainer/question-bank/upload' },
+    { label: 'Tests',           icon: FileText,        path: '/trainer/tests' },
+    { label: 'Schedule Test',   icon: Calendar,        path: '/trainer/tests/schedule' },
+    { label: 'Materials',       icon: BookMarked,      path: '/trainer/materials' },
+    { label: 'Students',        icon: Users,           path: '/trainer/students' },
+    { label: 'Results',         icon: BarChart,        path: '/trainer/results' },
   ];
+
 
   return (
     <div className="flex flex-col w-64 bg-white border-r border-slate-200 h-screen sticky top-0">

@@ -12,6 +12,7 @@ import { Tests as TrainerTests } from './pages/trainer/Tests';
 import { CreateTest } from './pages/trainer/CreateTest';
 import { ScheduleTest } from './pages/trainer/ScheduleTest';
 import { Results as TrainerResults } from './pages/trainer/Results';
+import { TrainerMaterials } from './pages/trainer/Materials';
 
 import { StudentDashboard } from './pages/student/Dashboard';
 import { TestDetails } from './pages/student/TestDetails';
@@ -19,6 +20,7 @@ import { TestAttempt } from './pages/student/TestAttempt';
 import { TestResult } from './pages/student/TestResult';
 import { StudentResults } from './pages/student/Results';
 import { StudentProfile } from './pages/student/Profile';
+import { StudentMaterials } from './pages/student/Materials';
 
 import { Landing } from './pages/auth/Landing';
 import { TrainerLogin } from './pages/auth/TrainerLogin';
@@ -35,47 +37,52 @@ function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public Auth Routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/trainer/login" element={<TrainerLogin />} />
             <Route path="/student/login" element={<StudentLogin />} />
             <Route path="/student/register" element={<StudentRegister />} />
             <Route path="/admin/login" element={<AdminLogin />} />
-            
-            {/* Dashboard Routes */}
-            <Route element={<DashboardLayout />}>
-              {/* Admin Routes */}
-              <Route element={<ProtectedRoute allowedRole="admin" />}>
+
+            {/* Admin Routes - Strictly Protected */}
+            <Route element={<ProtectedRoute allowedRole="admin" />}>
+              <Route element={<DashboardLayout />}>
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
               </Route>
+            </Route>
 
-              {/* Trainer Routes */}
-              <Route element={<ProtectedRoute allowedRole="trainer" />}>
+            {/* Trainer Routes - Strictly Protected */}
+            <Route element={<ProtectedRoute allowedRole="trainer" />}>
+              <Route element={<DashboardLayout />}>
                 <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
                 <Route path="/trainer/question-bank" element={<QuestionBanks />} />
                 <Route path="/trainer/question-bank/upload" element={<QuestionBankUpload />} />
                 <Route path="/trainer/tests" element={<TrainerTests />} />
                 <Route path="/trainer/tests/create" element={<CreateTest />} />
                 <Route path="/trainer/tests/schedule" element={<ScheduleTest />} />
+                <Route path="/trainer/materials" element={<TrainerMaterials />} />
                 <Route path="/trainer/students" element={<TrainerStudents />} />
                 <Route path="/trainer/results" element={<TrainerResults />} />
               </Route>
+            </Route>
 
-              {/* Student Routes */}
-              <Route element={<ProtectedRoute allowedRole="student" />}>
+            {/* Student Routes - Strictly Protected */}
+            <Route element={<ProtectedRoute allowedRole="student" />}>
+              <Route element={<DashboardLayout />}>
                 <Route path="/student/dashboard" element={<StudentDashboard />} />
-                <Route path="/student/tests" element={<StudentDashboard />} /> {/* Using dashboard for tests list for prototype */}
+                <Route path="/student/tests" element={<StudentDashboard />} />
                 <Route path="/student/tests/:id" element={<TestDetails />} />
+                <Route path="/student/materials" element={<StudentMaterials />} />
                 <Route path="/student/results" element={<StudentResults />} />
                 <Route path="/student/profile" element={<StudentProfile />} />
               </Route>
-            </Route>
-            
-            {/* Fullscreen Test Interface (Outside Layout) */}
-            <Route element={<ProtectedRoute allowedRole="student" />}>
+
+              {/* Fullscreen Test Interface (Outside Layout) */}
               <Route path="/student/tests/:id/attempt" element={<TestAttempt />} />
               <Route path="/student/results/:id" element={<TestResult />} />
             </Route>
-            
+
+            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

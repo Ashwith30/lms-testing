@@ -105,8 +105,11 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
 # === Questions ===
 
 @app.get("/api/question-banks", response_model=List[schemas.QuestionBank])
-def get_question_banks(db: Session = Depends(get_db)):
-    return db.query(models.QuestionBank).all()
+def get_question_banks(uploadedBy: str = None, db: Session = Depends(get_db)):
+    query = db.query(models.QuestionBank)
+    if uploadedBy:
+        query = query.filter(models.QuestionBank.uploadedBy == uploadedBy)
+    return query.all()
 
 @app.post("/api/question-banks", response_model=schemas.QuestionBank)
 def create_question_bank(bank: schemas.QuestionBankCreate, db: Session = Depends(get_db)):
@@ -183,8 +186,11 @@ def format_test(t: models.Test):
     }
 
 @app.get("/api/tests", response_model=List[schemas.Test])
-def get_tests(db: Session = Depends(get_db)):
-    tests = db.query(models.Test).all()
+def get_tests(createdBy: str = None, db: Session = Depends(get_db)):
+    query = db.query(models.Test)
+    if createdBy:
+        query = query.filter(models.Test.createdBy == createdBy)
+    tests = query.all()
     return [format_test(t) for t in tests]
 
 @app.post("/api/tests", response_model=schemas.Test)
@@ -318,6 +324,92 @@ def create_attempt(attempt: schemas.AttemptBase, db: Session = Depends(get_db)):
     db.refresh(db_attempt)
     return format_attempt(db_attempt, db)
 
+@app.get("/api/attempts/{attempt_id}", response_model=schemas.AttemptBase)
+def get_attempt(attempt_id: str, db: Session = Depends(get_db)):
+    db_attempt = db.query(models.Attempt).filter(models.Attempt.id == attempt_id).first()
+    if not db_attempt:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+    return format_attempt(db_attempt, db)
+
+@app.get("/api/student/dashboard/{student_id}")
+def get_student_dashboard(student_id: str, db: Session = Depends(get_db)):
+    """
+    Returns all data needed for the student dashboard in a single call:
+    - upcoming_tests: schedules/tests not yet completed
+    - past_exams: submitted attempts enriched with test info
+    - stats: summary stats (avg score, highest score, total completed)
+    """
+    # Fetch all attempts for this student
+    attempts = db.query(models.Attempt).filter(models.Attempt.studentId == student_id).all()
+
+    # Fetch all schedules and tests
+    schedules = db.query(models.Schedule).all()
+    tests = db.query(models.Test).all()
+    tests_map = {t.id: t for t in tests}
+
+    now = datetime.datetime.utcnow().isoformat()
+    attempts_map = {a.testId: a for a in attempts}
+
+    # Build upcoming tests
+    upcoming = []
+    for s in schedules:
+        test = tests_map.get(s.testId)
+        if not test:
+            continue
+        attempt = attempts_map.get(s.testId)
+        assigned = json.loads(s.assignedStudents) if s.assignedStudents else []
+        # Show test if student is assigned (by ID or batch) and it's not fully submitted
+        student_user = db.query(models.User).filter(models.User.id == student_id).first()
+        is_assigned = (
+            student_id in assigned or
+            (student_user and student_user.batch and student_user.batch == s.assignedBatch)
+        )
+        if not is_assigned:
+            continue
+        is_available = now >= s.startTime and now <= s.endTime and (not attempt or attempt.status not in ('submitted', 'auto_submitted'))
+        upcoming.append({
+            "schedule": {
+                "id": s.id,
+                "testId": s.testId,
+                "startTime": s.startTime,
+                "endTime": s.endTime,
+                "assignedStudents": assigned,
+                "assignedBatch": s.assignedBatch
+            },
+            "test": format_test(test),
+            "attempt": format_attempt(attempt, db) if attempt else None,
+            "isAvailable": is_available
+        })
+
+    # Build past exams (submitted attempts)
+    past_exams = []
+    submitted_attempts = [a for a in attempts if a.status in ('submitted', 'auto_submitted')]
+    for a in submitted_attempts:
+        test = tests_map.get(a.testId)
+        if not test:
+            continue
+        past_exams.append({
+            "attempt": format_attempt(a, db),
+            "test": format_test(test)
+        })
+
+    # Sort past exams newest first
+    past_exams.sort(key=lambda x: x["attempt"]["submittedAt"] or "", reverse=True)
+
+    # Stats
+    percentages = [a.percentage for a in submitted_attempts if a.percentage is not None]
+    stats = {
+        "totalCompleted": len(submitted_attempts),
+        "averageScore": round(sum(percentages) / len(percentages), 1) if percentages else 0,
+        "highestScore": round(max(percentages), 1) if percentages else 0,
+    }
+
+    return {
+        "upcoming_tests": upcoming,
+        "past_exams": past_exams,
+        "stats": stats
+    }
+
 @app.put("/api/attempts/{attempt_id}")
 def update_attempt(attempt_id: str, updates: schemas.AttemptUpdate, db: Session = Depends(get_db)):
     db_attempt = db.query(models.Attempt).filter(models.Attempt.id == attempt_id).first()
@@ -347,3 +439,97 @@ def update_attempt(attempt_id: str, updates: schemas.AttemptUpdate, db: Session 
                 
     db.commit()
     return format_attempt(db_attempt, db)
+
+# === Materials ===
+
+def format_material(m: models.Material):
+    return {
+        "id": m.id,
+        "title": m.title,
+        "description": m.description,
+        "type": m.type,
+        "url": m.url,
+        "content": m.content,
+        "uploadedBy": m.uploadedBy,
+        "isReleased": m.isReleased,
+        "releasedAt": m.releasedAt,
+        "assignedBatch": m.assignedBatch,
+        "createdAt": m.createdAt,
+    }
+
+@app.get("/api/materials")
+def get_materials(
+    uploadedBy: str = None,
+    studentId: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    - Trainer: pass uploadedBy=trainer_id → returns all materials by that trainer.
+    - Student: pass studentId=student_id → returns only released materials for that student's batch.
+    """
+    query = db.query(models.Material)
+    if uploadedBy:
+        query = query.filter(models.Material.uploadedBy == uploadedBy)
+    elif studentId:
+        student = db.query(models.User).filter(models.User.id == studentId).first()
+        query = query.filter(models.Material.isReleased == True)
+        if student and student.batch:
+            query = query.filter(
+                (models.Material.assignedBatch == None) |
+                (models.Material.assignedBatch == student.batch)
+            )
+        else:
+            query = query.filter(models.Material.assignedBatch == None)
+    return [format_material(m) for m in query.all()]
+
+@app.post("/api/materials")
+def create_material(material: schemas.MaterialCreate, db: Session = Depends(get_db)):
+    db_mat = models.Material(
+        id=material.id,
+        title=material.title,
+        description=material.description,
+        type=material.type,
+        url=material.url,
+        content=material.content,
+        uploadedBy=material.uploadedBy,
+        isReleased=False,
+        assignedBatch=material.assignedBatch,
+        createdAt=material.createdAt,
+    )
+    db.add(db_mat)
+    db.commit()
+    db.refresh(db_mat)
+    return format_material(db_mat)
+
+@app.put("/api/materials/{material_id}")
+def update_material(material_id: str, updates: schemas.MaterialUpdate, db: Session = Depends(get_db)):
+    db_mat = db.query(models.Material).filter(models.Material.id == material_id).first()
+    if not db_mat:
+        raise HTTPException(status_code=404, detail="Material not found")
+    if updates.title is not None:
+        db_mat.title = updates.title
+    if updates.description is not None:
+        db_mat.description = updates.description
+    if updates.url is not None:
+        db_mat.url = updates.url
+    if updates.content is not None:
+        db_mat.content = updates.content
+    if updates.isReleased is not None:
+        db_mat.isReleased = updates.isReleased
+        if updates.isReleased and not db_mat.releasedAt:
+            db_mat.releasedAt = datetime.datetime.utcnow().isoformat()
+        elif not updates.isReleased:
+            db_mat.releasedAt = None
+    if updates.assignedBatch is not None:
+        db_mat.assignedBatch = updates.assignedBatch
+    db.commit()
+    return format_material(db_mat)
+
+@app.delete("/api/materials/{material_id}")
+def delete_material(material_id: str, db: Session = Depends(get_db)):
+    db_mat = db.query(models.Material).filter(models.Material.id == material_id).first()
+    if not db_mat:
+        raise HTTPException(status_code=404, detail="Material not found")
+    db.delete(db_mat)
+    db.commit()
+    return {"status": "deleted"}

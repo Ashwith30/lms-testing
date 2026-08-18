@@ -2,8 +2,9 @@ import { QuestionBank, Question } from '../types';
 import { api } from './api';
 
 export const questionService = {
-  getQuestionBanks: async (): Promise<QuestionBank[]> => {
-    const res = await api.get('/question-banks');
+  getQuestionBanks: async (uploadedBy?: string): Promise<QuestionBank[]> => {
+    const url = uploadedBy ? `/question-banks?uploadedBy=${uploadedBy}` : '/question-banks';
+    const res = await api.get(url);
     return res.data;
   },
 

@@ -94,3 +94,18 @@ export interface Attempt {
   violations: number;
   status: 'in_progress' | 'submitted' | 'auto_submitted';
 }
+
+export interface Material {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'pdf' | 'video' | 'link' | 'note';
+  url?: string;
+  content?: string;
+  uploadedBy: string;
+  isReleased: boolean;
+  releasedAt?: string;
+  assignedBatch?: string;
+  createdAt: string;
+}
+

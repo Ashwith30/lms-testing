@@ -4,22 +4,24 @@ import { Plus, Database, Calendar } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { questionService } from '../../services/questionService';
+import { useAuth } from '../../context/AuthContext';
 import { QuestionBank } from '../../types';
 
 export const QuestionBanks = () => {
+  const { user } = useAuth();
   const [banks, setBanks] = useState<QuestionBank[]>([]);
 
   useEffect(() => {
     const fetchBanks = async () => {
       try {
-        const data = await questionService.getQuestionBanks();
+        const data = await questionService.getQuestionBanks(user?.id);
         setBanks(data);
       } catch (error) {
         console.error("Failed to load question banks", error);
       }
     };
     fetchBanks();
-  }, []);
+  }, [user]);
 
   return (
     <div className="space-y-6">

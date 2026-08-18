@@ -4,22 +4,24 @@ import { Plus, Clock, FileText, Settings } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { testService } from '../../services/testService';
+import { useAuth } from '../../context/AuthContext';
 import { Test } from '../../types';
 
 export const Tests = () => {
+  const { user } = useAuth();
   const [tests, setTests] = useState<Test[]>([]);
 
   useEffect(() => {
     const fetchTests = async () => {
       try {
-        const data = await testService.getTrainerTests();
+        const data = await testService.getTrainerTests(user?.id);
         setTests(data);
       } catch (error) {
         console.error("Failed to load tests", error);
       }
     };
     fetchTests();
-  }, []);
+  }, [user]);
 
   return (
     <div className="space-y-6">

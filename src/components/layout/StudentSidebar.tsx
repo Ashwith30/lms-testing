@@ -6,8 +6,10 @@ import {
   FileText, 
   BarChart, 
   User, 
+  BookOpen,
   LogOut 
 } from 'lucide-react';
+
 import { cn } from '../ui/Button';
 import { Logo } from '../ui/Logo';
 
@@ -22,10 +24,12 @@ export const StudentSidebar = () => {
 
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/student/dashboard' },
-    { label: 'My Tests', icon: FileText, path: '/student/tests' },
-    { label: 'Results', icon: BarChart, path: '/student/results' },
-    { label: 'Profile', icon: User, path: '/student/profile' },
+    { label: 'My Tests',  icon: FileText,        path: '/student/tests' },
+    { label: 'Materials', icon: BookOpen,         path: '/student/materials' },
+    { label: 'Results',   icon: BarChart,         path: '/student/results' },
+    { label: 'Profile',   icon: User,             path: '/student/profile' },
   ];
+
 
   return (
     <div className="flex flex-col w-64 bg-white border-r border-slate-200 h-screen sticky top-0">

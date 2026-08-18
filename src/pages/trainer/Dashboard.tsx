@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { FileText, Play, Users, CheckCircle } from 'lucide-react';
 import { testService } from '../../services/testService';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { Test } from '../../types';
 
 export const TrainerDashboard = () => {
+  const { user } = useAuth();
   const [tests, setTests] = useState<Test[]>([]);
   const [stats, setStats] = useState({
     totalTests: 0,
@@ -17,15 +19,14 @@ export const TrainerDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const allTests = await testService.getTrainerTests();
-        // Fallbacks for endpoints that might not exist yet, though we added them or can assume them
+        const allTests = await testService.getTrainerTests(user?.id);
         const usersRes = await api.get('/users/all').catch(() => ({ data: [] }));
         const attemptsRes = await api.get('/attempts').catch(() => ({ data: [] }));
         
         const students = usersRes.data.filter((u: any) => u.role === 'student');
         const attempts = attemptsRes.data.filter((a: any) => a.status === 'submitted' || a.status === 'auto_submitted');
         
-        setTests(allTests.slice(0, 5)); // Last 5 tests
+        setTests(allTests.slice(0, 5));
         setStats({
           totalTests: allTests.length,
           activeTests: allTests.filter(t => t.status === 'Live' || t.status === 'Scheduled').length,
@@ -37,7 +38,7 @@ export const TrainerDashboard = () => {
       }
     };
     fetchStats();
-  }, []);
+  }, [user]);
 
   const statCards = [
     { title: 'Total Tests', value: stats.totalTests, icon: FileText, color: 'text-blue-600' },

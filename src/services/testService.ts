@@ -2,8 +2,9 @@ import { Test, Schedule, Attempt, Question } from '../types';
 import { api } from './api';
 
 export const testService = {
-  getTrainerTests: async (): Promise<Test[]> => {
-    const res = await api.get('/tests');
+  getTrainerTests: async (trainerId?: string): Promise<Test[]> => {
+    const url = trainerId ? `/tests?createdBy=${trainerId}` : '/tests';
+    const res = await api.get(url);
     return res.data;
   },
 
@@ -148,5 +149,25 @@ export const testService = {
     
     const res = await api.put(`/attempts/${attempt.id}`, updates);
     return res.data;
+  },
+  getStudentDashboardData: async (studentId: string) => {
+    const res = await api.get(`/student/dashboard/${studentId}`);
+    return res.data as {
+      upcoming_tests: {
+        schedule: import('../types').Schedule;
+        test: import('../types').Test;
+        attempt?: import('../types').Attempt;
+        isAvailable: boolean;
+      }[];
+      past_exams: {
+        attempt: import('../types').Attempt;
+        test: import('../types').Test;
+      }[];
+      stats: {
+        totalCompleted: number;
+        averageScore: number;
+        highestScore: number;
+      };
+    };
   }
 };

@@ -36,3 +36,6 @@ lms.db
 __pycache__/
 *.pyc
 
+# Environment variables (secrets)
+.env
+backend/.env

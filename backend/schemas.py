@@ -133,3 +133,40 @@ class AttemptUpdate(BaseModel):
 class Attempt(AttemptBase):
     class Config:
         from_attributes = True
+
+class MaterialBase(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = None
+    type: str  # 'pdf' | 'video' | 'link' | 'note'
+    url: Optional[str] = None
+    content: Optional[str] = None
+    uploadedBy: str
+    isReleased: bool = False
+    releasedAt: Optional[str] = None
+    assignedBatch: Optional[str] = None
+    createdAt: str
+
+class MaterialCreate(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = None
+    type: str
+    url: Optional[str] = None
+    content: Optional[str] = None
+    uploadedBy: str
+    assignedBatch: Optional[str] = None
+    createdAt: str
+
+class MaterialUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    url: Optional[str] = None
+    content: Optional[str] = None
+    isReleased: Optional[bool] = None
+    releasedAt: Optional[str] = None
+    assignedBatch: Optional[str] = None
+
+class Material(MaterialBase):
+    class Config:
+        from_attributes = True
