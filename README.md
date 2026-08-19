@@ -1,32 +1,54 @@
-# React + TypeScript + Vite
+# LMS Testing Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A full-stack Learning Management & Online Testing Platform with multi-role support (Admin, Institution, Trainer, Student) and AI/Client-Side Proctoring.
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+lms-testing/
+├── backend/          # FastAPI backend (Python, SQLAlchemy, SQLite, JWT Auth)
+│   ├── auth.py
+│   ├── database.py
+│   ├── main.py
+│   ├── models.py
+│   ├── schemas.py
+│   └── requirements.txt
+├── frontend/         # React + Vite + TypeScript + Tailwind CSS
+│   ├── src/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── types/
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.ts
+└── README.md
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Getting Started
+
+### 1. Backend Setup (FastAPI)
+
+```bash
+cd backend
+pip install -r requirements.txt
+python seed.py           # Seed database with demo accounts & tests
+python -m uvicorn main:app --reload --port 8000
+```
+Backend API will be running at `http://localhost:8000`.
+
+### 2. Frontend Setup (React + Vite)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Frontend will be running at `http://localhost:5173`.
+
+### 3. Verification & Tests
+
+```bash
+python test_verify_all.py
+```

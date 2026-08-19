@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Literal
+from typing import List, Optional, Dict, Literal, Any
 
 class UserBase(BaseModel):
     id: str
@@ -18,6 +18,10 @@ class UserCreate(UserBase):
 class User(UserBase):
     class Config:
         from_attributes = True
+
+class LoginResponse(BaseModel):
+    token: str
+    user: User
 
 class QuestionOptions(BaseModel):
     A: str
@@ -100,6 +104,12 @@ class ScheduleBase(BaseModel):
 class ScheduleCreate(ScheduleBase):
     pass
 
+class ScheduleUpdate(BaseModel):
+    startTime: Optional[str] = None
+    endTime: Optional[str] = None
+    assignedStudents: Optional[List[str]] = None
+    assignedBatch: Optional[str] = None
+
 class Schedule(ScheduleBase):
     class Config:
         from_attributes = True
@@ -120,11 +130,15 @@ class AttemptBase(BaseModel):
     score: Optional[float] = None
     percentage: Optional[float] = None
     violations: int
+    violationLogs: Optional[List[Dict[str, Any]]] = None
+    proctoringSummary: Optional[Dict[str, Any]] = None
     status: str
 
 class AttemptUpdate(BaseModel):
     answers: Optional[Dict[str, AnswerRecordBase]] = None
     violations: Optional[int] = None
+    violationLogs: Optional[List[Dict[str, Any]]] = None
+    proctoringSummary: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
     submittedAt: Optional[str] = None
     score: Optional[float] = None
@@ -133,6 +147,30 @@ class AttemptUpdate(BaseModel):
 class Attempt(AttemptBase):
     class Config:
         from_attributes = True
+
+class TestUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    questionIds: Optional[List[str]] = None
+    totalMarks: Optional[float] = None
+    settings: Optional[TestSettingsBase] = None
+    status: Optional[str] = None
+
+class AttemptSubmitRequest(BaseModel):
+    isAutoSubmit: Optional[bool] = False
+    violations: Optional[int] = None
+    violationLogs: Optional[List[Dict[str, Any]]] = None
+    proctoringSummary: Optional[Dict[str, Any]] = None
+    answers: Optional[Dict[str, AnswerRecordBase]] = None
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    department: Optional[str] = None
+    batch: Optional[str] = None
+    studentId: Optional[str] = None
+    password: Optional[str] = None
+    currentPassword: Optional[str] = None
 
 class MaterialBase(BaseModel):
     id: str

@@ -1,7 +1,13 @@
+import datetime
 from sqlalchemy import Column, String, Integer, Boolean, Float, ForeignKey, Text, DateTime
 from sqlalchemy.orm import relationship
-import datetime
-from .database import Base
+try:
+    from .database import Base
+except (ImportError, ValueError):
+    from database import Base
+
+def get_utc_now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 class User(Base):
     __tablename__ = "users"
@@ -9,12 +15,12 @@ class User(Base):
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True)
-    role = Column(String, nullable=False) # 'trainer' or 'student'
+    role = Column(String, nullable=False) # 'admin', 'institution', 'trainer', 'student'
     studentId = Column(String, unique=True, index=True, nullable=True)
     department = Column(String, nullable=True)
     batch = Column(String, nullable=True)
     password = Column(String, nullable=True)
-    createdAt = Column(String, default=lambda: datetime.datetime.utcnow().isoformat())
+    createdAt = Column(String, default=get_utc_now)
 
 class QuestionBank(Base):
     __tablename__ = "question_banks"
@@ -23,7 +29,7 @@ class QuestionBank(Base):
     name = Column(String, nullable=False)
     description = Column(String)
     uploadedBy = Column(String, ForeignKey("users.id"))
-    createdAt = Column(String, default=lambda: datetime.datetime.utcnow().isoformat())
+    createdAt = Column(String, default=get_utc_now)
     questionCount = Column(Integer, default=0)
     
     questions = relationship("Question", back_populates="bank")
@@ -56,7 +62,7 @@ class Test(Base):
     totalMarks = Column(Float, default=0.0)
     createdBy = Column(String, ForeignKey("users.id"))
     status = Column(String, nullable=False) # 'Draft', 'Scheduled', etc.
-    createdAt = Column(String, default=lambda: datetime.datetime.utcnow().isoformat())
+    createdAt = Column(String, default=get_utc_now)
     
     # Settings stored as individual columns or JSON. SQLite doesn't have native JSON before 3.38 mostly.
     # We'll use individual columns for simplicity.
@@ -94,6 +100,8 @@ class Attempt(Base):
     score = Column(Float, nullable=True)
     percentage = Column(Float, nullable=True)
     violations = Column(Integer, default=0)
+    violationLogs = Column(Text, nullable=True) # JSON list of violation records
+    proctoringSummary = Column(Text, nullable=True) # JSON object of proctoring metrics
     status = Column(String, nullable=False) # 'in_progress', 'submitted', 'auto_submitted'
     
     answers = relationship("AnswerRecord", back_populates="attempt")
@@ -122,4 +130,4 @@ class Material(Base):
     isReleased = Column(Boolean, default=False)
     releasedAt = Column(String, nullable=True)
     assignedBatch = Column(String, nullable=True)  # None = all batches
-    createdAt = Column(String, default=lambda: datetime.datetime.utcnow().isoformat())
+    createdAt = Column(String, default=get_utc_now)
