@@ -1,173 +1,122 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Poppins', 'Inter', sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  /* Brand Palette (Custom variables for reference and direct use) */
-  --color-canvas: #F8FAFC;
-  --color-panel: #FFFFFF;
-  --color-brand-primary: #0977bb;
-  --color-brand-secondary: #386bb1;
-  --color-light-tint: #D9E9F2;
-  --color-accent-cta: #E26212;
-  --color-accent-muted: #E08852;
-  --color-typography: #0F172A;
-
-  /* Overriding standard Tailwind utility classes to match the palette */
-  
-  /* 1. White and panel elements */
-  --color-white: #FFFFFF;
-
-  /* 2. Page backgrounds & Neutral elements (slate / gray / zinc / neutral / stone) */
-  --color-slate-50: #F8FAFC;
-  --color-slate-100: #F8FAFC;
-  --color-slate-200: #D9E9F2;
-  --color-slate-300: #386bb1;
-  --color-slate-400: #386bb1;
-  --color-slate-500: #386bb1;
-  --color-slate-600: #386bb1;
-  --color-slate-700: #386bb1;
-  --color-slate-800: #0F172A;
-  --color-slate-900: #0F172A;
-  --color-slate-950: #0F172A;
-
-  --color-gray-50: #F8FAFC;
-  --color-gray-100: #F8FAFC;
-  --color-gray-200: #D9E9F2;
-  --color-gray-300: #386bb1;
-  --color-gray-400: #386bb1;
-  --color-gray-500: #386bb1;
-  --color-gray-600: #386bb1;
-  --color-gray-700: #386bb1;
-  --color-gray-800: #0F172A;
-  --color-gray-900: #0F172A;
-
-  --color-zinc-50: #F8FAFC;
-  --color-zinc-100: #F8FAFC;
-  --color-zinc-200: #D9E9F2;
-  --color-zinc-300: #386bb1;
-  --color-zinc-400: #386bb1;
-  --color-zinc-500: #386bb1;
-  --color-zinc-600: #386bb1;
-  --color-zinc-700: #386bb1;
-  --color-zinc-800: #0F172A;
-  --color-zinc-900: #0F172A;
-
-  /* 3. Blue/Indigo (Primary brand elements & Highlights) */
-  --color-blue-50: #D9E9F2;
-  --color-blue-100: #D9E9F2;
-  --color-blue-200: #D9E9F2;
-  --color-blue-300: #386bb1;
-  --color-blue-400: #386bb1;
-  --color-blue-500: #0977bb;
-  --color-blue-600: #0977bb;
-  --color-blue-700: #0977bb;
-  --color-blue-800: #386bb1;
-  --color-blue-900: #0F172A;
-
-  --color-indigo-50: #D9E9F2;
-  --color-indigo-100: #D9E9F2;
-  --color-indigo-200: #D9E9F2;
-  --color-indigo-300: #386bb1;
-  --color-indigo-400: #386bb1;
-  --color-indigo-500: #0977bb;
-  --color-indigo-600: #0977bb;
-  --color-indigo-700: #386bb1;
-  --color-indigo-800: #386bb1;
-  --color-indigo-900: #0F172A;
-
-  /* 4. Purple/Violet (Muted status / Review / Accent states) */
-  --color-purple-50: #D9E9F2;
-  --color-purple-100: #D9E9F2;
-  --color-purple-200: #E08852;
-  --color-purple-300: #E08852;
-  --color-purple-400: #E08852;
-  --color-purple-500: #E26212;
-  --color-purple-600: #E26212;
-  --color-purple-700: #E26212;
-  --color-purple-800: #E26212;
-  --color-purple-900: #0F172A;
-
-  --color-violet-50: #D9E9F2;
-  --color-violet-100: #D9E9F2;
-  --color-violet-200: #E08852;
-  --color-violet-300: #E08852;
-  --color-violet-400: #E08852;
-  --color-violet-500: #E26212;
-  --color-violet-600: #E26212;
-  --color-violet-700: #E26212;
-
-  /* 5. Emerald/Green (Successful / Complete states mapped to Primary/Secondary brand elements) */
-  --color-green-50: #D9E9F2;
-  --color-green-100: #D9E9F2;
-  --color-green-500: #386bb1;
-  --color-green-600: #0977bb;
-  --color-green-700: #0977bb;
-
-  --color-emerald-50: #D9E9F2;
-  --color-emerald-100: #D9E9F2;
-  --color-emerald-500: #386bb1;
-  --color-emerald-600: #0977bb;
-  --color-emerald-700: #0977bb;
-
-  /* 6. Red/Amber (Warning / Alert / Error states mapped to Accent / CTA) */
-  --color-red-50: #F8FAFC;
-  --color-red-100: #D9E9F2;
-  --color-red-500: #E08852;
-  --color-red-600: #E26212;
-  --color-red-700: #E26212;
-  --color-red-800: #E26212;
-
-  --color-amber-50: #F8FAFC;
-  --color-amber-100: #D9E9F2;
-  --color-amber-500: #E08852;
-  --color-amber-600: #E26212;
-  --color-amber-700: #E26212;
-  --color-amber-800: #E26212;
+  /* Warm, intentional palette — not default Tailwind */
+  --color-canvas: #f7f8fa;
+  --color-panel: #ffffff;
+  --color-brand: #2563eb;
+  --color-brand-hover: #1d4ed8;
+  --color-brand-light: #eff4ff;
+  --color-brand-muted: #8ba4d9;
+  --color-ink: #1a1d23;
+  --color-ink-secondary: #5a6170;
+  --color-ink-tertiary: #9099a8;
+  --color-border: #e2e5ea;
+  --color-border-light: #eef0f3;
+  --color-surface-raised: #f0f2f5;
+  --color-accent-warm: #e85d26;
+  --color-accent-warm-light: #fef3ee;
+  --color-success: #16a34a;
+  --color-success-light: #f0fdf4;
+  --color-warning: #d97706;
+  --color-warning-light: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-light: #fef2f2;
 }
 
 @layer base {
   body {
-    @apply bg-canvas text-typography antialiased selection:bg-light-tint selection:text-brand-secondary;
-    font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01";
+    letter-spacing: -0.011em;
+  }
+
+  ::selection {
+    background: var(--color-brand-light);
+    color: var(--color-brand);
   }
 }
 
-/* Custom Utilities for smooth animations and professional look */
 @layer utilities {
+  /* Entrance animations with variety */
   .animate-in {
-    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-  
-  /* Premium Scrollbar styled to match approved palette */
+
+  .animate-in-delayed {
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+  }
+
+  .animate-fade {
+    animation: fadeOnly 0.3s ease both;
+  }
+
+  .animate-slide-right {
+    animation: slideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Subtle dot pattern for panels */
+  .bg-dots {
+    background-image: radial-gradient(circle, #d5d9e0 0.8px, transparent 0.8px);
+    background-size: 24px 24px;
+  }
+
+  /* Scrollbar — barely visible until hovered */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   ::-webkit-scrollbar-thumb {
-    background: var(--color-light-tint);
+    background: #d1d5db;
     border-radius: 9999px;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-brand-secondary);
+    background: #9ca3af;
   }
-  
-  @keyframes fadeIn {
+
+  @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  @keyframes fadeOnly {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideRight {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes pulse-subtle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 }

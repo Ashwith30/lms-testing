@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { X } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { cn } from '../components/ui/Button';
 
 interface Toast {
@@ -30,6 +30,14 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const getIcon = (type: Toast['type']) => {
+    switch (type) {
+      case 'success': return <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />;
+      case 'error': return <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />;
+      default: return <Info className="h-4 w-4 text-blue-500 flex-shrink-0" />;
+    }
+  };
+
   return (
     <ToastContext.Provider value={{ toast: addToast }}>
       {children}
@@ -38,15 +46,15 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
           <div
             key={t.id}
             className={cn(
-              "flex items-center justify-between p-4 min-w-[300px] rounded-lg shadow-lg animate-in transition-all",
-              t.type === 'success' ? "bg-green-50 text-green-800 border border-green-200" :
-              t.type === 'error' ? "bg-red-50 text-red-800 border border-red-200" :
-              "bg-white text-slate-800 border border-slate-200"
+              "flex items-center gap-2.5 px-4 py-3 min-w-[280px] max-w-[380px] rounded-lg shadow-lifted bg-white border border-[#e2e5ea]",
+              "animate-slide-right"
             )}
+            style={{ animation: 'slideRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) both' }}
           >
-            <span className="text-sm font-medium">{t.message}</span>
-            <button onClick={() => removeToast(t.id)} className="opacity-50 hover:opacity-100">
-              <X size={16} />
+            {getIcon(t.type)}
+            <span className="text-[13px] font-medium text-[#1a1d23] flex-1">{t.message}</span>
+            <button onClick={() => removeToast(t.id)} className="text-[#9099a8] hover:text-[#5a6170] transition-colors flex-shrink-0">
+              <X size={14} />
             </button>
           </div>
         ))}

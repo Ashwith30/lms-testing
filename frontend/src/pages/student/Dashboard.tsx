@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Play, CheckCircle, Clock, BarChart2, Award, BookOpen,
-  AlertTriangle, Eye, TrendingUp, Calendar
+  AlertTriangle, Eye, TrendingUp, Calendar, ArrowRight
 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -57,104 +57,94 @@ export const StudentDashboard = () => {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 font-sans">
-          Welcome back, {user?.name} 👋
+        <h1 className="text-2xl font-bold tracking-tight text-[#1a1d23]">
+          Hey, {user?.name?.split(' ')[0]} 👋
         </h1>
-        <p className="text-slate-500 mt-1">Here's a summary of your placement assessment activity.</p>
+        <p className="text-[#9099a8] text-sm mt-0.5">Here's what's happening with your assessments.</p>
       </div>
 
-      {/* Stats Bar */}
+      {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <Card>
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                <BookOpen className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500">Tests Completed</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{stats?.totalCompleted ?? 0}</h3>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500">Average Score</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{stats?.averageScore ?? 0}%</h3>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                <Award className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500">Highest Score</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{stats?.highestScore ?? 0}%</h3>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl border border-[#e2e5ea] p-4 flex items-center gap-3.5 shadow-soft">
+            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[12px] font-medium text-[#9099a8] uppercase tracking-wider">Completed</p>
+              <p className="text-xl font-bold text-[#1a1d23] mt-0.5 leading-none">{stats?.totalCompleted ?? 0}</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-[#e2e5ea] p-4 flex items-center gap-3.5 shadow-soft">
+            <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+              <TrendingUp className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[12px] font-medium text-[#9099a8] uppercase tracking-wider">Avg Score</p>
+              <p className="text-xl font-bold text-[#1a1d23] mt-0.5 leading-none">{stats?.averageScore ?? 0}%</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-[#e2e5ea] p-4 flex items-center gap-3.5 shadow-soft">
+            <div className="h-10 w-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <Award className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[12px] font-medium text-[#9099a8] uppercase tracking-wider">Best Score</p>
+              <p className="text-xl font-bold text-[#1a1d23] mt-0.5 leading-none">{stats?.highestScore ?? 0}%</p>
+            </div>
+          </div>
         </div>
       )}
 
       {isLoading ? (
-        <div className="text-center py-16 text-slate-400">
-          <div className="animate-spin inline-block h-8 w-8 border-4 border-slate-200 border-t-blue-500 rounded-full mb-3"></div>
-          <p className="text-sm font-medium">Loading your dashboard...</p>
+        <div className="text-center py-16 text-[#9099a8]">
+          <div className="animate-spin inline-block h-6 w-6 border-2 border-[#e2e5ea] border-t-blue-500 rounded-full mb-3"></div>
+          <p className="text-sm">Loading...</p>
         </div>
       ) : (
         <>
-          {/* Upcoming / Active Tests */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-500" />
-              Upcoming Tests
-            </h2>
+          {/* Upcoming Tests */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-[#1a1d23] flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-[#9099a8]" />
+                Upcoming tests
+              </h2>
+            </div>
 
             {upcomingTests.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {upcomingTests.map((item) => (
-                  <Card key={item.schedule.id} className="hover:shadow-md transition-all">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                          <Clock className="h-6 w-6" />
+                  <Card key={item.schedule.id} className="hover:shadow-lifted transition-all duration-200 group">
+                    <CardContent className="p-5">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="h-9 w-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                          <Clock className="h-4 w-4" />
                         </div>
                         {item.isAvailable ? (
-                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold animate-pulse">
-                            Available Now
+                          <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md text-[11px] font-semibold border border-emerald-200">
+                            Live
                           </span>
                         ) : item.attempt?.status === 'in_progress' ? (
-                          <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold">
-                            In Progress
+                          <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md text-[11px] font-semibold border border-amber-200">
+                            In progress
                           </span>
                         ) : (
-                          <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-semibold">
+                          <span className="bg-[#f0f2f5] text-[#5a6170] px-2 py-0.5 rounded-md text-[11px] font-semibold">
                             Scheduled
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-1">
+                      <h3 className="text-[15px] font-semibold text-[#1a1d23] mb-2 line-clamp-1">
                         {item.test.title}
                       </h3>
 
-                      <div className="space-y-2 mb-6">
-                        <p className="text-sm text-slate-500 flex items-center">
-                          <span className="w-24 font-medium">Questions:</span>
-                          {item.test.questionIds.length}
-                        </p>
-                        <p className="text-sm text-slate-500 flex items-center">
-                          <span className="w-24 font-medium">Duration:</span>
-                          {item.test.settings.duration} Minutes
-                        </p>
-                        <p className="text-sm text-slate-500 flex items-center">
-                          <span className="w-24 font-medium">Window:</span>
+                      <div className="space-y-1 mb-4 text-[13px] text-[#9099a8]">
+                        <p>{item.test.questionIds.length} questions · {item.test.settings.duration} min</p>
+                        <p>
                           {new Date(item.schedule.startTime).toLocaleString(undefined, {
                             month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                           })}
@@ -162,8 +152,9 @@ export const StudentDashboard = () => {
                       </div>
 
                       <Link to={`/student/tests/${item.test.id}`}>
-                        <Button className="w-full" variant={item.isAvailable ? 'primary' : 'outline'}>
-                          {item.attempt?.status === 'in_progress' ? 'Resume Test' : 'View Test'}
+                        <Button className="w-full" variant={item.isAvailable ? 'primary' : 'outline'} size="sm">
+                          {item.attempt?.status === 'in_progress' ? 'Resume' : 'View'}
+                          <ArrowRight className="h-3.5 w-3.5 ml-1" />
                         </Button>
                       </Link>
                     </CardContent>
@@ -171,108 +162,101 @@ export const StudentDashboard = () => {
                 ))}
               </div>
             ) : (
-              <Card>
-                <CardContent className="p-10 text-center text-slate-500 flex flex-col items-center">
-                  <CheckCircle className="h-12 w-12 text-green-400 mb-4" />
-                  <h3 className="text-lg font-medium text-slate-900 mb-1">All caught up!</h3>
-                  <p>You have no pending or upcoming assessments.</p>
-                </CardContent>
-              </Card>
+              <div className="bg-white rounded-xl border border-[#e2e5ea] shadow-soft p-8 text-center">
+                <CheckCircle className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
+                <p className="text-[15px] font-medium text-[#1a1d23] mb-0.5">All caught up</p>
+                <p className="text-sm text-[#9099a8]">No upcoming assessments right now.</p>
+              </div>
             )}
           </div>
 
           {/* Past Exams */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-              <BarChart2 className="h-5 w-5 text-purple-500" />
-              Past Exams
+          <div className="space-y-3">
+            <h2 className="text-base font-semibold text-[#1a1d23] flex items-center gap-2">
+              <BarChart2 className="h-4 w-4 text-[#9099a8]" />
+              Past exams
             </h2>
 
             {pastExams.length > 0 ? (
-              <Card className="overflow-hidden border border-slate-200">
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-slate-500">
-                      <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b">
-                        <tr>
-                          <th className="px-6 py-4">Assessment</th>
-                          <th className="px-6 py-4 text-center">Score</th>
-                          <th className="px-6 py-4 text-center">Percentage</th>
-                          <th className="px-6 py-4 text-center">Violations</th>
-                          <th className="px-6 py-4 text-center">Status</th>
-                          <th className="px-6 py-4 text-right">Submitted</th>
-                          <th className="px-6 py-4 text-right">Review</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {pastExams.map(({ attempt, test }) => (
-                          <tr key={attempt.id} className="hover:bg-slate-50 transition-colors group">
-                            <td className="px-6 py-4">
-                              <p className="font-semibold text-slate-900">{test.title}</p>
-                              <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{test.description}</p>
-                            </td>
-                            <td className="px-6 py-4 text-center font-medium text-slate-900">
-                              {attempt.score != null ? attempt.score : '—'} / {test.totalMarks}
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                (attempt.percentage ?? 0) >= 70
-                                  ? 'bg-green-50 text-green-700 border border-green-200'
-                                  : (attempt.percentage ?? 0) >= 40
-                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                  : 'bg-red-50 text-red-700 border border-red-200'
-                              }`}>
-                                {attempt.percentage != null ? `${attempt.percentage.toFixed(1)}%` : '—'}
+              <div className="bg-white rounded-xl border border-[#e2e5ea] shadow-soft overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead>
+                      <tr className="border-b border-[#eef0f3]">
+                        <th className="px-5 py-3 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Assessment</th>
+                        <th className="px-5 py-3 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider text-center">Score</th>
+                        <th className="px-5 py-3 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider text-center">%</th>
+                        <th className="px-5 py-3 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider text-center">Flags</th>
+                        <th className="px-5 py-3 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider text-center">Status</th>
+                        <th className="px-5 py-3 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider text-right">Date</th>
+                        <th className="px-5 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#eef0f3]">
+                      {pastExams.map(({ attempt, test }) => (
+                        <tr key={attempt.id} className="hover:bg-[#f7f8fa] transition-colors group">
+                          <td className="px-5 py-3.5">
+                            <p className="font-medium text-[#1a1d23] text-[13px]">{test.title}</p>
+                            <p className="text-[11px] text-[#9099a8] mt-0.5 line-clamp-1">{test.description}</p>
+                          </td>
+                          <td className="px-5 py-3.5 text-center text-[13px] font-medium text-[#1a1d23]">
+                            {attempt.score != null ? attempt.score : '—'} / {test.totalMarks}
+                          </td>
+                          <td className="px-5 py-3.5 text-center">
+                            <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                              (attempt.percentage ?? 0) >= 70
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : (attempt.percentage ?? 0) >= 40
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-red-50 text-red-700'
+                            }`}>
+                              {attempt.percentage != null ? `${attempt.percentage.toFixed(1)}%` : '—'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5 text-center">
+                            {(attempt.violations ?? 0) > 0 ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md">
+                                <AlertTriangle className="h-3 w-3" />
+                                {attempt.violations}
                               </span>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              {(attempt.violations ?? 0) > 0 ? (
-                                <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  {attempt.violations}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-slate-400">0</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-center text-xs">
-                              {attempt.status === 'auto_submitted' ? (
-                                <span className="text-amber-600 font-medium">Auto Submitted</span>
-                              ) : (
-                                <span className="text-green-600 font-medium">Submitted</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-right text-xs text-slate-500">
-                              {attempt.submittedAt
-                                ? new Date(attempt.submittedAt).toLocaleDateString(undefined, {
-                                    year: 'numeric', month: 'short', day: 'numeric',
-                                    hour: '2-digit', minute: '2-digit'
-                                  })
-                                : '—'}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <Link to={`/student/results/${test.id}`}>
-                                <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Eye className="mr-1.5 h-4 w-4 text-slate-400 group-hover:text-slate-600" />
-                                  Review
-                                </Button>
-                              </Link>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
+                            ) : (
+                              <span className="text-[11px] text-[#9099a8]">—</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5 text-center text-[11px]">
+                            {attempt.status === 'auto_submitted' ? (
+                              <span className="text-amber-600 font-medium">Auto</span>
+                            ) : (
+                              <span className="text-emerald-600 font-medium">Done</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5 text-right text-[11px] text-[#9099a8]">
+                            {attempt.submittedAt
+                              ? new Date(attempt.submittedAt).toLocaleDateString(undefined, {
+                                  month: 'short', day: 'numeric'
+                                })
+                              : '—'}
+                          </td>
+                          <td className="px-5 py-3.5 text-right">
+                            <Link to={`/student/results/${test.id}`}>
+                              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity text-[12px]">
+                                <Eye className="mr-1 h-3.5 w-3.5" />
+                                Review
+                              </Button>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             ) : (
-              <Card>
-                <CardContent className="p-10 text-center text-slate-500 flex flex-col items-center">
-                  <Play className="h-12 w-12 text-slate-300 mb-4" />
-                  <h3 className="text-lg font-medium text-slate-900 mb-1">No past exams yet</h3>
-                  <p>Complete an assessment to see your results here.</p>
-                </CardContent>
-              </Card>
+              <div className="bg-white rounded-xl border border-[#e2e5ea] shadow-soft p-8 text-center">
+                <Play className="h-8 w-8 text-[#e2e5ea] mx-auto mb-2" />
+                <p className="text-[15px] font-medium text-[#1a1d23] mb-0.5">No exams yet</p>
+                <p className="text-sm text-[#9099a8]">Complete an assessment to see results here.</p>
+              </div>
             )}
           </div>
         </>

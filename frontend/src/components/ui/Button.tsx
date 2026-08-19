@@ -21,20 +21,20 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]';
   
   const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm',
-    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200',
-    outline: 'border border-slate-300 bg-transparent hover:bg-slate-50 text-slate-700',
-    ghost: 'bg-transparent hover:bg-slate-100 text-slate-700',
-    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
+    primary: 'bg-[#2563eb] text-white hover:bg-[#1d4ed8] rounded-lg shadow-sm hover:shadow-md',
+    secondary: 'bg-[#f0f2f5] text-[#1a1d23] hover:bg-[#e2e5ea] rounded-lg',
+    outline: 'border border-[#e2e5ea] bg-white hover:bg-[#f7f8fa] text-[#5a6170] rounded-lg',
+    ghost: 'bg-transparent hover:bg-[#f0f2f5] text-[#5a6170] rounded-lg',
+    danger: 'bg-[#dc2626] text-white hover:bg-[#b91c1c] rounded-lg shadow-sm',
   };
   
   const sizes = {
-    sm: 'h-9 px-3 text-sm',
-    md: 'h-10 px-4 py-2',
-    lg: 'h-12 px-8 text-lg',
+    sm: 'h-8 px-3 text-[13px] gap-1.5',
+    md: 'h-9 px-4 text-sm gap-2',
+    lg: 'h-11 px-6 text-[15px] gap-2',
   };
 
   return (

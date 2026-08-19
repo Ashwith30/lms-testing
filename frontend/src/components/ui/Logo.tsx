@@ -12,24 +12,23 @@ export const Logo: React.FC<LogoProps> = ({
   size = 'md',
   variant = 'dark',
 }) => {
-  const textTheme = variant === 'light' ? 'text-white' : 'text-slate-800';
+  const textTheme = variant === 'light' ? 'text-white/90' : 'text-[#1a1d23]';
 
-  // Centrally control the relative proportions of P logo to text
   const sizeClasses = {
     sm: {
       container: 'gap-1.5',
       image: 'h-7 w-auto',
-      text: 'text-sm',
+      text: 'text-[13px]',
     },
     md: {
-      container: 'gap-2.5',
-      image: 'h-10 w-auto',
-      text: 'text-base tracking-normal',
+      container: 'gap-2',
+      image: 'h-9 w-auto',
+      text: 'text-[14px] tracking-[0.04em]',
     },
     lg: {
-      container: 'gap-3',
-      image: 'h-12 w-auto',
-      text: 'text-lg tracking-normal',
+      container: 'gap-2.5',
+      image: 'h-11 w-auto',
+      text: 'text-[16px] tracking-[0.04em]',
     },
   };
 
@@ -38,10 +37,9 @@ export const Logo: React.FC<LogoProps> = ({
   return (
     <div className={`flex items-center ${currentSize.container} ${className}`}>
       <img src={pLogo} alt="Phonetic Logo" className={`object-contain ${currentSize.image}`} />
-      <span className={`font-bold ${textTheme} ${currentSize.text}`}>
+      <span className={`font-semibold ${textTheme} ${currentSize.text}`}>
         PHONETIC
       </span>
     </div>
   );
 };
-

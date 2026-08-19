@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { Card, CardContent } from '../../components/ui/Card';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 
 export const AdminLogin = () => {
   const { login } = useAuth();
@@ -46,56 +46,52 @@ export const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center flex flex-col items-center justify-center">
-        <Link to="/">
-          <Logo size="lg" className="justify-center" />
+    <div className="min-h-screen bg-[#f7f8fa] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-[400px]">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-[13px] text-[#9099a8] hover:text-[#5a6170] mb-8 transition-colors">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to home
         </Link>
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-slate-900">
-          Admin Portal
-        </h2>
-        <p className="mt-2 text-center text-sm text-slate-500">
-          System Administration & User Management
-        </p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <Card className="border border-slate-200 shadow-sm animate-in">
-          <CardContent className="py-8 px-4 sm:px-10">
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <Input
-                label="Admin Email Address"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@lms.com"
-                required
-              />
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-slate-100 rounded-lg">
+            <ShieldCheck className="h-5 w-5 text-slate-600" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-[#1a1d23] tracking-tight">Admin</h1>
+            <p className="text-[12px] text-[#9099a8]">System administration</p>
+          </div>
+        </div>
 
-              <Input
-                label="Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
+        <div className="bg-white rounded-xl border border-[#e2e5ea] shadow-soft p-6">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@lms.com"
+              required
+            />
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+            <Button type="submit" className="w-full" isLoading={isLoading}>
+              Sign in
+            </Button>
+          </form>
+        </div>
 
-              <div>
-                <Button type="submit" className="w-full" isLoading={isLoading}>
-                  Secure Authentication
-                </Button>
-              </div>
-            </form>
-
-            <div className="mt-6 border-t border-slate-100 pt-6 text-center text-sm">
-              <span className="text-slate-500">Not an administrator?</span>{' '}
-              <Link to="/" className="font-semibold text-blue-600 hover:text-blue-500">
-                Return home
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mt-4 text-center">
+          <Link to="/" className="text-[13px] text-[#9099a8] hover:text-[#5a6170] transition-colors">
+            Not an admin? Go back
+          </Link>
+        </div>
       </div>
     </div>
   );

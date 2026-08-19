@@ -11,7 +11,7 @@ export const DashboardLayout = () => {
   const { user } = useAuth();
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-[#f7f8fa] overflow-hidden">
       {user?.role === 'admin' ? (
         <AdminSidebar />
       ) : user?.role === 'institution' ? (
@@ -24,8 +24,10 @@ export const DashboardLayout = () => {
       
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar />
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 animate-in">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+          <div className="animate-in max-w-[1400px]">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

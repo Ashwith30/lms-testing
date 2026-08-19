@@ -148,118 +148,118 @@ export const Navbar = () => {
     switch (type) {
       case 'success':
         return (
-          <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
-            <CheckCircle2 className="h-4 w-4" />
+          <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-600">
+            <CheckCircle2 className="h-3.5 w-3.5" />
           </div>
         );
       case 'alert':
         return (
-          <div className="p-1.5 rounded-lg bg-red-50 text-red-600">
-            <AlertCircle className="h-4 w-4" />
+          <div className="p-1.5 rounded-md bg-amber-50 text-amber-600">
+            <AlertCircle className="h-3.5 w-3.5" />
           </div>
         );
       case 'info':
       default:
         return (
-          <div className="p-1.5 rounded-lg bg-slate-100 text-slate-600">
-            <Info className="h-4 w-4" />
+          <div className="p-1.5 rounded-md bg-blue-50 text-blue-600">
+            <Info className="h-3.5 w-3.5" />
           </div>
         );
     }
   };
 
   return (
-    <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 sticky top-0 z-40">
+    <header className="bg-white/80 backdrop-blur-sm border-b border-[#e2e5ea] h-14 flex items-center justify-between px-6 sticky top-0 z-40">
       <div className="flex flex-1 items-center gap-4">
-        <div className="relative max-w-md w-full hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <div className="relative max-w-sm w-full hidden md:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#9099a8]" />
           <input 
             type="text" 
             placeholder="Search..." 
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+            className="w-full pl-9 pr-4 py-1.5 bg-[#f0f2f5] border-0 rounded-md text-sm text-[#1a1d23] placeholder:text-[#9099a8] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus:shadow-sm transition-all duration-150"
           />
         </div>
       </div>
       
-      <div className="flex items-center gap-4 relative" ref={dropdownRef}>
+      <div className="flex items-center gap-3 relative" ref={dropdownRef}>
         {/* Bell Button */}
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className={`relative p-2 transition-colors rounded-full hover:bg-slate-100 ${
-            isOpen ? 'text-blue-600 bg-slate-100' : 'text-slate-400 hover:text-slate-600'
+          className={`relative p-1.5 transition-colors rounded-md ${
+            isOpen ? 'text-blue-600 bg-blue-50' : 'text-[#9099a8] hover:text-[#5a6170] hover:bg-[#f0f2f5]'
           }`}
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-[18px] w-[18px]" />
           {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-600 rounded-full animate-pulse"></span>
+            <span className="absolute top-1 right-1 h-2 w-2 bg-blue-600 rounded-full ring-2 ring-white"></span>
           )}
         </button>
 
         {/* Notifications Dropdown Panel */}
         {isOpen && (
-          <div className="absolute right-0 mt-2 top-full w-96 bg-white rounded-xl border border-slate-200 shadow-lg py-2 origin-top-right transition-all duration-200 z-50 animate-in">
+          <div className="absolute right-0 mt-2 top-full w-[360px] bg-white rounded-xl border border-[#e2e5ea] shadow-dropdown py-1 origin-top-right animate-in z-50">
             {/* Header */}
-            <div className="px-4 py-2.5 flex items-center justify-between border-b border-slate-100">
-              <span className="font-bold text-slate-900 text-sm">Notifications</span>
+            <div className="px-4 py-2.5 flex items-center justify-between border-b border-[#eef0f3]">
+              <span className="font-semibold text-[#1a1d23] text-[13px]">Notifications</span>
               {unreadCount > 0 && (
                 <button 
                   onClick={handleMarkAllRead}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                  className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer font-medium"
                 >
-                  <Check className="h-3.5 w-3.5" /> Mark all read
+                  <Check className="h-3 w-3" /> Mark all read
                 </button>
               )}
             </div>
 
             {/* List */}
-            <div className="max-h-80 overflow-y-auto">
+            <div className="max-h-72 overflow-y-auto">
               {notifications.length > 0 ? (
                 notifications.map((notification) => (
                   <div 
                     key={notification.id}
                     onClick={() => handleToggleRead(notification.id)}
-                    className={`flex items-start gap-3 p-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-pointer relative ${
-                      !notification.isRead ? 'bg-blue-50/20' : ''
+                    className={`flex items-start gap-2.5 px-4 py-3 hover:bg-[#f7f8fa] transition-colors cursor-pointer relative ${
+                      !notification.isRead ? 'bg-blue-50/30' : ''
                     }`}
                   >
                     {renderIcon(notification.type)}
-                    <div className="flex-1 min-w-0 pr-4">
-                      <p className={`text-sm ${!notification.isRead ? 'font-bold text-slate-900' : 'text-slate-700'}`}>
+                    <div className="flex-1 min-w-0 pr-3">
+                      <p className={`text-[13px] leading-snug ${!notification.isRead ? 'font-semibold text-[#1a1d23]' : 'text-[#5a6170]'}`}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-slate-500 mt-1 leading-normal">
+                      <p className="text-xs text-[#9099a8] mt-0.5 leading-normal line-clamp-2">
                         {notification.description}
                       </p>
-                      <span className="text-[10px] text-slate-400 mt-1.5 block">
+                      <span className="text-[10px] text-[#9099a8] mt-1 block">
                         {notification.time}
                       </span>
                     </div>
 
                     {/* Unread indicator dot */}
                     {!notification.isRead && (
-                      <span className="absolute top-4 right-4 h-2 w-2 bg-blue-600 rounded-full"></span>
+                      <span className="absolute top-3.5 right-3 h-1.5 w-1.5 bg-blue-600 rounded-full"></span>
                     )}
                   </div>
                 ))
               ) : (
-                <div className="py-8 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
-                  <Bell className="h-8 w-8 text-slate-300" />
-                  <span className="text-sm">All caught up!</span>
+                <div className="py-8 text-center text-[#9099a8] flex flex-col items-center justify-center gap-1.5">
+                  <Bell className="h-6 w-6 text-[#e2e5ea]" />
+                  <span className="text-[13px]">All caught up!</span>
                 </div>
               )}
             </div>
           </div>
         )}
         
-        <div className="h-8 w-px bg-slate-200 mx-1"></div>
+        <div className="h-6 w-px bg-[#eef0f3] mx-0.5"></div>
         
         {/* User Profile Info */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <div className="flex flex-col items-end">
-            <span className="text-sm font-medium text-slate-900">{user?.name}</span>
-            <span className="text-xs text-slate-500 capitalize">{user?.role}</span>
+            <span className="text-[13px] font-medium text-[#1a1d23] leading-tight">{user?.name}</span>
+            <span className="text-[11px] text-[#9099a8] capitalize leading-tight">{user?.role}</span>
           </div>
-          <div className="h-9 w-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold">
+          <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-[13px] font-semibold shadow-sm">
             {user?.name?.charAt(0).toUpperCase()}
           </div>
         </div>
