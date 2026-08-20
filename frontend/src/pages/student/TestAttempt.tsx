@@ -366,22 +366,40 @@ export const TestAttempt = () => {
 
   // 5. Timer logic
   useEffect(() => {
-    if (!attempt) return;
+    if (!attempt || attempt.status === 'submitted' || attempt.status === 'auto_submitted') return;
+    
+    const durationMinutes = test?.settings?.duration || 60;
+    const startedAtMs = attempt.startedAt ? new Date(attempt.startedAt).getTime() : Date.now();
+    const expiresAtMs = attempt.expiresAt 
+      ? new Date(attempt.expiresAt).getTime() 
+      : startedAtMs + durationMinutes * 60 * 1000;
+
+    // Immediately compute initial remaining seconds
+    const calcRemaining = () => Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000));
+    const initialRemaining = calcRemaining();
+    setTimeLeft(initialRemaining);
+
+    if (initialRemaining <= 0) {
+      // If time was genuinely already expired from a previous session
+      if (!isSubmittingRef.current) {
+        toast('Time is up! Submitting your assessment...', 'info');
+        handleAutoSubmit();
+      }
+      return;
+    }
     
     const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const expires = new Date(attempt.expiresAt).getTime();
-      const remaining = Math.max(0, Math.floor((expires - now) / 1000));
-      
+      const remaining = calcRemaining();
       setTimeLeft(remaining);
       
-      if (remaining === 0 && !isSubmittingRef.current) {
+      if (remaining <= 0 && !isSubmittingRef.current) {
+        toast('Time is up! Submitting your assessment...', 'info');
         handleAutoSubmit();
       }
     }, 1000);
     
     return () => clearInterval(interval);
-  }, [attempt]);
+  }, [attempt, test]);
 
   // 6. Fullscreen lockdown & re-entry manager
   useEffect(() => {

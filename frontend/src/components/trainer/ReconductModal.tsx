@@ -167,7 +167,7 @@ export const ReconductModal: React.FC<ReconductModalProps> = ({
             <div className="min-w-0 pr-2">
               <p className="font-semibold text-slate-900 truncate">{test.title}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                {test.questionIds.length} questions · {test.settings.duration} mins · {test.totalMarks} total marks
+                {test.questionIds?.length ?? 0} questions · {test.settings?.duration ?? 60} mins · {test.totalMarks ?? 0} total marks
               </p>
             </div>
             <span className="shrink-0 px-2 py-0.5 bg-blue-50 text-blue-700 font-semibold rounded-md text-[10px] border border-blue-200">

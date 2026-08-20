@@ -7,7 +7,7 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
-import { ArrowLeft, GraduationCap } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Sparkles } from 'lucide-react';
 
 export const StudentLogin = () => {
   const [studentId, setStudentId] = useState('LMS001');
@@ -17,6 +17,12 @@ export const StudentLogin = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
+
+  const fillDemo = (id: string = 'LMS001') => {
+    setStudentId(id);
+    setPassword('student123');
+    toast(`Filled Demo Student credentials (${id})`, 'success');
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,8 +76,38 @@ export const StudentLogin = () => {
             <Logo size="md" />
           </div>
 
-          <h1 className="text-2xl font-bold text-[#1a1d23] mb-1 tracking-tight">Student sign in</h1>
-          <p className="text-sm text-[#9099a8] mb-8">Enter your student ID and password to continue.</p>
+          <div className="flex items-center justify-between mb-1">
+            <h1 className="text-2xl font-bold text-[#1a1d23] tracking-tight">Student sign in</h1>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => fillDemo('LMS001')}
+                className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition-colors"
+                title="Fill Student 1 (LMS001 / ashwith@example.com)"
+              >
+                <Sparkles className="h-3 w-3 text-blue-500" />
+                <span>LMS001</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemo('LMS002')}
+                className="text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition-colors"
+                title="Fill Student 2 (LMS002 / student@lms.com)"
+              >
+                <span>LMS002</span>
+              </button>
+            </div>
+          </div>
+          <p className="text-sm text-[#9099a8] mb-6">Enter your student ID or email and password to continue.</p>
+
+          {/* Demo credential callout */}
+          <div className="mb-5 p-2.5 bg-blue-50/70 border border-blue-100 rounded-lg flex items-center justify-between text-[11px]">
+            <div>
+              <span className="font-semibold text-blue-900">Demo Login:</span>{' '}
+              <code className="text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200">LMS001</code>
+            </div>
+            <code className="text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200">student123</code>
+          </div>
 
           <form className="space-y-4" onSubmit={handleLogin}>
             <Input
@@ -80,7 +116,7 @@ export const StudentLogin = () => {
               required
               value={studentId}
               onChange={e => setStudentId(e.target.value)}
-              placeholder="e.g. LMS001"
+              placeholder="e.g. LMS001 or ashwith@example.com"
             />
             <Input
               label="Password"

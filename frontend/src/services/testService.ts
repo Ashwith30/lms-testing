@@ -57,7 +57,7 @@ export const testService = {
   getBatches: async (): Promise<string[]> => {
     try {
       const res = await api.get('/batches');
-      return res.data;
+      return res.data.map((b: any) => typeof b === 'string' ? b : (b.name || b.id));
     } catch {
       return [];
     }

@@ -105,7 +105,7 @@ export const InstitutionTrainers = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right text-xs text-slate-500">
-                        {new Date(t.createdAt).toLocaleDateString(undefined, {
+                        {new Date(t.createdAt || Date.now()).toLocaleDateString(undefined, {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric'

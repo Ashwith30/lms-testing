@@ -6,7 +6,7 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
-import { ArrowLeft, Building2 } from 'lucide-react';
+import { ArrowLeft, Building2, Sparkles } from 'lucide-react';
 
 export const InstitutionLogin = () => {
   const { login } = useAuth();
@@ -16,6 +16,12 @@ export const InstitutionLogin = () => {
   const [email, setEmail] = useState('institution@lms.com');
   const [password, setPassword] = useState('institution123');
   const [isLoading, setIsLoading] = useState(false);
+
+  const fillDemo = () => {
+    setEmail('institution@lms.com');
+    setPassword('institution123');
+    toast('Filled Demo Institution credentials', 'success');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,8 +85,28 @@ export const InstitutionLogin = () => {
             <Logo size="md" />
           </div>
 
-          <h1 className="text-2xl font-bold text-[#1a1d23] mb-1 tracking-tight">Institution portal</h1>
-          <p className="text-sm text-[#9099a8] mb-8">Sign in to manage your college or university.</p>
+          <div className="flex items-center justify-between mb-1">
+            <h1 className="text-2xl font-bold text-[#1a1d23] tracking-tight">Institution portal</h1>
+            <button
+              type="button"
+              onClick={fillDemo}
+              className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-md transition-colors"
+              title="Auto-fill demo institution credentials"
+            >
+              <Sparkles className="h-3 w-3 text-emerald-600" />
+              <span>Fill Demo</span>
+            </button>
+          </div>
+          <p className="text-sm text-[#9099a8] mb-6">Sign in to manage your college or university.</p>
+
+          {/* Demo credential callout */}
+          <div className="mb-5 p-2.5 bg-emerald-50/70 border border-emerald-100 rounded-lg flex items-center justify-between text-[11px]">
+            <div>
+              <span className="font-semibold text-emerald-900">Demo Login:</span>{' '}
+              <code className="text-emerald-700 bg-white px-1.5 py-0.5 rounded border border-emerald-200">institution@lms.com</code>
+            </div>
+            <code className="text-emerald-700 bg-white px-1.5 py-0.5 rounded border border-emerald-200">institution123</code>
+          </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <Input
@@ -88,7 +114,7 @@ export const InstitutionLogin = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="institution@example.com"
+              placeholder="institution@lms.com"
               required
             />
             <Input

@@ -166,17 +166,7 @@ export const useMalpracticeLockdown = ({
       }
     };
 
-    // 9. DevTools Size Delta Monitor (skip in lite mode — not applicable on mobile)
-    let devToolsCheckInterval: ReturnType<typeof setInterval> | null = null;
-    if (!liteMode) {
-      devToolsCheckInterval = setInterval(() => {
-        const widthThreshold = window.outerWidth - window.innerWidth > 160;
-        const heightThreshold = window.outerHeight - window.innerHeight > 160;
-        if (widthThreshold || heightThreshold) {
-          triggerDebouncedViolation('DEVTOOLS_OPEN', 'DevTools window open detected', 4000);
-        }
-      }, 2000);
-    }
+    // DevTools inspection is blocked via F12, Ctrl+Shift+I, and context menu prevention above
 
     // Attach listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -198,7 +188,6 @@ export const useMalpracticeLockdown = ({
     }
 
     return () => {
-      if (devToolsCheckInterval) clearInterval(devToolsCheckInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
       document.removeEventListener('touchstart', handleTouchStart);

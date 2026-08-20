@@ -241,7 +241,7 @@ export const TestResult = () => {
               <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Attempted</p>
               <p className="text-2xl font-bold text-slate-900 mt-1">
                 {Object.values(answers).filter(a => a.selectedOption).length}
-                <span className="text-xs font-normal text-slate-500"> / {test.questionIds.length}</span>
+                <span className="text-xs font-normal text-slate-500"> / {test.questionIds?.length ?? 0}</span>
               </p>
             </div>
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">

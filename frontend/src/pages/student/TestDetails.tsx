@@ -107,14 +107,14 @@ export const TestDetails = () => {
             <div className="flex flex-col gap-2 shrink-0 bg-slate-50 p-4 rounded-xl border border-slate-100">
               <div className="flex justify-between gap-8 text-sm">
                 <span className="text-slate-500">Questions</span>
-                <span className="font-semibold text-slate-900">{test.questionIds.length}</span>
+                <span className="font-semibold text-slate-900">{test.questionIds?.length ?? 0}</span>
               </div>
               <div className="flex justify-between gap-8 text-sm items-center">
                 <span className="text-slate-500 flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5 text-slate-400" />
                   Duration
                 </span>
-                <span className="font-semibold text-slate-900">{test.settings.duration} Minutes</span>
+                <span className="font-semibold text-slate-900">{test.settings?.duration ?? 60} Minutes</span>
               </div>
               <div className="flex justify-between gap-8 text-sm">
                 <span className="text-slate-500">Total Marks</span>

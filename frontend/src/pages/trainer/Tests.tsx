@@ -154,9 +154,9 @@ export const Tests = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 font-medium text-slate-700">{test.questionIds.length} Qs</td>
-                        <td className="px-4 py-4 font-medium text-slate-700">{test.settings.duration} min</td>
-                        <td className="px-4 py-4 font-medium text-slate-900">{test.totalMarks} pts</td>
+                        <td className="px-4 py-4 font-medium text-slate-700">{test.questionIds?.length ?? 0} Qs</td>
+                        <td className="px-4 py-4 font-medium text-slate-700">{test.settings?.duration ?? 60} min</td>
+                        <td className="px-4 py-4 font-medium text-slate-900">{test.totalMarks ?? 0} pts</td>
                         <td className="px-6 py-4">
                           <div className="space-y-1.5">
                             {testSchedules.length > 0 ? (
@@ -248,11 +248,11 @@ export const Tests = () => {
                     </div>
 
                     <div className="flex items-center gap-3 text-[11px] text-slate-500">
-                      <span className="font-medium">{test.questionIds.length} Qs</span>
+                      <span className="font-medium">{test.questionIds?.length ?? 0} Qs</span>
                       <span className="text-slate-300">•</span>
-                      <span className="font-medium">{test.settings.duration} min</span>
+                      <span className="font-medium">{test.settings?.duration ?? 60} min</span>
                       <span className="text-slate-300">•</span>
-                      <span className="font-medium">{test.totalMarks} pts</span>
+                      <span className="font-medium">{test.totalMarks ?? 0} pts</span>
                     </div>
 
                     {/* Schedule badges */}

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Logo } from '../../components/ui/Logo';
-import { ChevronDown, GraduationCap, BookOpen, Building2, ShieldCheck, ArrowRight } from 'lucide-react';
+import { ChevronDown, GraduationCap, BookOpen, Building2, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
 
 export const Landing = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -38,30 +38,38 @@ export const Landing = () => {
     {
       to: '/student/login',
       icon: GraduationCap,
-      label: 'Student',
+      label: 'Student Portal',
       desc: 'Take tests & view results',
       color: 'text-blue-600 bg-blue-50',
+      border: 'hover:border-blue-300',
+      demo: 'LMS001 / student123'
     },
     {
       to: '/trainer/login',
       icon: BookOpen,
-      label: 'Trainer',
-      desc: 'Manage tests & students',
+      label: 'Trainer Portal',
+      desc: 'Create tests & manage questions',
       color: 'text-indigo-600 bg-indigo-50',
+      border: 'hover:border-indigo-300',
+      demo: 'trainer@lms.com / trainer123'
     },
     {
       to: '/institution/login',
       icon: Building2,
-      label: 'Institution',
-      desc: 'Academic oversight',
+      label: 'Institution Portal',
+      desc: 'Campus & batch oversight',
       color: 'text-emerald-600 bg-emerald-50',
+      border: 'hover:border-emerald-300',
+      demo: 'institution@lms.com / institution123'
     },
     {
       to: '/admin/login',
       icon: ShieldCheck,
-      label: 'Admin',
-      desc: 'System management',
+      label: 'Admin Portal',
+      desc: 'System & platform control',
       color: 'text-slate-600 bg-slate-100',
+      border: 'hover:border-slate-300',
+      demo: 'admin@lms.com / admin123'
     },
   ];
 
@@ -95,7 +103,11 @@ export const Landing = () => {
           </Button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-[#e2e5ea] shadow-dropdown py-1.5 origin-top-right animate-in z-50">
+            <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl border border-[#e2e5ea] shadow-dropdown py-1.5 origin-top-right animate-in z-50">
+              <div className="px-3 py-1.5 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-amber-500" />
+                <span>Select Demo Portal</span>
+              </div>
               {portals.map((p) => (
                 <Link 
                   key={p.to}
@@ -108,7 +120,7 @@ export const Landing = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-[13px] font-medium block">{p.label}</span>
-                    <span className="text-[11px] text-[#9099a8]">{p.desc}</span>
+                    <span className="text-[10px] text-slate-400 block font-mono">{p.demo}</span>
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-[#9099a8] opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Link>
@@ -118,28 +130,42 @@ export const Landing = () => {
         </div>
       </header>
       
-      <main className="flex-1 flex items-center relative z-10">
-        <div className="max-w-2xl px-6 lg:px-10 animate-in">
+      <main className="flex-1 flex flex-col justify-center px-6 lg:px-10 relative z-10 py-8 max-w-5xl mx-auto w-full">
+        <div className="animate-in mb-8">
           <p className="text-[13px] font-medium text-blue-600 mb-3 tracking-wide uppercase">Placement Assessment Platform</p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#1a1d23] mb-4 leading-[1.15] sm:leading-[1.1]">
             Run placement tests<br className="hidden sm:inline" /> without the headache.
           </h1>
-          <p className="text-base sm:text-lg text-[#5a6170] mb-8 max-w-lg leading-relaxed">
-            Create assessments, schedule them for your batches, and get results — all from one place. Built for trainers who have better things to do.
+          <p className="text-base sm:text-lg text-[#5a6170] max-w-xl leading-relaxed">
+            Create assessments, schedule them for your cohorts, and get real-time analytics with proctoring telemetry.
           </p>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <Link to="/student/login" className="w-full sm:w-auto">
-              <Button size="lg" className="w-full sm:w-auto">
-                Get started
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
+        </div>
+
+        {/* Quick Demo Portal Access Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {portals.map((p) => (
+            <Link
+              key={p.to}
+              to={p.to}
+              className={`bg-white/90 backdrop-blur-sm p-4 rounded-xl border border-[#e2e5ea] ${p.border} shadow-sm hover:shadow-md transition-all group flex flex-col justify-between`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className={`p-2 rounded-lg ${p.color}`}>
+                    <p.icon className="h-5 w-5" />
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-slate-600 transition-colors" />
+                </div>
+                <h3 className="font-bold text-slate-800 text-sm">{p.label}</h3>
+                <p className="text-[12px] text-slate-500 mt-0.5">{p.desc}</p>
+              </div>
+
+              <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[10px] uppercase font-semibold text-slate-400">Demo Fill:</span>
+                <span className="text-[11px] font-mono text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">{p.demo.split(' / ')[0]}</span>
+              </div>
             </Link>
-            <Link to="/trainer/login" className="w-full sm:w-auto">
-              <Button variant="ghost" size="lg" className="text-[#5a6170] w-full sm:w-auto">
-                I'm a trainer
-              </Button>
-            </Link>
-          </div>
+          ))}
         </div>
       </main>
 

@@ -93,8 +93,8 @@ export const TrainerDashboard = () => {
                       <td className="px-5 py-3 font-medium text-[#1a1d23] text-[13px]">
                         {test.title}
                       </td>
-                      <td className="px-5 py-3 text-[13px] text-[#5a6170]">{test.questionIds.length}</td>
-                      <td className="px-5 py-3 text-[13px] text-[#5a6170]">{test.settings.duration} min</td>
+                      <td className="px-5 py-3 text-[13px] text-[#5a6170]">{test.questionIds?.length ?? 0}</td>
+                      <td className="px-5 py-3 text-[13px] text-[#5a6170]">{test.settings?.duration ?? 60} min</td>
                       <td className="px-5 py-3">
                         <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold
                           ${test.status === 'Draft' ? 'bg-[#f0f2f5] text-[#5a6170]' : 
@@ -127,9 +127,9 @@ export const TrainerDashboard = () => {
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-[11px] text-[#9099a8]">
-                    <span>{test.questionIds.length} Questions</span>
+                    <span>{test.questionIds?.length ?? 0} Questions</span>
                     <span>•</span>
-                    <span>{test.settings.duration} min</span>
+                    <span>{test.settings?.duration ?? 60} min</span>
                   </div>
                 </div>
               ))}

@@ -179,7 +179,7 @@ export const ScheduleTest = () => {
               <option value="" disabled>-- Select an assessment --</option>
               {tests.map(test => (
                 <option key={test.id} value={test.id}>
-                  {test.title} ({test.questionIds.length} Qs · {test.settings.duration} min)
+                  {test.title} ({(test.questionIds?.length ?? 0)} Qs · {(test.settings?.duration ?? 60)} min)
                 </option>
               ))}
             </select>

@@ -143,11 +143,11 @@ export const StudentDashboard = () => {
                       </h3>
 
                       <div className="space-y-1 mb-4 text-[13px] text-[#9099a8]">
-                        <p>{item.test.questionIds.length} questions · {item.test.settings.duration} min</p>
+                        <p>{item.test?.questionIds?.length ?? 0} questions · {item.test?.settings?.duration ?? 60} min</p>
                         <p>
-                          {new Date(item.schedule.startTime).toLocaleString(undefined, {
+                          {item.schedule?.startTime ? new Date(item.schedule.startTime).toLocaleString(undefined, {
                             month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                          })}
+                          }) : 'Flexible'}
                         </p>
                       </div>
 

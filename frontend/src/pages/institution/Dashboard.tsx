@@ -237,7 +237,7 @@ export const InstitutionDashboard = () => {
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{test.title}</p>
                       <p className="text-xs text-slate-500">
-                        {test.questionIds.length} Questions • {test.settings.duration} mins • {test.totalMarks} marks
+                        {test.questionIds?.length ?? 0} Questions • {test.settings?.duration ?? 60} mins • {test.totalMarks ?? 0} marks
                       </p>
                     </div>
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${

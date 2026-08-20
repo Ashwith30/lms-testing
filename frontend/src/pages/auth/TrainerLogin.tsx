@@ -6,7 +6,7 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft, BookOpen, Sparkles } from 'lucide-react';
 
 export const TrainerLogin = () => {
   const [email, setEmail] = useState('trainer@lms.com');
@@ -16,6 +16,12 @@ export const TrainerLogin = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
+
+  const fillDemo = () => {
+    setEmail('trainer@lms.com');
+    setPassword('trainer123');
+    toast('Filled Demo Trainer credentials', 'success');
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +75,28 @@ export const TrainerLogin = () => {
             <Logo size="md" />
           </div>
 
-          <h1 className="text-2xl font-bold text-[#1a1d23] mb-1 tracking-tight">Trainer sign in</h1>
-          <p className="text-sm text-[#9099a8] mb-8">Access your dashboard and manage assessments.</p>
+          <div className="flex items-center justify-between mb-1">
+            <h1 className="text-2xl font-bold text-[#1a1d23] tracking-tight">Trainer sign in</h1>
+            <button
+              type="button"
+              onClick={fillDemo}
+              className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-md transition-colors"
+              title="Auto-fill demo trainer credentials"
+            >
+              <Sparkles className="h-3 w-3 text-indigo-500" />
+              <span>Fill Demo</span>
+            </button>
+          </div>
+          <p className="text-sm text-[#9099a8] mb-6">Access your dashboard and manage assessments.</p>
+
+          {/* Demo credential callout */}
+          <div className="mb-5 p-2.5 bg-indigo-50/70 border border-indigo-100 rounded-lg flex items-center justify-between text-[11px]">
+            <div>
+              <span className="font-semibold text-indigo-900">Demo Login:</span>{' '}
+              <code className="text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-indigo-200">trainer@lms.com</code>
+            </div>
+            <code className="text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-indigo-200">trainer123</code>
+          </div>
 
           <form className="space-y-4" onSubmit={handleLogin}>
             <Input
@@ -79,7 +105,7 @@ export const TrainerLogin = () => {
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="trainer@lms.com"
             />
             <Input
               label="Password"

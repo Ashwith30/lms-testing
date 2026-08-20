@@ -6,16 +6,22 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
-import { ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
 
 export const AdminLogin = () => {
   const { login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@lms.com');
+  const [password, setPassword] = useState('admin123');
   const [isLoading, setIsLoading] = useState(false);
+
+  const fillDemo = () => {
+    setEmail('admin@lms.com');
+    setPassword('admin123');
+    toast('Filled Demo Admin credentials', 'success');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,17 +59,37 @@ export const AdminLogin = () => {
           Back to home
         </Link>
 
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-slate-100 rounded-lg">
-            <ShieldCheck className="h-5 w-5 text-slate-600" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-slate-100 rounded-lg">
+              <ShieldCheck className="h-5 w-5 text-slate-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-[#1a1d23] tracking-tight">Admin</h1>
+              <p className="text-[12px] text-[#9099a8]">System administration</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-[#1a1d23] tracking-tight">Admin</h1>
-            <p className="text-[12px] text-[#9099a8]">System administration</p>
-          </div>
+          <button
+            type="button"
+            onClick={fillDemo}
+            className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-300/80 px-2.5 py-1 rounded-md transition-colors"
+            title="Auto-fill demo admin credentials"
+          >
+            <Sparkles className="h-3 w-3 text-slate-500" />
+            <span>Fill Demo</span>
+          </button>
         </div>
 
         <div className="bg-white rounded-xl border border-[#e2e5ea] shadow-soft p-6">
+          {/* Demo credential callout */}
+          <div className="mb-4 p-2.5 bg-slate-50 border border-slate-200/80 rounded-lg flex items-center justify-between text-[11px]">
+            <div>
+              <span className="font-semibold text-slate-700">Demo Login:</span>{' '}
+              <code className="text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">admin@lms.com</code>
+            </div>
+            <code className="text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">admin123</code>
+          </div>
+
           <form className="space-y-4" onSubmit={handleSubmit}>
             <Input
               label="Email"
