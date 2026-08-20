@@ -41,12 +41,12 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ToastContext.Provider value={{ toast: addToast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <div className="fixed bottom-4 right-4 z-[999999] flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}
             className={cn(
-              "flex items-center gap-2.5 px-4 py-3 min-w-[280px] max-w-[380px] rounded-lg shadow-lifted bg-white border border-[#e2e5ea]",
+              "pointer-events-auto flex items-center gap-2.5 px-4 py-3 min-w-[280px] max-w-[400px] rounded-xl shadow-2xl bg-white border border-[#e2e5ea]",
               "animate-slide-right"
             )}
             style={{ animation: 'slideRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) both' }}

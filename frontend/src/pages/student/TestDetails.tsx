@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ShieldAlert, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -8,9 +8,13 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Test, Schedule } from '../../types';
 import { ProctoringSetupModal } from '../../components/student/ProctoringSetupModal';
+import { useDeviceDetection } from '../../hooks/useDeviceDetection';
+import { Smartphone } from 'lucide-react';
 
 export const TestDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const queryScheduleId = searchParams.get('scheduleId') || undefined;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -21,6 +25,7 @@ export const TestDetails = () => {
   const [agreed, setAgreed] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+  const { isTouchDevice } = useDeviceDetection();
 
   useEffect(() => {
     const fetchTestDetails = async () => {
@@ -29,7 +34,7 @@ export const TestDetails = () => {
           const testData = await testService.getTestDetails(id);
           if (testData) {
             setTest(testData);
-            const schedData = await testService.getTestSchedule(id);
+            const schedData = await testService.getTestSchedule(id, queryScheduleId);
             setSchedule(schedData || null);
             if (schedData) {
               const now = new Date().toISOString();
@@ -55,7 +60,7 @@ export const TestDetails = () => {
       }
     };
     fetchTestDetails();
-  }, [id, navigate, toast]);
+  }, [id, queryScheduleId, navigate, toast]);
 
   const handleStartTest = async () => {
     if (!user?.id || !test?.id) return;
@@ -78,8 +83,8 @@ export const TestDetails = () => {
     
     setIsStarting(true);
     try {
-      await testService.startAttempt(user.id, test.id);
-      navigate(`/student/tests/${test.id}/attempt`);
+      await testService.startAttempt(user.id, test.id, queryScheduleId);
+      navigate(`/student/tests/${test.id}/attempt${queryScheduleId ? `?scheduleId=${queryScheduleId}` : ''}`);
     } catch (e: any) {
       toast(e.message || 'Failed to start test', 'error');
     } finally {
@@ -159,6 +164,19 @@ export const TestDetails = () => {
                 </li>
               )}
             </ul>
+
+            {/* Lite Proctoring Banner for Mobile/Tablet */}
+            {isTouchDevice && (
+              <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-800 text-sm flex items-start gap-3">
+                <Smartphone className="h-5 w-5 text-indigo-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong>Lite Proctoring Mode (Mobile Device)</strong>
+                  <p className="mt-1 text-indigo-700 text-xs leading-relaxed">
+                    You are on a mobile/tablet device. The exam will run in <strong>Lite Proctoring</strong> mode — camera monitoring is active, but fullscreen enforcement and keyboard lockdown are disabled. Your attempt will be marked as a "Mobile Attempt" for your trainer to review. You have 5 violation warnings before auto-submission.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {scheduleStatus === 'future' && schedule && (
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm flex items-start gap-2">

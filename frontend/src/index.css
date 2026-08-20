@@ -37,11 +37,23 @@
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv11", "ss01";
     letter-spacing: -0.011em;
+    /* Prevent iOS overscroll bounce */
+    overscroll-behavior: none;
+  }
+
+  /* Safe area insets for modern iPhones */
+  html {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
   ::selection {
     background: var(--color-brand-light);
     color: var(--color-brand);
+  }
+
+  /* Prevent tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 

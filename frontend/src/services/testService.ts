@@ -63,28 +63,81 @@ export const testService = {
     }
   },
 
+  cloneTest: async (testId: string, customTitle?: string): Promise<Test> => {
+    const res = await api.post(`/tests/${testId}/clone`, { title: customTitle });
+    return res.data;
+  },
+
+  reconductTest: async (payload: {
+    testId: string;
+    startTime: string;
+    endTime: string;
+    assignedStudents?: string[];
+    assignedBatch?: string;
+    cloneTest?: boolean;
+    newTestTitle?: string;
+  }): Promise<{ schedule: Schedule; clonedTest?: Test; message: string }> => {
+    const res = await api.post(`/tests/${payload.testId}/reconduct`, payload);
+    return res.data;
+  },
+
+  getSchedulesForTest: async (testId: string): Promise<Schedule[]> => {
+    try {
+      const res = await api.get(`/tests/${testId}/schedules`);
+      return res.data;
+    } catch {
+      const allScheds = await api.get('/schedules');
+      return (allScheds.data || []).filter((s: Schedule) => s.testId === testId);
+    }
+  },
+
   getStudentUpcomingTests: async (studentId: string) => {
-    const schedulesRes = await api.get('/schedules');
-    const testsRes = await api.get('/tests');
-    const attemptsRes = await api.get(`/attempts?studentId=${studentId}`);
+    const [schedulesRes, testsRes, attemptsRes, userRes] = await Promise.all([
+      api.get('/schedules'),
+      api.get('/tests'),
+      api.get(`/attempts?studentId=${studentId}`),
+      api.get(`/users/${studentId}`).catch(() => ({ data: null }))
+    ]);
     
-    const schedules: Schedule[] = schedulesRes.data;
-    const tests: Test[] = testsRes.data;
-    const attempts: Attempt[] = attemptsRes.data;
+    const schedules: Schedule[] = schedulesRes.data || [];
+    const tests: Test[] = testsRes.data || [];
+    const attempts: Attempt[] = attemptsRes.data || [];
+    const studentUser = userRes.data;
 
     const now = new Date().toISOString();
     
     return schedules.map(s => {
       const test = tests.find(t => t.id === s.testId);
-      const attempt = attempts.find(a => a.testId === s.testId);
+      if (!test) return null;
+
+      // Check if student belongs to assigned batch or students list
+      if (s.assignedBatch && s.assignedBatch !== 'all') {
+        if (studentUser && studentUser.batch && studentUser.batch !== s.assignedBatch) {
+          return null; // Not assigned to this student's batch
+        }
+      }
+      if (s.assignedStudents && s.assignedStudents.length > 0 && !s.assignedStudents.includes('all')) {
+        if (!s.assignedStudents.includes(studentId)) {
+          return null; // Not in assigned student list
+        }
+      }
+
+      // Find attempt specific to this schedule, or matching the test
+      const attempt = attempts.find(a => 
+        (a.scheduleId && a.scheduleId === s.id) || 
+        (!a.scheduleId && a.testId === s.testId && a.startedAt >= s.startTime)
+      ) || attempts.find(a => a.testId === s.testId);
       
+      const isCompleted = attempt?.status === 'submitted' || attempt?.status === 'auto_submitted';
+      const isAvailable = now >= s.startTime && now <= s.endTime && !isCompleted;
+
       return {
         schedule: s,
         test: test as Test,
         attempt,
-        isAvailable: now >= s.startTime && now <= s.endTime && (!attempt || (attempt.status !== 'submitted' && attempt.status !== 'auto_submitted'))
+        isAvailable
       };
-    }).filter(item => item.test);
+    }).filter((item): item is NonNullable<typeof item> => item !== null);
   },
 
   getTestDetails: async (testId: string): Promise<Test | undefined> => {
@@ -97,9 +150,21 @@ export const testService = {
     }
   },
 
-  getTestSchedule: async (testId: string): Promise<Schedule | undefined> => {
+  getTestSchedule: async (testId: string, scheduleId?: string): Promise<Schedule | undefined> => {
     const schedulesRes = await api.get('/schedules');
-    return schedulesRes.data.find((s: Schedule) => s.testId === testId);
+    const allSchedules: Schedule[] = schedulesRes.data || [];
+    if (scheduleId) {
+      return allSchedules.find(s => s.id === scheduleId);
+    }
+    // Return the active or latest upcoming schedule
+    const testSchedules = allSchedules.filter(s => s.testId === testId);
+    if (testSchedules.length === 0) return undefined;
+    const now = new Date().toISOString();
+    const active = testSchedules.find(s => now >= s.startTime && now <= s.endTime);
+    if (active) return active;
+    const upcoming = testSchedules.filter(s => s.startTime > now).sort((a, b) => a.startTime.localeCompare(b.startTime));
+    if (upcoming.length > 0) return upcoming[0];
+    return testSchedules[testSchedules.length - 1];
   },
   
   getQuestionsForTest: async (testId: string): Promise<Question[]> => {
@@ -110,16 +175,21 @@ export const testService = {
     return allQsRes.data.filter((q: Question) => test.questionIds.includes(q.id));
   },
 
-  startAttempt: async (studentId: string, testId: string): Promise<Attempt> => {
+  startAttempt: async (studentId: string, testId: string, scheduleId?: string): Promise<Attempt> => {
     const test = await testService.getTestDetails(testId);
     if (!test) throw new Error('Test not found');
 
     const attemptsRes = await api.get(`/attempts?studentId=${studentId}`);
-    const existingAttempt = attemptsRes.data.find((a: Attempt) => a.testId === testId);
+    const userAttempts: Attempt[] = attemptsRes.data || [];
+    
+    // Check if there is an in-progress attempt for this test/schedule to resume
+    const existingAttempt = scheduleId 
+      ? userAttempts.find((a: Attempt) => a.testId === testId && a.scheduleId === scheduleId)
+      : userAttempts.find((a: Attempt) => a.testId === testId && a.status === 'in_progress');
     
     if (existingAttempt) {
       if (existingAttempt.status === 'submitted' || existingAttempt.status === 'auto_submitted') {
-        throw new Error('Test already submitted');
+        throw new Error('Test already submitted for this scheduled session');
       }
       return existingAttempt; // Resume
     }
@@ -136,6 +206,7 @@ export const testService = {
       id: `att-${Date.now()}`,
       studentId,
       testId,
+      scheduleId: scheduleId || undefined,
       startedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
       answers: initialAnswers,

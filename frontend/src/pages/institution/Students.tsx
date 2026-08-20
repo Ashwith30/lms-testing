@@ -208,54 +208,54 @@ export const InstitutionStudents = () => {
       ) : (
         <>
           {/* Aggregate Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card>
-              <CardContent className="p-6 flex items-center gap-4">
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                  <User className="h-6 w-6" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 sm:p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">Enrolled</p>
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Total Enrolled</p>
-                  <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{totalRegistered} Students</h3>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+                {totalRegistered} <span className="text-xs font-normal text-slate-500">Students</span>
+              </p>
+            </div>
 
-            <Card>
-              <CardContent className="p-6 flex items-center gap-4">
-                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                  <Award className="h-6 w-6" />
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 sm:p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">Average</p>
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
+                  <Award className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Class Average</p>
-                  <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{classAverage.toFixed(1)}%</h3>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+                {classAverage.toFixed(1)}%
+              </p>
+            </div>
 
-            <Card>
-              <CardContent className="p-6 flex items-center gap-4">
-                <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-                  <BookOpen className="h-6 w-6" />
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 sm:p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">Top Score</p>
+                <div className="p-2 bg-purple-50 text-purple-600 rounded-lg shrink-0">
+                  <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Top Performance</p>
-                  <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{topScore.toFixed(1)}%</h3>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+                {topScore.toFixed(1)}%
+              </p>
+            </div>
 
-            <Card>
-              <CardContent className="p-6 flex items-center gap-4">
-                <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-                  <ShieldAlert className="h-6 w-6" />
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 sm:p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">Violations</p>
+                <div className="p-2 bg-amber-50 text-amber-600 rounded-lg shrink-0">
+                  <ShieldAlert className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Total Violations</p>
-                  <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{totalViolationsCount} Flags</h3>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+                {totalViolationsCount} <span className="text-xs font-normal text-slate-500">Flags</span>
+              </p>
+            </div>
           </div>
 
           {/* Filters */}
@@ -306,81 +306,134 @@ export const InstitutionStudents = () => {
           <Card className="border border-slate-200 overflow-hidden shadow-sm">
             <CardContent className="p-0">
               {filteredStudents.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left text-slate-500">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200">
-                      <tr>
-                        <th className="px-6 py-4">Student</th>
-                        <th className="px-6 py-4">ID</th>
-                        <th className="px-6 py-4">Dept & Batch</th>
-                        <th className="px-6 py-4 text-center">Tests Taken</th>
-                        <th className="px-6 py-4 text-center">Average Score</th>
-                        <th className="px-6 py-4 text-center">Violations</th>
-                        <th className="px-6 py-4 text-right">Performance</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      {filteredStudents.map((student) => {
-                        const stats = getStudentStats(student.id);
-                        return (
-                          <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center font-bold text-sm uppercase">
-                                  {student.name.substring(0, 2)}
+                <>
+                  {/* Desktop Table */}
+                  <div className="overflow-x-auto hidden sm:block">
+                    <table className="w-full text-sm text-left text-slate-500">
+                      <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200">
+                        <tr>
+                          <th className="px-6 py-4">Student</th>
+                          <th className="px-6 py-4">ID</th>
+                          <th className="px-6 py-4">Dept & Batch</th>
+                          <th className="px-6 py-4 text-center">Tests Taken</th>
+                          <th className="px-6 py-4 text-center">Average Score</th>
+                          <th className="px-6 py-4 text-center">Violations</th>
+                          <th className="px-6 py-4 text-right">Performance</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {filteredStudents.map((student) => {
+                          const stats = getStudentStats(student.id);
+                          return (
+                            <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-8 w-8 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center font-bold text-sm uppercase">
+                                    {student.name.substring(0, 2)}
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-slate-900">{student.name}</p>
+                                    <p className="text-xs text-slate-400 mt-0.5">{student.email}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-semibold text-slate-900">{student.name}</p>
-                                  <p className="text-xs text-slate-400 mt-0.5">{student.email}</p>
-                                </div>
+                              </td>
+                              <td className="px-6 py-4 font-mono font-medium text-slate-700">
+                                {student.studentId || 'N/A'}
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="font-medium text-slate-800">{student.department || 'N/A'}</p>
+                                <p className="text-xs text-slate-400 mt-0.5">Batch: {student.batch || 'N/A'}</p>
+                              </td>
+                              <td className="px-6 py-4 text-center font-medium text-slate-900">
+                                {stats.testCount}
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                  stats.testCount === 0 ? 'bg-slate-50 text-slate-400' :
+                                  stats.avgPercentage >= 70 ? 'bg-green-50 text-green-700 border border-green-200' :
+                                  stats.avgPercentage >= 40 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                  'bg-red-50 text-red-700 border border-red-200'
+                                }`}>
+                                  {stats.testCount > 0 ? `${stats.avgPercentage.toFixed(1)}%` : 'No attempts'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                {stats.totalViolations > 0 ? (
+                                  <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    {stats.totalViolations}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-slate-400">0</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleOpenPerformance(student)}
+                                >
+                                  <Eye className="mr-1.5 h-4 w-4 text-slate-400 group-hover:text-slate-600" />
+                                  Details
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="sm:hidden divide-y divide-slate-100 bg-white">
+                    {filteredStudents.map((student) => {
+                      const stats = getStudentStats(student.id);
+                      return (
+                        <div key={student.id} className="p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <div className="h-8 w-8 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                                {student.name.substring(0, 2)}
                               </div>
-                            </td>
-                            <td className="px-6 py-4 font-mono font-medium text-slate-700">
-                              {student.studentId || 'N/A'}
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="font-medium text-slate-800">{student.department || 'N/A'}</p>
-                              <p className="text-xs text-slate-400 mt-0.5">Batch: {student.batch || 'N/A'}</p>
-                            </td>
-                            <td className="px-6 py-4 text-center font-medium text-slate-900">
-                              {stats.testCount}
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                stats.testCount === 0 ? 'bg-slate-50 text-slate-400' :
-                                stats.avgPercentage >= 70 ? 'bg-green-50 text-green-700 border border-green-200' :
-                                stats.avgPercentage >= 40 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                'bg-red-50 text-red-700 border border-red-200'
-                              }`}>
-                                {stats.testCount > 0 ? `${stats.avgPercentage.toFixed(1)}%` : 'No attempts'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              {stats.totalViolations > 0 ? (
-                                <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                              <div>
+                                <p className="font-semibold text-slate-900 text-sm">{student.name}</p>
+                                <p className="text-xs text-slate-400">{student.studentId || 'No ID'} • {student.department || 'N/A'}</p>
+                              </div>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${
+                              stats.testCount === 0 ? 'bg-slate-50 text-slate-400' :
+                              stats.avgPercentage >= 70 ? 'bg-green-50 text-green-700' :
+                              stats.avgPercentage >= 40 ? 'bg-amber-50 text-amber-700' :
+                              'bg-red-50 text-red-700'
+                            }`}>
+                              {stats.testCount > 0 ? `${stats.avgPercentage.toFixed(1)}%` : '—'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                            <span>{stats.testCount} test{stats.testCount !== 1 ? 's' : ''} taken</span>
+                            <div className="flex items-center gap-2">
+                              {stats.totalViolations > 0 && (
+                                <span className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-medium">
                                   <AlertTriangle className="h-3 w-3" />
                                   {stats.totalViolations}
                                 </span>
-                              ) : (
-                                <span className="text-xs text-slate-400">0</span>
                               )}
-                            </td>
-                            <td className="px-6 py-4 text-right">
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
+                                className="text-xs h-7 px-2.5"
                                 onClick={() => handleOpenPerformance(student)}
                               >
-                                <Eye className="mr-1.5 h-4 w-4 text-slate-400 group-hover:text-slate-600" />
                                 Details
                               </Button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-16 text-slate-500">
                   <User className="mx-auto h-12 w-12 text-slate-300 mb-3" />
@@ -501,93 +554,151 @@ export const InstitutionStudents = () => {
               {isLoadingModal ? (
                 <div className="text-center py-12 text-slate-500">Loading performance data...</div>
               ) : studentAttempts.length > 0 ? (
-                <div className="overflow-x-auto border border-slate-100 rounded-xl">
-                  <table className="w-full text-sm text-left text-slate-500">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b">
-                      <tr>
-                        <th className="px-4 py-3">Assessment</th>
-                        <th className="px-4 py-3 text-center">Score</th>
-                        <th className="px-4 py-3 text-center">Percentage</th>
-                        <th className="px-4 py-3 text-center">Trust Score & Audit</th>
-                        <th className="px-4 py-3 text-center">Status</th>
-                        <th className="px-4 py-3 text-right">Attempt Date</th>
-                        <th className="px-4 py-3 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      {studentAttempts.map((attempt) => {
-                        const trustScore = attempt.proctoringSummary?.trustScore ?? Math.max(0, 100 - (attempt.violations || 0) * 20);
-                        return (
-                          <tr key={attempt.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-4 py-3 font-semibold text-slate-900">{attempt.testTitle}</td>
-                            <td className="px-4 py-3 text-center font-medium text-slate-700">
-                              {attempt.status === 'in_progress' ? '—' : `${attempt.score} / ${attempt.totalMarks}`}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {attempt.status === 'in_progress' ? (
-                                <span className="text-xs text-slate-400">In Progress</span>
-                              ) : (
-                                <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-semibold ${
-                                  (attempt.percentage || 0) >= 70 ? 'bg-green-50 text-green-700 border border-green-200' :
-                                  (attempt.percentage || 0) >= 40 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                  'bg-red-50 text-red-700 border border-red-200'
-                                }`}>
-                                  {attempt.percentage?.toFixed(1)}%
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {attempt.status === 'in_progress' ? (
-                                <span className="text-xs text-slate-400">Active Session</span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedAuditAttempt(attempt)}
-                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border cursor-pointer transition-all hover:scale-105 ${
-                                    trustScore >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                    trustScore >= 60 ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                    'bg-rose-50 text-rose-700 border-rose-200'
-                                  }`}
-                                >
-                                  {trustScore >= 80 ? (
-                                    <ShieldCheck className="h-3.5 w-3.5" />
-                                  ) : (
-                                    <ShieldAlert className="h-3.5 w-3.5" />
-                                  )}
-                                  <span>{trustScore}% ({attempt.violations} viol.)</span>
-                                </button>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-center text-xs font-medium capitalize">
-                              {attempt.status === 'auto_submitted' ? (
-                                <span className="text-amber-600">Auto Submitted</span>
-                              ) : attempt.status === 'submitted' ? (
-                                <span className="text-green-600">Submitted</span>
-                              ) : (
-                                <span className="text-slate-400">In Progress</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-right text-xs text-slate-400">
-                              {new Date(attempt.startedAt).toLocaleDateString(undefined, {
-                                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                              })}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {attempt.status !== 'in_progress' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setSelectedAuditAttempt(attempt)}
-                                >
-                                  View Audit
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div className="border border-slate-100 rounded-xl overflow-hidden">
+                  {/* Desktop Table View */}
+                  <div className="overflow-x-auto hidden sm:block">
+                    <table className="w-full text-sm text-left text-slate-500">
+                      <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b">
+                        <tr>
+                          <th className="px-4 py-3 whitespace-nowrap">Assessment</th>
+                          <th className="px-4 py-3 text-center whitespace-nowrap">Score</th>
+                          <th className="px-4 py-3 text-center whitespace-nowrap">Percentage</th>
+                          <th className="px-4 py-3 text-center whitespace-nowrap">Trust Score & Audit</th>
+                          <th className="px-4 py-3 text-center whitespace-nowrap">Status</th>
+                          <th className="px-4 py-3 text-right whitespace-nowrap">Attempt Date</th>
+                          <th className="px-4 py-3 text-right whitespace-nowrap">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {studentAttempts.map((attempt) => {
+                          const trustScore = attempt.proctoringSummary?.trustScore ?? Math.max(0, 100 - (attempt.violations || 0) * 20);
+                          return (
+                            <tr key={attempt.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-4 py-3 font-semibold text-slate-900">{attempt.testTitle}</td>
+                              <td className="px-4 py-3 text-center font-medium text-slate-700 whitespace-nowrap">
+                                {attempt.status === 'in_progress' ? '—' : `${attempt.score} / ${attempt.totalMarks}`}
+                              </td>
+                              <td className="px-4 py-3 text-center whitespace-nowrap">
+                                {attempt.status === 'in_progress' ? (
+                                  <span className="text-xs text-slate-400">In Progress</span>
+                                ) : (
+                                  <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-semibold ${
+                                    (attempt.percentage || 0) >= 70 ? 'bg-green-50 text-green-700 border border-green-200' :
+                                    (attempt.percentage || 0) >= 40 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                    'bg-red-50 text-red-700 border border-red-200'
+                                  }`}>
+                                    {attempt.percentage?.toFixed(1)}%
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-center whitespace-nowrap">
+                                {attempt.status === 'in_progress' ? (
+                                  <span className="text-xs text-slate-400">Active Session</span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedAuditAttempt(attempt)}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border cursor-pointer whitespace-nowrap transition-all hover:scale-105 ${
+                                      trustScore >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                      trustScore >= 60 ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                      'bg-rose-50 text-rose-700 border-rose-200'
+                                    }`}
+                                  >
+                                    {trustScore >= 80 ? (
+                                      <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                                    ) : (
+                                      <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+                                    )}
+                                    <span className="whitespace-nowrap">{trustScore}% ({attempt.violations} viol.)</span>
+                                  </button>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-center text-xs font-medium capitalize whitespace-nowrap">
+                                {attempt.status === 'auto_submitted' ? (
+                                  <span className="text-amber-600">Auto Submitted</span>
+                                ) : attempt.status === 'submitted' ? (
+                                  <span className="text-green-600">Submitted</span>
+                                ) : (
+                                  <span className="text-slate-400">In Progress</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right text-xs text-slate-400 whitespace-nowrap">
+                                {new Date(attempt.startedAt).toLocaleDateString(undefined, {
+                                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </td>
+                              <td className="px-4 py-3 text-right whitespace-nowrap">
+                                {attempt.status !== 'in_progress' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setSelectedAuditAttempt(attempt)}
+                                  >
+                                    View Audit
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card View for Attempts */}
+                  <div className="sm:hidden divide-y divide-slate-100 bg-white">
+                    {studentAttempts.map((attempt) => {
+                      const trustScore = attempt.proctoringSummary?.trustScore ?? Math.max(0, 100 - (attempt.violations || 0) * 20);
+                      return (
+                        <div key={attempt.id} className="p-4 space-y-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold text-slate-900 text-sm">{attempt.testTitle}</p>
+                            {attempt.status !== 'in_progress' && (
+                              <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-semibold ${
+                                (attempt.percentage || 0) >= 70 ? 'bg-green-50 text-green-700' :
+                                (attempt.percentage || 0) >= 40 ? 'bg-amber-50 text-amber-700' :
+                                'bg-red-50 text-red-700'
+                              }`}>
+                                {attempt.percentage?.toFixed(1)}%
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs text-slate-500">
+                            <span>Score: {attempt.status === 'in_progress' ? 'In Progress' : `${attempt.score} / ${attempt.totalMarks} pts`}</span>
+                            <span className="text-slate-400">
+                              {new Date(attempt.startedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+
+                          {attempt.status !== 'in_progress' && (
+                            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-50">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedAuditAttempt(attempt)}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${
+                                  trustScore >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                  trustScore >= 60 ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                  'bg-rose-50 text-rose-700 border-rose-200'
+                                }`}
+                              >
+                                {trustScore >= 80 ? <ShieldCheck className="h-3 w-3 shrink-0" /> : <ShieldAlert className="h-3 w-3 shrink-0" />}
+                                <span>{trustScore}% Trust ({attempt.violations} viol.)</span>
+                              </button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 px-2.5"
+                                onClick={() => setSelectedAuditAttempt(attempt)}
+                              >
+                                View Audit
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-12 text-slate-500 border border-dashed rounded-xl">

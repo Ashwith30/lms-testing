@@ -75,39 +75,66 @@ export const TrainerDashboard = () => {
           <h2 className="text-[15px] font-semibold text-[#1a1d23]">Recent tests</h2>
         </div>
         {tests.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead>
-                <tr className="border-b border-[#eef0f3]">
-                  <th className="px-5 py-2.5 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Test</th>
-                  <th className="px-5 py-2.5 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Questions</th>
-                  <th className="px-5 py-2.5 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Duration</th>
-                  <th className="px-5 py-2.5 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#eef0f3]">
-                {tests.map((test) => (
-                  <tr key={test.id} className="hover:bg-[#f7f8fa] transition-colors">
-                    <td className="px-5 py-3 font-medium text-[#1a1d23] text-[13px]">
-                      {test.title}
-                    </td>
-                    <td className="px-5 py-3 text-[13px] text-[#5a6170]">{test.questionIds.length}</td>
-                    <td className="px-5 py-3 text-[13px] text-[#5a6170]">{test.settings.duration} min</td>
-                    <td className="px-5 py-3">
-                      <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold
-                        ${test.status === 'Draft' ? 'bg-[#f0f2f5] text-[#5a6170]' : 
-                          test.status === 'Scheduled' ? 'bg-blue-50 text-blue-700' : 
-                          test.status === 'Live' ? 'bg-emerald-50 text-emerald-700' : 
-                          'bg-violet-50 text-violet-700'}`
-                      }>
-                        {test.status}
-                      </span>
-                    </td>
+          <>
+            {/* Desktop table */}
+            <div className="overflow-x-auto hidden sm:block">
+              <table className="w-full text-sm text-left">
+                <thead>
+                  <tr className="border-b border-[#eef0f3]">
+                    <th className="px-5 py-2.5 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Test</th>
+                    <th className="px-5 py-2.5 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Questions</th>
+                    <th className="px-5 py-2.5 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Duration</th>
+                    <th className="px-5 py-2.5 text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[#eef0f3]">
+                  {tests.map((test) => (
+                    <tr key={test.id} className="hover:bg-[#f7f8fa] transition-colors">
+                      <td className="px-5 py-3 font-medium text-[#1a1d23] text-[13px]">
+                        {test.title}
+                      </td>
+                      <td className="px-5 py-3 text-[13px] text-[#5a6170]">{test.questionIds.length}</td>
+                      <td className="px-5 py-3 text-[13px] text-[#5a6170]">{test.settings.duration} min</td>
+                      <td className="px-5 py-3">
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold
+                          ${test.status === 'Draft' ? 'bg-[#f0f2f5] text-[#5a6170]' : 
+                            test.status === 'Scheduled' ? 'bg-blue-50 text-blue-700' : 
+                            test.status === 'Live' ? 'bg-emerald-50 text-emerald-700' : 
+                            'bg-violet-50 text-violet-700'}`
+                        }>
+                          {test.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card view */}
+            <div className="sm:hidden divide-y divide-[#eef0f3]">
+              {tests.map((test) => (
+                <div key={test.id} className="p-4 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium text-[#1a1d23] text-[13px] truncate">{test.title}</p>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-semibold
+                      ${test.status === 'Draft' ? 'bg-[#f0f2f5] text-[#5a6170]' : 
+                        test.status === 'Scheduled' ? 'bg-blue-50 text-blue-700' : 
+                        test.status === 'Live' ? 'bg-emerald-50 text-emerald-700' : 
+                        'bg-violet-50 text-violet-700'}`
+                    }>
+                      {test.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-[#9099a8]">
+                    <span>{test.questionIds.length} Questions</span>
+                    <span>•</span>
+                    <span>{test.settings.duration} min</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="text-center py-8 text-[#9099a8] text-sm">
             No tests created yet.

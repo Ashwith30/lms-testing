@@ -3,7 +3,9 @@ import datetime
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import func as sa_func, text
 from typing import List, Optional, Dict, Any
+from statistics import median as calc_median
 
 try:
     from . import models, schemas
@@ -31,6 +33,14 @@ def now_iso():
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 models.Base.metadata.create_all(bind=engine)
+
+# Ensure scheduleId column exists in attempts table for SQLite backwards-compatibility
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE attempts ADD COLUMN scheduleId VARCHAR"))
+        conn.commit()
+except Exception:
+    pass
 
 app = FastAPI(title="LMS API")
 
@@ -489,6 +499,128 @@ def delete_test(
     db.commit()
     return {"status": "deleted"}
 
+@app.post("/api/tests/{test_id}/clone", response_model=schemas.Test)
+def clone_test(
+    test_id: str,
+    payload: Optional[schemas.CloneTestRequest] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
+):
+    """Duplicates a test with its full question set and settings for independent administration."""
+    original = db.query(models.Test).filter(models.Test.id == test_id).first()
+    if not original:
+        raise HTTPException(status_code=404, detail="Test not found")
+    
+    new_title = payload.title if (payload and payload.title) else f"{original.title} (Copy)"
+    new_desc = payload.description if (payload and payload.description is not None) else original.description
+    new_id = f"test-{int(datetime.datetime.now().timestamp() * 1000)}"
+
+    db_clone = models.Test(
+        id=new_id,
+        title=new_title,
+        description=new_desc,
+        questionIds=original.questionIds,
+        totalMarks=original.totalMarks,
+        createdBy=current_user.id,
+        status="Draft",
+        createdAt=now_iso(),
+        duration=original.duration,
+        attemptsAllowed=original.attemptsAllowed,
+        negativeMarking=original.negativeMarking,
+        randomizeQuestions=original.randomizeQuestions,
+        randomizeOptions=original.randomizeOptions,
+        showResultImmediately=original.showResultImmediately,
+        allowBackNavigation=original.allowBackNavigation,
+        fullscreenRequired=original.fullscreenRequired,
+        autoSubmit=original.autoSubmit,
+        enableCalculator=original.enableCalculator,
+        enablePalette=original.enablePalette
+    )
+    db.add(db_clone)
+    db.commit()
+    db.refresh(db_clone)
+    return format_test(db_clone)
+
+@app.get("/api/tests/{test_id}/schedules", response_model=List[schemas.Schedule])
+def get_test_schedules(
+    test_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("admin", "institution", "trainer", "student"))
+):
+    """Retrieves all scheduled sessions (past, live, upcoming) for a specific test."""
+    schedules = db.query(models.Schedule).filter(models.Schedule.testId == test_id).all()
+    return [format_schedule(s) for s in schedules]
+
+@app.post("/api/tests/{test_id}/reconduct")
+def reconduct_test(
+    test_id: str,
+    payload: schemas.ReconductTestRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
+):
+    """Reconducts an assessment by scheduling a new session window (or creating a clone with a new schedule)."""
+    target_test_id = test_id
+    cloned_test_info = None
+
+    if payload.cloneTest:
+        original = db.query(models.Test).filter(models.Test.id == test_id).first()
+        if not original:
+            raise HTTPException(status_code=404, detail="Original test not found")
+        
+        new_title = payload.newTestTitle or f"{original.title} - Reconduct ({payload.assignedBatch or 'All'})"
+        target_test_id = f"test-{int(datetime.datetime.now().timestamp() * 1000)}"
+
+        db_clone = models.Test(
+            id=target_test_id,
+            title=new_title,
+            description=original.description,
+            questionIds=original.questionIds,
+            totalMarks=original.totalMarks,
+            createdBy=current_user.id,
+            status="Scheduled",
+            createdAt=now_iso(),
+            duration=original.duration,
+            attemptsAllowed=original.attemptsAllowed,
+            negativeMarking=original.negativeMarking,
+            randomizeQuestions=original.randomizeQuestions,
+            randomizeOptions=original.randomizeOptions,
+            showResultImmediately=original.showResultImmediately,
+            allowBackNavigation=original.allowBackNavigation,
+            fullscreenRequired=original.fullscreenRequired,
+            autoSubmit=original.autoSubmit,
+            enableCalculator=original.enableCalculator,
+            enablePalette=original.enablePalette
+        )
+        db.add(db_clone)
+        db.commit()
+        db.refresh(db_clone)
+        cloned_test_info = format_test(db_clone)
+    else:
+        db_test = db.query(models.Test).filter(models.Test.id == test_id).first()
+        if not db_test:
+            raise HTTPException(status_code=404, detail="Test not found")
+        db_test.status = "Scheduled"
+
+    # Create new schedule session
+    new_sched_id = f"s-{int(datetime.datetime.now().timestamp() * 1000)}"
+    db_sched = models.Schedule(
+        id=new_sched_id,
+        testId=target_test_id,
+        startTime=payload.startTime,
+        endTime=payload.endTime,
+        assignedStudents=json.dumps(payload.assignedStudents or ["all"]),
+        assignedBatch=payload.assignedBatch
+    )
+    db.add(db_sched)
+    db.commit()
+    db.refresh(db_sched)
+
+    return {
+        "schedule": format_schedule(db_sched),
+        "clonedTest": cloned_test_info,
+        "message": "Test session scheduled / reconducted successfully"
+    }
+
 # === Schedules ===
 
 def format_schedule(s: models.Schedule):
@@ -619,6 +751,7 @@ def format_attempt(a: models.Attempt, db: Session):
         "id": a.id,
         "studentId": a.studentId,
         "testId": a.testId,
+        "scheduleId": getattr(a, "scheduleId", None),
         "startedAt": a.startedAt,
         "expiresAt": a.expiresAt,
         "submittedAt": a.submittedAt,
@@ -634,6 +767,8 @@ def format_attempt(a: models.Attempt, db: Session):
 @app.get("/api/attempts", response_model=List[schemas.AttemptBase])
 def get_attempts(
     studentId: str = None, 
+    testId: str = None,
+    scheduleId: str = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_roles("admin", "institution", "trainer", "student"))
 ):
@@ -642,6 +777,10 @@ def get_attempts(
         query = query.filter(models.Attempt.studentId == current_user.id)
     elif studentId:
         query = query.filter(models.Attempt.studentId == studentId)
+    if testId:
+        query = query.filter(models.Attempt.testId == testId)
+    if scheduleId:
+        query = query.filter(models.Attempt.scheduleId == scheduleId)
     attempts = query.all()
     return [format_attempt(a, db) for a in attempts]
 
@@ -662,6 +801,7 @@ def create_attempt(
         id=attempt.id,
         studentId=attempt.studentId,
         testId=attempt.testId,
+        scheduleId=attempt.scheduleId,
         startedAt=attempt.startedAt,
         expiresAt=attempt.expiresAt,
         status=attempt.status,
@@ -713,6 +853,9 @@ def update_attempt(
         
     if current_user.role == "student" and db_attempt.studentId != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    if updates.scheduleId is not None:
+        db_attempt.scheduleId = updates.scheduleId
 
     if updates.violations is not None:
         db_attempt.violations = updates.violations
@@ -1343,3 +1486,657 @@ def delete_material(
     db.delete(db_mat)
     db.commit()
     return {"status": "deleted"}
+
+# === Analytics ===
+
+def _score_brackets(attempts):
+    """Compute score distribution brackets from a list of attempts."""
+    brackets = {"80-100": 0, "60-79": 0, "40-59": 0, "0-39": 0}
+    for a in attempts:
+        p = a.percentage or 0
+        if p >= 80:
+            brackets["80-100"] += 1
+        elif p >= 60:
+            brackets["60-79"] += 1
+        elif p >= 40:
+            brackets["40-59"] += 1
+        else:
+            brackets["0-39"] += 1
+    return brackets
+
+
+def _parse_duration_minutes(started_at: str, submitted_at: str) -> float:
+    """Return duration in minutes between two ISO timestamps, or 0 on error."""
+    try:
+        s = datetime.datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+        e = datetime.datetime.fromisoformat(submitted_at.replace("Z", "+00:00"))
+        return max(0, (e - s).total_seconds() / 60)
+    except Exception:
+        return 0
+
+
+@app.get("/api/analytics/admin")
+def analytics_admin(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("admin"))
+):
+    """Platform-wide analytics for the admin role."""
+    # --- User counts ---
+    total_users = db.query(sa_func.count(models.User.id)).scalar() or 0
+    total_students = db.query(sa_func.count(models.User.id)).filter(models.User.role == "student").scalar() or 0
+    total_trainers = db.query(sa_func.count(models.User.id)).filter(models.User.role == "trainer").scalar() or 0
+    total_institutions = db.query(sa_func.count(models.User.id)).filter(models.User.role == "institution").scalar() or 0
+
+    # --- Content counts ---
+    total_tests = db.query(sa_func.count(models.Test.id)).scalar() or 0
+    total_questions = db.query(sa_func.count(models.Question.id)).scalar() or 0
+
+    # --- Attempt stats ---
+    all_attempts = db.query(models.Attempt).all()
+    submitted = [a for a in all_attempts if a.status in ("submitted", "auto_submitted")]
+    total_attempts = len(all_attempts)
+    submitted_count = len(submitted)
+    scores = [a.percentage for a in submitted if a.percentage is not None]
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+    total_violations = sum(a.violations or 0 for a in all_attempts)
+    completion_rate = round(submitted_count / total_attempts * 100, 1) if total_attempts > 0 else 0
+
+    # Avg duration
+    durations = []
+    for a in submitted:
+        if a.startedAt and a.submittedAt:
+            d = _parse_duration_minutes(a.startedAt, a.submittedAt)
+            if d > 0:
+                durations.append(d)
+    avg_duration = round(sum(durations) / len(durations), 1) if durations else 0
+
+    # Materials
+    materials_published = db.query(sa_func.count(models.Material.id)).filter(models.Material.isReleased == True).scalar() or 0
+
+    # --- Department & Batch counts ---
+    dept_rows = db.query(models.User.department, sa_func.count(models.User.id)).filter(
+        models.User.role == "student", models.User.department.isnot(None)
+    ).group_by(models.User.department).all()
+    department_counts = {d: c for d, c in dept_rows if d}
+
+    batch_rows = db.query(models.User.batch, sa_func.count(models.User.id)).filter(
+        models.User.role == "student", models.User.batch.isnot(None)
+    ).group_by(models.User.batch).all()
+    batch_counts = {b: c for b, c in batch_rows if b}
+
+    # --- Score brackets ---
+    score_brackets = _score_brackets(submitted)
+
+    # --- Question difficulty ---
+    diff_rows = db.query(models.Question.difficulty, sa_func.count(models.Question.id)).group_by(models.Question.difficulty).all()
+    question_difficulty = {d: c for d, c in diff_rows}
+
+    # --- Question categories ---
+    cat_rows = db.query(models.Question.category, sa_func.count(models.Question.id)).group_by(models.Question.category).all()
+    question_categories = [{"category": c, "count": n} for c, n in cat_rows if c]
+
+    # --- Role distribution ---
+    role_rows = db.query(models.User.role, sa_func.count(models.User.id)).group_by(models.User.role).all()
+    role_distribution = {r: c for r, c in role_rows}
+
+    # --- Auto-submit rate ---
+    auto_submitted_count = len([a for a in submitted if a.status == "auto_submitted"])
+    manual_submitted_count = submitted_count - auto_submitted_count
+
+    # --- Top / bottom tests ---
+    tests = db.query(models.Test).all()
+    test_stats = []
+    for t in tests:
+        t_attempts = [a for a in submitted if a.testId == t.id]
+        if not t_attempts:
+            continue
+        t_scores = [a.percentage for a in t_attempts if a.percentage is not None]
+        t_avg = round(sum(t_scores) / len(t_scores), 1) if t_scores else 0
+        t_pass = round(len([s for s in t_scores if s >= 60]) / len(t_scores) * 100, 1) if t_scores else 0
+        test_stats.append({
+            "id": t.id, "title": t.title,
+            "avgScore": t_avg, "passRate": t_pass,
+            "submissions": len(t_attempts)
+        })
+    test_stats.sort(key=lambda x: x["avgScore"], reverse=True)
+    top_tests = test_stats[:5]
+    bottom_tests = list(reversed(test_stats[-5:])) if len(test_stats) >= 5 else list(reversed(test_stats))
+
+    # --- User growth by month ---
+    users = db.query(models.User).filter(models.User.role.in_(["student", "trainer"])).all()
+    growth_map: Dict[str, Dict[str, int]] = {}
+    for u in users:
+        try:
+            month = u.createdAt[:7] if u.createdAt else "unknown"
+        except Exception:
+            month = "unknown"
+        if month not in growth_map:
+            growth_map[month] = {"students": 0, "trainers": 0}
+        if u.role == "student":
+            growth_map[month]["students"] += 1
+        else:
+            growth_map[month]["trainers"] += 1
+    user_growth = [{"month": m, **v} for m, v in sorted(growth_map.items())]
+
+    # --- Test activity by date ---
+    activity_map: Dict[str, Dict[str, int]] = {}
+    for a in submitted:
+        try:
+            date = a.submittedAt[:10] if a.submittedAt else a.startedAt[:10]
+        except Exception:
+            continue
+        if date not in activity_map:
+            activity_map[date] = {"submitted": 0, "autoSubmitted": 0}
+        if a.status == "auto_submitted":
+            activity_map[date]["autoSubmitted"] += 1
+        else:
+            activity_map[date]["submitted"] += 1
+    test_activity = [{"date": d, **v} for d, v in sorted(activity_map.items())]
+
+    return {
+        "kpis": {
+            "totalUsers": total_users,
+            "totalStudents": total_students,
+            "totalTrainers": total_trainers,
+            "totalInstitutions": total_institutions,
+            "totalTests": total_tests,
+            "totalQuestions": total_questions,
+            "totalAttempts": total_attempts,
+            "submittedAttempts": submitted_count,
+            "avgScore": avg_score,
+            "totalViolations": total_violations,
+            "completionRate": completion_rate,
+            "avgDuration": avg_duration,
+            "materialsPublished": materials_published,
+        },
+        "departmentCounts": department_counts,
+        "batchCounts": batch_counts,
+        "scoreBrackets": score_brackets,
+        "questionDifficulty": question_difficulty,
+        "questionCategories": question_categories,
+        "roleDistribution": role_distribution,
+        "autoSubmitRate": {"submitted": manual_submitted_count, "autoSubmitted": auto_submitted_count},
+        "topTests": top_tests,
+        "bottomTests": bottom_tests,
+        "userGrowth": user_growth,
+        "testActivity": test_activity,
+    }
+
+
+@app.get("/api/analytics/institution")
+def analytics_institution(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("institution"))
+):
+    """Campus-level analytics for the institution role."""
+    # --- User counts ---
+    total_students = db.query(sa_func.count(models.User.id)).filter(models.User.role == "student").scalar() or 0
+    total_trainers = db.query(sa_func.count(models.User.id)).filter(models.User.role == "trainer").scalar() or 0
+
+    # --- Attempt stats ---
+    all_attempts = db.query(models.Attempt).all()
+    submitted = [a for a in all_attempts if a.status in ("submitted", "auto_submitted")]
+    total_submissions = len(submitted)
+    scores = [a.percentage for a in submitted if a.percentage is not None]
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+    pass_count = len([s for s in scores if s >= 60])
+    pass_rate = round(pass_count / len(scores) * 100, 1) if scores else 0
+    total_violations = sum(a.violations or 0 for a in all_attempts)
+
+    # Active tests
+    now = now_iso()
+    active_tests = db.query(sa_func.count(models.Schedule.id)).filter(
+        models.Schedule.startTime <= now, models.Schedule.endTime >= now
+    ).scalar() or 0
+
+    # Avg attempts per student
+    unique_students = len(set(a.studentId for a in all_attempts))
+    avg_attempts_per_student = round(len(all_attempts) / unique_students, 1) if unique_students > 0 else 0
+
+    # --- Department breakdown ---
+    students = db.query(models.User).filter(models.User.role == "student").all()
+    student_map = {s.id: s for s in students}
+
+    dept_data: Dict[str, Dict[str, Any]] = {}
+    for s in students:
+        dept = s.department or "Unassigned"
+        if dept not in dept_data:
+            dept_data[dept] = {"students": 0, "attempts": 0, "scores": [], "pass_count": 0}
+        dept_data[dept]["students"] += 1
+
+    for a in submitted:
+        s = student_map.get(a.studentId)
+        dept = (s.department if s else None) or "Unassigned"
+        if dept not in dept_data:
+            dept_data[dept] = {"students": 0, "attempts": 0, "scores": [], "pass_count": 0}
+        dept_data[dept]["attempts"] += 1
+        if a.percentage is not None:
+            dept_data[dept]["scores"].append(a.percentage)
+            if a.percentage >= 60:
+                dept_data[dept]["pass_count"] += 1
+
+    departments = []
+    for dept, d in dept_data.items():
+        dept_scores = d["scores"]
+        departments.append({
+            "department": dept,
+            "students": d["students"],
+            "attempts": d["attempts"],
+            "avgScore": round(sum(dept_scores) / len(dept_scores), 1) if dept_scores else 0,
+            "passRate": round(d["pass_count"] / len(dept_scores) * 100, 1) if dept_scores else 0,
+        })
+
+    # --- Batch breakdown ---
+    batch_data: Dict[str, Dict[str, Any]] = {}
+    for s in students:
+        b = s.batch or "Unassigned"
+        if b not in batch_data:
+            batch_data[b] = {"students": 0, "attempts": 0, "scores": [], "pass_count": 0}
+        batch_data[b]["students"] += 1
+
+    for a in submitted:
+        s = student_map.get(a.studentId)
+        b = (s.batch if s else None) or "Unassigned"
+        if b not in batch_data:
+            batch_data[b] = {"students": 0, "attempts": 0, "scores": [], "pass_count": 0}
+        batch_data[b]["attempts"] += 1
+        if a.percentage is not None:
+            batch_data[b]["scores"].append(a.percentage)
+            if a.percentage >= 60:
+                batch_data[b]["pass_count"] += 1
+
+    batches = []
+    for batch, d in batch_data.items():
+        b_scores = d["scores"]
+        batches.append({
+            "batch": batch,
+            "students": d["students"],
+            "attempts": d["attempts"],
+            "avgScore": round(sum(b_scores) / len(b_scores), 1) if b_scores else 0,
+            "passRate": round(d["pass_count"] / len(b_scores) * 100, 1) if b_scores else 0,
+        })
+
+    # --- Score brackets ---
+    score_brackets = _score_brackets(submitted)
+
+    # --- Trainer effectiveness ---
+    trainers = db.query(models.User).filter(models.User.role == "trainer").all()
+    tests = db.query(models.Test).all()
+    test_map = {t.id: t for t in tests}
+    trainer_eff = []
+    for tr in trainers:
+        tr_tests = [t for t in tests if t.createdBy == tr.id]
+        tr_test_ids = {t.id for t in tr_tests}
+        tr_attempts = [a for a in submitted if a.testId in tr_test_ids]
+        tr_scores = [a.percentage for a in tr_attempts if a.percentage is not None]
+        trainer_eff.append({
+            "id": tr.id,
+            "name": tr.name,
+            "testsCreated": len(tr_tests),
+            "submissions": len(tr_attempts),
+            "avgStudentScore": round(sum(tr_scores) / len(tr_scores), 1) if tr_scores else 0,
+            "passRate": round(len([s for s in tr_scores if s >= 60]) / len(tr_scores) * 100, 1) if tr_scores else 0,
+        })
+
+    # --- Material stats ---
+    materials = db.query(models.Material).all()
+    material_stats = {
+        "total": len(materials),
+        "released": len([m for m in materials if m.isReleased]),
+        "byType": {
+            "pdf": len([m for m in materials if m.type == "pdf"]),
+            "video": len([m for m in materials if m.type == "video"]),
+            "link": len([m for m in materials if m.type == "link"]),
+            "note": len([m for m in materials if m.type == "note"]),
+        }
+    }
+
+    # --- At-risk students (avg < 40% or violations > 3) ---
+    at_risk = []
+    for s in students:
+        s_attempts = [a for a in submitted if a.studentId == s.id]
+        s_scores = [a.percentage for a in s_attempts if a.percentage is not None]
+        s_avg = round(sum(s_scores) / len(s_scores), 1) if s_scores else 0
+        s_violations = sum(a.violations or 0 for a in s_attempts)
+        last_active = max((a.submittedAt or a.startedAt for a in s_attempts), default=None) if s_attempts else None
+        if s_avg < 40 or s_violations > 3 or (not s_attempts):
+            at_risk.append({
+                "id": s.id,
+                "name": s.name,
+                "studentId": s.studentId,
+                "department": s.department or "—",
+                "batch": s.batch or "—",
+                "avgScore": s_avg,
+                "attempts": len(s_attempts),
+                "violations": s_violations,
+                "lastActive": last_active,
+            })
+
+    return {
+        "kpis": {
+            "totalStudents": total_students,
+            "totalTrainers": total_trainers,
+            "totalSubmissions": total_submissions,
+            "avgScore": avg_score,
+            "passRate": pass_rate,
+            "totalViolations": total_violations,
+            "activeTests": active_tests,
+            "avgAttemptsPerStudent": avg_attempts_per_student,
+        },
+        "departments": departments,
+        "batches": batches,
+        "scoreBrackets": score_brackets,
+        "trainerEffectiveness": trainer_eff,
+        "materialStats": material_stats,
+        "atRiskStudents": at_risk,
+    }
+
+
+@app.get("/api/analytics/trainer")
+def analytics_trainer(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("trainer", "admin", "institution"))
+):
+    """Assessment-level analytics scoped to the current trainer's tests."""
+    trainer_id = current_user.id
+
+    # --- Trainer's tests ---
+    my_tests = db.query(models.Test).filter(models.Test.createdBy == trainer_id).all()
+    my_test_ids = {t.id for t in my_tests}
+
+    # --- All attempts on trainer's tests ---
+    all_attempts = db.query(models.Attempt).filter(models.Attempt.testId.in_(my_test_ids)).all() if my_test_ids else []
+    submitted = [a for a in all_attempts if a.status in ("submitted", "auto_submitted")]
+    scores = [a.percentage for a in submitted if a.percentage is not None]
+
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+    pass_rate = round(len([s for s in scores if s >= 60]) / len(scores) * 100, 1) if scores else 0
+    highest = round(max(scores), 1) if scores else 0
+    lowest = round(min(scores), 1) if scores else 0
+    median_score = round(calc_median(scores), 1) if scores else 0
+    total_violations = sum(a.violations or 0 for a in all_attempts)
+
+    # Avg duration
+    durations = []
+    for a in submitted:
+        if a.startedAt and a.submittedAt:
+            d = _parse_duration_minutes(a.startedAt, a.submittedAt)
+            if d > 0:
+                durations.append(d)
+    avg_duration = round(sum(durations) / len(durations), 1) if durations else 0
+
+    # Questions created by this trainer
+    my_banks = db.query(models.QuestionBank).filter(models.QuestionBank.uploadedBy == trainer_id).all()
+    my_bank_ids = {b.id for b in my_banks}
+    questions_created = db.query(sa_func.count(models.Question.id)).filter(
+        models.Question.questionBankId.in_(my_bank_ids)
+    ).scalar() if my_bank_ids else 0
+
+    # --- Per-test summaries ---
+    test_summaries = []
+    for t in my_tests:
+        t_attempts = [a for a in submitted if a.testId == t.id]
+        t_scores = [a.percentage for a in t_attempts if a.percentage is not None]
+        t_avg = round(sum(t_scores) / len(t_scores), 1) if t_scores else 0
+        t_pass = round(len([s for s in t_scores if s >= 60]) / len(t_scores) * 100, 1) if t_scores else 0
+        t_violations = sum(a.violations or 0 for a in t_attempts)
+        t_durations = []
+        for a in t_attempts:
+            if a.startedAt and a.submittedAt:
+                d = _parse_duration_minutes(a.startedAt, a.submittedAt)
+                if d > 0:
+                    t_durations.append(d)
+        t_avg_dur = round(sum(t_durations) / len(t_durations), 1) if t_durations else 0
+        test_summaries.append({
+            "id": t.id, "title": t.title,
+            "submissionsCount": len(t_attempts),
+            "avgScore": t_avg, "passRate": t_pass,
+            "violations": t_violations,
+            "avgDuration": t_avg_dur,
+        })
+
+    # --- Score brackets ---
+    score_brackets = _score_brackets(submitted)
+
+    # --- Question-level analysis ---
+    # Gather all question IDs from trainer's tests
+    all_q_ids = set()
+    for t in my_tests:
+        try:
+            qids = [q.strip() for q in (t.questionIds or "").split(",") if q.strip()]
+            all_q_ids.update(qids)
+        except Exception:
+            pass
+
+    questions = db.query(models.Question).filter(models.Question.id.in_(all_q_ids)).all() if all_q_ids else []
+    question_map = {q.id: q for q in questions}
+
+    # Get all answer records for submitted attempts
+    submitted_ids = [a.id for a in submitted]
+    answer_records = db.query(models.AnswerRecord).filter(
+        models.AnswerRecord.attemptId.in_(submitted_ids)
+    ).all() if submitted_ids else []
+
+    # Group answer records by question
+    q_answers: Dict[str, list] = {}
+    for ar in answer_records:
+        if ar.questionId not in q_answers:
+            q_answers[ar.questionId] = []
+        q_answers[ar.questionId].append(ar)
+
+    question_analysis = []
+    for qid in all_q_ids:
+        q = question_map.get(qid)
+        if not q:
+            continue
+        answers = q_answers.get(qid, [])
+        total_ans = len(answers)
+        if total_ans == 0:
+            continue
+        correct = len([a for a in answers if a.selectedOption == q.correctAnswer])
+        wrong = len([a for a in answers if a.selectedOption and a.selectedOption != q.correctAnswer])
+        skipped = len([a for a in answers if not a.selectedOption])
+        opt_dist = {"A": 0, "B": 0, "C": 0, "D": 0}
+        for a in answers:
+            if a.selectedOption in opt_dist:
+                opt_dist[a.selectedOption] += 1
+        question_analysis.append({
+            "id": q.id,
+            "questionText": q.question[:120] + ("..." if len(q.question) > 120 else ""),
+            "category": q.category,
+            "difficulty": q.difficulty,
+            "correctRate": round(correct / total_ans * 100, 1),
+            "wrongRate": round(wrong / total_ans * 100, 1),
+            "skipRate": round(skipped / total_ans * 100, 1),
+            "optionDistribution": opt_dist,
+            "correctAnswer": q.correctAnswer,
+            "totalResponses": total_ans,
+        })
+
+    # --- Category performance ---
+    cat_perf: Dict[str, Dict[str, Any]] = {}
+    for qa in question_analysis:
+        cat = qa["category"]
+        if cat not in cat_perf:
+            cat_perf[cat] = {"totalQuestions": 0, "correctRates": []}
+        cat_perf[cat]["totalQuestions"] += 1
+        cat_perf[cat]["correctRates"].append(qa["correctRate"])
+    category_performance = []
+    for cat, d in cat_perf.items():
+        rates = d["correctRates"]
+        category_performance.append({
+            "category": cat,
+            "totalQuestions": d["totalQuestions"],
+            "avgScore": round(sum(rates) / len(rates), 1) if rates else 0,
+            "correctRate": round(sum(rates) / len(rates), 1) if rates else 0,
+        })
+
+    # --- Attempt status breakdown ---
+    attempt_status = {
+        "submitted": len([a for a in all_attempts if a.status == "submitted"]),
+        "autoSubmitted": len([a for a in all_attempts if a.status == "auto_submitted"]),
+        "inProgress": len([a for a in all_attempts if a.status == "in_progress"]),
+    }
+
+    # --- Answer status breakdown ---
+    answer_status = {"answered": 0, "notVisited": 0, "visited": 0, "marked": 0}
+    for ar in answer_records:
+        if ar.status == "answered":
+            answer_status["answered"] += 1
+        elif ar.status == "not_visited":
+            answer_status["notVisited"] += 1
+        elif ar.status == "visited":
+            answer_status["visited"] += 1
+        elif ar.status == "marked":
+            answer_status["marked"] += 1
+
+    # --- Time distribution (5-min buckets) ---
+    time_buckets: Dict[int, int] = {}
+    for d in durations:
+        bucket = int(d // 5) * 5
+        time_buckets[bucket] = time_buckets.get(bucket, 0) + 1
+    time_distribution = [{"minutes": m, "count": c} for m, c in sorted(time_buckets.items())]
+
+    return {
+        "kpis": {
+            "totalTests": len(my_tests),
+            "totalSubmissions": len(submitted),
+            "avgScore": avg_score,
+            "passRate": pass_rate,
+            "highestScore": highest,
+            "lowestScore": lowest,
+            "medianScore": median_score,
+            "avgDuration": avg_duration,
+            "totalViolations": total_violations,
+            "questionsCreated": questions_created,
+        },
+        "testSummaries": test_summaries,
+        "scoreBrackets": score_brackets,
+        "questionAnalysis": question_analysis,
+        "categoryPerformance": category_performance,
+        "attemptStatusBreakdown": attempt_status,
+        "answerStatusBreakdown": answer_status,
+        "timeDistribution": time_distribution,
+    }
+
+
+# === Student Endpoints ===
+
+@app.get("/api/student/dashboard/{student_id}")
+def get_student_dashboard(
+    student_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("admin", "institution", "trainer", "student"))
+):
+    student = db.query(models.User).filter(models.User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Get student attempts
+    attempts = db.query(models.Attempt).filter(models.Attempt.studentId == student_id).all()
+    submitted_attempts = [a for a in attempts if a.status in ("submitted", "auto_submitted")]
+    
+    # Get all tests & schedules
+    tests = db.query(models.Test).all()
+    test_map = {t.id: t for t in tests}
+    schedules = db.query(models.Schedule).all()
+    
+    now = now_iso()
+    
+    # Upcoming & Live tests assigned to this student / student's batch
+    upcoming_tests = []
+    for s in schedules:
+        test = test_map.get(s.testId)
+        if not test:
+            continue
+        
+        # Check batch/student assignment
+        if s.assignedBatch and s.assignedBatch != "all" and student.batch and student.batch != s.assignedBatch:
+            continue
+        
+        assigned_students = []
+        if s.assignedStudents:
+            try:
+                assigned_students = json.loads(s.assignedStudents)
+            except Exception:
+                assigned_students = [x.strip() for x in s.assignedStudents.split(",") if x.strip()]
+        
+        if assigned_students and "all" not in assigned_students and student_id not in assigned_students:
+            continue
+
+        # Check attempt
+        attempt = next((a for a in attempts if (getattr(a, "scheduleId", None) == s.id) or (a.testId == s.testId and a.startedAt >= s.startTime)), None)
+        if not attempt:
+            attempt = next((a for a in attempts if a.testId == s.testId), None)
+            
+        is_completed = attempt and attempt.status in ("submitted", "auto_submitted")
+        is_available = s.startTime <= now <= s.endTime and not is_completed
+
+        upcoming_tests.append({
+            "schedule": format_schedule(s),
+            "test": format_test(test),
+            "attempt": format_attempt(attempt, db) if attempt else None,
+            "isAvailable": is_available
+        })
+
+    # Past exams
+    past_exams = []
+    for a in submitted_attempts:
+        test = test_map.get(a.testId)
+        if test:
+            past_exams.append({
+                "attempt": format_attempt(a, db),
+                "test": format_test(test)
+            })
+
+    # Stats
+    scores = [a.percentage for a in submitted_attempts if a.percentage is not None]
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+    highest_score = round(max(scores), 1) if scores else 0
+
+    return {
+        "upcoming_tests": upcoming_tests,
+        "past_exams": past_exams,
+        "stats": {
+            "totalCompleted": len(submitted_attempts),
+            "averageScore": avg_score,
+            "highestScore": highest_score
+        }
+    }
+
+
+@app.get("/api/student/analytics/{student_id}")
+def get_student_analytics(
+    student_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("admin", "institution", "trainer", "student"))
+):
+    student = db.query(models.User).filter(models.User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    attempts = db.query(models.Attempt).filter(models.Attempt.studentId == student_id).all()
+    submitted = [a for a in attempts if a.status in ("submitted", "auto_submitted")]
+    scores = [a.percentage for a in submitted if a.percentage is not None]
+    
+    tests = db.query(models.Test).all()
+    test_map = {t.id: t for t in tests}
+
+    history = []
+    for a in submitted:
+        test = test_map.get(a.testId)
+        history.append({
+            "testTitle": test.title if test else "Assessment",
+            "score": a.score,
+            "percentage": a.percentage,
+            "submittedAt": a.submittedAt or a.startedAt,
+            "violations": a.violations or 0
+        })
+
+    return {
+        "totalCompleted": len(submitted),
+        "avgScore": round(sum(scores) / len(scores), 1) if scores else 0,
+        "highestScore": round(max(scores), 1) if scores else 0,
+        "totalViolations": sum(a.violations or 0 for a in attempts),
+        "history": history
+    }

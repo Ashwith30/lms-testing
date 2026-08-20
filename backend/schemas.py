@@ -123,6 +123,7 @@ class AttemptBase(BaseModel):
     id: str
     studentId: str
     testId: str
+    scheduleId: Optional[str] = None
     startedAt: str
     expiresAt: str
     submittedAt: Optional[str] = None
@@ -136,6 +137,7 @@ class AttemptBase(BaseModel):
 
 class AttemptUpdate(BaseModel):
     answers: Optional[Dict[str, AnswerRecordBase]] = None
+    scheduleId: Optional[str] = None
     violations: Optional[int] = None
     violationLogs: Optional[List[Dict[str, Any]]] = None
     proctoringSummary: Optional[Dict[str, Any]] = None
@@ -155,6 +157,18 @@ class TestUpdate(BaseModel):
     totalMarks: Optional[float] = None
     settings: Optional[TestSettingsBase] = None
     status: Optional[str] = None
+
+class CloneTestRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+class ReconductTestRequest(BaseModel):
+    startTime: str
+    endTime: str
+    assignedStudents: Optional[List[str]] = None
+    assignedBatch: Optional[str] = None
+    cloneTest: Optional[bool] = False
+    newTestTitle: Optional[str] = None
 
 class AttemptSubmitRequest(BaseModel):
     isAutoSubmit: Optional[bool] = False

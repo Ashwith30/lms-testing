@@ -81,7 +81,7 @@ export const InstitutionDashboard = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link to="/institution/tests/create">
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
               <FileText className="mr-2 h-4 w-4" />
@@ -98,19 +98,17 @@ export const InstitutionDashboard = () => {
       </div>
 
       {/* Overview Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {statCards.map((stat, i) => (
-          <Card key={i} className="border border-slate-200">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-                <stat.icon className="h-6 w-6" />
+          <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 sm:p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{stat.title}</p>
+              <div className={`p-2 rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
+                <stat.icon className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{stat.title}</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{stat.value}</h3>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">{stat.value}</p>
+          </div>
         ))}
       </div>
 

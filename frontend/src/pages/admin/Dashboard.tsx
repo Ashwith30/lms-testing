@@ -130,41 +130,69 @@ export const AdminDashboard = () => {
               {isLoadingTrainers ? (
                 <div className="text-center py-12 text-slate-500">Loading trainers...</div>
               ) : trainers.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left text-slate-500">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b">
-                      <tr>
-                        <th className="px-6 py-4">Name</th>
-                        <th className="px-6 py-4">Email</th>
-                        <th className="px-6 py-4">Role</th>
-                        <th className="px-6 py-4 text-right">Registration Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      {trainers.map((t) => (
-                        <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-4 font-semibold text-slate-900 flex items-center gap-2">
-                            <div className="h-8 w-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm uppercase">
+                <>
+                  {/* Desktop table */}
+                  <div className="overflow-x-auto hidden sm:block">
+                    <table className="w-full text-sm text-left text-slate-500">
+                      <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b">
+                        <tr>
+                          <th className="px-6 py-4">Name</th>
+                          <th className="px-6 py-4">Email</th>
+                          <th className="px-6 py-4">Role</th>
+                          <th className="px-6 py-4 text-right">Registration Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {trainers.map((t) => (
+                          <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 font-semibold text-slate-900 flex items-center gap-2">
+                              <div className="h-8 w-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm uppercase">
+                                {t.name.substring(0, 2)}
+                              </div>
+                              {t.name}
+                            </td>
+                            <td className="px-6 py-4">{t.email}</td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800 capitalize">
+                                {t.role}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right text-xs text-slate-500">
+                              {new Date(t.createdAt).toLocaleDateString(undefined, {
+                                year: 'numeric', month: 'short', day: 'numeric'
+                              })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile card view */}
+                  <div className="sm:hidden divide-y divide-slate-100 bg-white">
+                    {trainers.map((t) => (
+                      <div key={t.id} className="p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-8 w-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs uppercase shrink-0">
                               {t.name.substring(0, 2)}
                             </div>
-                            {t.name}
-                          </td>
-                          <td className="px-6 py-4">{t.email}</td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800 capitalize">
-                              {t.role}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right text-xs text-slate-500">
-                            {new Date(t.createdAt).toLocaleDateString(undefined, {
-                              year: 'numeric', month: 'short', day: 'numeric'
-                            })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                            <div>
+                              <p className="font-semibold text-slate-900 text-sm">{t.name}</p>
+                              <p className="text-xs text-slate-400">{t.email}</p>
+                            </div>
+                          </div>
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700 capitalize">
+                            {t.role}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 text-right">
+                          Registered {new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-16 text-slate-500">
                   <Users className="mx-auto h-12 w-12 text-slate-300 mb-3" />

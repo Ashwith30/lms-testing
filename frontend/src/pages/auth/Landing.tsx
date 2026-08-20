@@ -121,21 +121,21 @@ export const Landing = () => {
       <main className="flex-1 flex items-center relative z-10">
         <div className="max-w-2xl px-6 lg:px-10 animate-in">
           <p className="text-[13px] font-medium text-blue-600 mb-3 tracking-wide uppercase">Placement Assessment Platform</p>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#1a1d23] mb-4 leading-[1.1]">
-            Run placement tests<br/>without the headache.
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#1a1d23] mb-4 leading-[1.15] sm:leading-[1.1]">
+            Run placement tests<br className="hidden sm:inline" /> without the headache.
           </h1>
-          <p className="text-lg text-[#5a6170] mb-8 max-w-lg leading-relaxed">
+          <p className="text-base sm:text-lg text-[#5a6170] mb-8 max-w-lg leading-relaxed">
             Create assessments, schedule them for your batches, and get results — all from one place. Built for trainers who have better things to do.
           </p>
-          <div className="flex items-center gap-3">
-            <Link to="/student/login">
-              <Button size="lg">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <Link to="/student/login" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto">
                 Get started
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </Link>
-            <Link to="/trainer/login">
-              <Button variant="ghost" size="lg" className="text-[#5a6170]">
+            <Link to="/trainer/login" className="w-full sm:w-auto">
+              <Button variant="ghost" size="lg" className="text-[#5a6170] w-full sm:w-auto">
                 I'm a trainer
               </Button>
             </Link>

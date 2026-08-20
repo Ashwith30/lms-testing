@@ -73,10 +73,10 @@ export const StudentProfile = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Student Profile</h1>
-          <p className="text-slate-500">View and update your account information and academic details.</p>
+          <p className="text-slate-500 text-sm">View and update your account information and academic details.</p>
         </div>
         <Button 
           variant={isEditing ? "secondary" : "outline"}
@@ -105,7 +105,7 @@ export const StudentProfile = () => {
           </div>
         </div>
 
-        <CardContent className="pt-14 pb-8 px-8">
+        <CardContent className="pt-14 pb-6 sm:pb-8 px-4 sm:px-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-slate-900">{user.name}</h2>
             <p className="text-sm font-medium text-slate-400 capitalize flex items-center gap-1.5 mt-1">

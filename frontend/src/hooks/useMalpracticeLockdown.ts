@@ -3,11 +3,13 @@ import { ViolationType } from '../types';
 
 interface UseMalpracticeLockdownProps {
   isActive: boolean;
+  liteMode?: boolean; // For mobile/tablet: skip desktop-only protections
   onViolation: (type: ViolationType, reason: string) => void;
 }
 
 export const useMalpracticeLockdown = ({
   isActive,
+  liteMode = false,
   onViolation
 }: UseMalpracticeLockdownProps) => {
   const onViolationRef = useRef(onViolation);
@@ -70,8 +72,9 @@ export const useMalpracticeLockdown = ({
       }
     };
 
-    // 5. Right Click Context Menu
+    // 5. Right Click Context Menu (skip in lite mode)
     const handleContextMenu = (e: MouseEvent) => {
+      if (liteMode) return;
       e.preventDefault();
       triggerDebouncedViolation('CONTEXT_MENU_BLOCKED', 'Right-click context menu is disabled during the exam', 2000);
     };
@@ -163,14 +166,17 @@ export const useMalpracticeLockdown = ({
       }
     };
 
-    // 9. DevTools Size Delta Monitor
-    const devToolsCheckInterval = setInterval(() => {
-      const widthThreshold = window.outerWidth - window.innerWidth > 160;
-      const heightThreshold = window.outerHeight - window.innerHeight > 160;
-      if (widthThreshold || heightThreshold) {
-        triggerDebouncedViolation('DEVTOOLS_OPEN', 'DevTools window open detected', 4000);
-      }
-    }, 2000);
+    // 9. DevTools Size Delta Monitor (skip in lite mode — not applicable on mobile)
+    let devToolsCheckInterval: ReturnType<typeof setInterval> | null = null;
+    if (!liteMode) {
+      devToolsCheckInterval = setInterval(() => {
+        const widthThreshold = window.outerWidth - window.innerWidth > 160;
+        const heightThreshold = window.outerHeight - window.innerHeight > 160;
+        if (widthThreshold || heightThreshold) {
+          triggerDebouncedViolation('DEVTOOLS_OPEN', 'DevTools window open detected', 4000);
+        }
+      }, 2000);
+    }
 
     // Attach listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -180,16 +186,19 @@ export const useMalpracticeLockdown = ({
     document.addEventListener('gesturestart', handleGesture);
     document.addEventListener('gesturechange', handleGesture);
     window.addEventListener('wheel', handleWheel, { passive: false });
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('selectstart', handleSelectStart);
-    document.addEventListener('dragstart', handleDragStart);
-    document.addEventListener('copy', handleCopy);
-    document.addEventListener('cut', handleCut);
-    document.addEventListener('paste', handlePaste);
-    window.addEventListener('keydown', handleKeyDown, true);
+    // In lite mode, skip keyboard shortcut interception and clipboard blocking
+    if (!liteMode) {
+      document.addEventListener('contextmenu', handleContextMenu);
+      document.addEventListener('selectstart', handleSelectStart);
+      document.addEventListener('dragstart', handleDragStart);
+      document.addEventListener('copy', handleCopy);
+      document.addEventListener('cut', handleCut);
+      document.addEventListener('paste', handlePaste);
+      window.addEventListener('keydown', handleKeyDown, true);
+    }
 
     return () => {
-      clearInterval(devToolsCheckInterval);
+      if (devToolsCheckInterval) clearInterval(devToolsCheckInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
       document.removeEventListener('touchstart', handleTouchStart);
@@ -197,13 +206,15 @@ export const useMalpracticeLockdown = ({
       document.removeEventListener('gesturestart', handleGesture);
       document.removeEventListener('gesturechange', handleGesture);
       window.removeEventListener('wheel', handleWheel);
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('selectstart', handleSelectStart);
-      document.removeEventListener('dragstart', handleDragStart);
-      document.removeEventListener('copy', handleCopy);
-      document.removeEventListener('cut', handleCut);
-      document.removeEventListener('paste', handlePaste);
-      window.removeEventListener('keydown', handleKeyDown, true);
+      if (!liteMode) {
+        document.removeEventListener('contextmenu', handleContextMenu);
+        document.removeEventListener('selectstart', handleSelectStart);
+        document.removeEventListener('dragstart', handleDragStart);
+        document.removeEventListener('copy', handleCopy);
+        document.removeEventListener('cut', handleCut);
+        document.removeEventListener('paste', handlePaste);
+        window.removeEventListener('keydown', handleKeyDown, true);
+      }
     };
   }, [isActive]);
 };

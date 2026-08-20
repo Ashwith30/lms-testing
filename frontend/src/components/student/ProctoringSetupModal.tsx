@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, ShieldCheck, CheckCircle2, AlertTriangle, Monitor, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { loadCocoModel, detectObjectsInFrame } from '../../services/proctoringService';
+import { useDeviceDetection } from '../../hooks/useDeviceDetection';
 
 interface ProctoringSetupModalProps {
   isOpen: boolean;
@@ -23,16 +24,25 @@ export const ProctoringSetupModal: React.FC<ProctoringSetupModalProps> = ({
   const [faceDetected, setFaceDetected] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const { isTouchDevice } = useDeviceDetection();
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const checkIntervalRef = useRef<any>(null);
+
+  const stopCameraStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        try { track.stop(); } catch {}
+      });
+      streamRef.current = null;
+    }
+    setStream(null);
+  };
 
   useEffect(() => {
     if (!isOpen) {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        setStream(null);
-      }
+      stopCameraStream();
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
       return;
     }
@@ -47,7 +57,14 @@ export const ProctoringSetupModal: React.FC<ProctoringSetupModalProps> = ({
           audio: false
         });
 
-        if (!isMounted) return;
+        if (!isMounted || !isOpen) {
+          mediaStream.getTracks().forEach(track => {
+            try { track.stop(); } catch {}
+          });
+          return;
+        }
+
+        streamRef.current = mediaStream;
         setStream(mediaStream);
         setCameraPermission('granted');
 
@@ -57,6 +74,8 @@ export const ProctoringSetupModal: React.FC<ProctoringSetupModalProps> = ({
         }
 
         const model = await loadCocoModel();
+
+        if (!isMounted) return;
 
         // Run continuous check on preview
         checkIntervalRef.current = setInterval(async () => {
@@ -81,8 +100,19 @@ export const ProctoringSetupModal: React.FC<ProctoringSetupModalProps> = ({
     return () => {
       isMounted = false;
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          try { track.stop(); } catch {}
+        });
+        streamRef.current = null;
+      }
     };
   }, [isOpen]);
+
+  const handleClose = () => {
+    stopCameraStream();
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -97,9 +127,7 @@ export const ProctoringSetupModal: React.FC<ProctoringSetupModalProps> = ({
     }
     
     // Stop setup stream so TestAttempt can take over
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
+    stopCameraStream();
     onConfirmStart();
   };
 
@@ -112,7 +140,7 @@ export const ProctoringSetupModal: React.FC<ProctoringSetupModalProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Security Verification</span>
             <h2 className="text-xl font-bold">{testTitle}</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg">
+          <button onClick={handleClose} className="text-slate-400 hover:text-white p-1 rounded-lg">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -181,21 +209,23 @@ export const ProctoringSetupModal: React.FC<ProctoringSetupModalProps> = ({
             </h3>
 
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs text-slate-700 space-y-2">
+              {!isTouchDevice && (
+                <div className="flex items-start gap-2">
+                  <Monitor className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                  <span><strong>Fullscreen Mode:</strong> The test will launch in full screen. Exiting full screen records an instant violation.</span>
+                </div>
+              )}
               <div className="flex items-start gap-2">
-                <Monitor className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                <span><strong>Fullscreen Mode:</strong> The test will launch in full screen. Exiting full screen records an instant violation.</span>
+                <span className="text-red-600 font-bold">•</span>
+                <span><strong>Tab Switching:</strong> Navigating away from this exam tab will log a malpractice warning.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-red-600 font-bold">•</span>
-                <span><strong>Tab & App Switching:</strong> Pressing Alt+Tab, switching tabs, or trackpad swipe gestures are strictly prohibited.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-red-600 font-bold">•</span>
-                <span><strong>Mobile & Face Detection:</strong> Using mobile phones or stepping away from the camera will flag security violations.</span>
+                <span><strong>Camera Monitoring:</strong> Stepping away or multiple faces detected will flag security alerts.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-amber-600 font-bold">•</span>
-                <span><strong>Auto-Submission:</strong> Reaching 3 violations will immediately lock and submit your exam.</span>
+                <span><strong>Auto-Submission:</strong> Reaching {isTouchDevice ? '5' : '3'} violations will immediately lock and submit your exam.</span>
               </div>
             </div>
           </div>
@@ -215,17 +245,17 @@ export const ProctoringSetupModal: React.FC<ProctoringSetupModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+          <Button variant="outline" onClick={handleClose} className="w-full sm:w-auto">
             Cancel
           </Button>
           <Button
             variant="primary"
             onClick={handleStartExam}
             disabled={cameraPermission !== 'granted' || !agreed}
-            className="bg-blue-600 hover:bg-blue-700 px-6 font-bold"
+            className="bg-blue-600 hover:bg-blue-700 px-6 font-bold w-full sm:w-auto"
           >
-            Launch Secure Exam ({durationMinutes}m)
+            Launch {isTouchDevice ? 'Exam' : 'Secure Exam'} ({durationMinutes}m)
           </Button>
         </div>
       </div>

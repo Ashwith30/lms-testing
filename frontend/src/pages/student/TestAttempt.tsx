@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, ChevronLeft, ChevronRight, Bookmark, Maximize } from 'lucide-react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Clock, ChevronLeft, ChevronRight, Bookmark, Maximize, Minimize, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { testService } from '../../services/testService';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { Test, Question, Attempt, ViolationLog, ViolationType } from '../../types';
 import { Logo } from '../../components/ui/Logo';
 import { useMalpracticeLockdown } from '../../hooks/useMalpracticeLockdown';
+import { useDeviceDetection } from '../../hooks/useDeviceDetection';
 import { 
   loadCocoModel, 
   detectObjectsInFrame, 
@@ -17,14 +18,19 @@ import {
 import { syncService, SyncStatus } from '../../services/syncService';
 import { ProctoringOverlay } from '../../components/student/ProctoringOverlay';
 import { FullscreenWarningModal } from '../../components/student/FullscreenWarningModal';
+import { SubmitAnalysisModal } from '../../components/student/SubmitAnalysisModal';
 import { DetectedObject } from '@tensorflow-models/coco-ssd';
 import pLogoWatermark from '../../assets/p-logo-transparent-bg.png';
 
 export const TestAttempt = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const queryScheduleId = searchParams.get('scheduleId') || undefined;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const { isMobile, isTablet, isTouchDevice } = useDeviceDetection();
 
   const [test, setTest] = useState<Test | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -33,11 +39,12 @@ export const TestAttempt = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   
-  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFullscreenModal, setShowFullscreenModal] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [violations, setViolations] = useState(0);
   const [violationLogs, setViolationLogs] = useState<ViolationLog[]>([]);
-  const maxViolations = 3;
+  const maxViolations = isTouchDevice ? 5 : 3; // Relaxed threshold for mobile
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('synced');
@@ -50,6 +57,7 @@ export const TestAttempt = () => {
   const [phoneDetected, setPhoneDetected] = useState(false);
   const [predictions, setPredictions] = useState<DetectedObject[]>([]);
   const [lastAnalysisTime, setLastAnalysisTime] = useState<number>(Date.now());
+  const [showRightPanel, setShowRightPanel] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -61,6 +69,11 @@ export const TestAttempt = () => {
   const multipleFaceStreakRef = useRef(0);
   const phoneStreakRef = useRef(0);
 
+  // Fullscreen tracking refs
+  const hasEnteredFullscreenRef = useRef(false);
+  const isSubmittingRef = useRef(false);
+  isSubmittingRef.current = isSubmitting;
+
   // Ref tracking current violation logs & counts for async callbacks
   const violationsRef = useRef(violations);
   violationsRef.current = violations;
@@ -68,6 +81,75 @@ export const TestAttempt = () => {
   violationLogsRef.current = violationLogs;
   const attemptRef = useRef(attempt);
   attemptRef.current = attempt;
+
+  // Dedicated media stream track cleanup helper
+  const stopAllMediaTracks = useCallback(() => {
+    if (aiIntervalRef.current) {
+      clearInterval(aiIntervalRef.current);
+      aiIntervalRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch (e) {
+          console.warn('Track stop warning:', e);
+        }
+      });
+      streamRef.current = null;
+    }
+    setStream(null);
+    setCameraActive(false);
+  }, []);
+
+  // Safe Fullscreen helpers
+  const enterFullscreenSafe = async () => {
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      } else if ((el as any).webkitRequestFullscreen) {
+        await (el as any).webkitRequestFullscreen();
+      } else if ((el as any).mozRequestFullScreen) {
+        await (el as any).mozRequestFullScreen();
+      } else if ((el as any).msRequestFullscreen) {
+        await (el as any).msRequestFullscreen();
+      }
+      setIsFullscreen(true);
+      hasEnteredFullscreenRef.current = true;
+      setShowFullscreenModal(false);
+    } catch (err) {
+      console.warn('Fullscreen request could not be fulfilled without user gesture:', err);
+    }
+  };
+
+  const exitFullscreenSafe = async () => {
+    try {
+      if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        }
+      }
+      setIsFullscreen(false);
+    } catch (err) {
+      console.warn('Exit fullscreen warning:', err);
+    }
+  };
+
+  const toggleFullscreen = async () => {
+    const isFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+    if (isFs) {
+      if (test?.settings?.fullscreenRequired) {
+        toast('Fullscreen mode is mandatory for this proctored assessment.', 'error');
+        return;
+      }
+      await exitFullscreenSafe();
+    } else {
+      await enterFullscreenSafe();
+    }
+  };
 
   // Subscribe to sync service status
   useEffect(() => {
@@ -79,7 +161,7 @@ export const TestAttempt = () => {
 
   // 1. Log violation & capture snapshot
   const registerViolation = useCallback(async (type: ViolationType, reason: string, severity: 'low' | 'medium' | 'high' | 'critical' = 'high') => {
-    if (isSubmitting) return;
+    if (isSubmittingRef.current) return;
 
     let snapshotUrl: string | undefined;
     if (videoRef.current) {
@@ -119,11 +201,15 @@ export const TestAttempt = () => {
       toast('Maximum security violations reached. Disqualifying & auto-submitting test.', 'error');
       handleAutoSubmit(updatedLogs, newViolationsCount);
     }
-  }, [isSubmitting, toast]);
+  }, [toast]);
+
+  const registerViolationRef = useRef(registerViolation);
+  registerViolationRef.current = registerViolation;
 
   // 2. Malpractice Lockdown Hook
   useMalpracticeLockdown({
     isActive: !isSubmitting && attempt !== null,
+    liteMode: isTouchDevice,
     onViolation: (type, reason) => {
       registerViolation(type, reason, 'high');
     }
@@ -137,7 +223,7 @@ export const TestAttempt = () => {
         const testData = await testService.getTestDetails(id);
         if (!testData) throw new Error('Test not found');
 
-        const schedule = await testService.getTestSchedule(id);
+        const schedule = await testService.getTestSchedule(id, queryScheduleId);
         if (schedule) {
           const now = new Date().toISOString();
           if (now < schedule.startTime) {
@@ -151,7 +237,7 @@ export const TestAttempt = () => {
         }
         
         const testQuestions = await testService.getQuestionsForTest(id);
-        const attemptData = await testService.startAttempt(user.id, id);
+        const attemptData = await testService.startAttempt(user.id, id, queryScheduleId);
         
         if (attemptData.status === 'submitted' || attemptData.status === 'auto_submitted') {
           navigate(`/student/results/${id}`);
@@ -170,9 +256,9 @@ export const TestAttempt = () => {
       }
     };
     init();
-  }, [id, user, navigate, toast]);
+  }, [id, queryScheduleId, user, navigate, toast]);
 
-  // 4. Initialize Camera & AI Vision Model Loop
+  // 4. Initialize Camera & AI Vision Model Loop (runs once on mount)
   useEffect(() => {
     let isMounted = true;
 
@@ -183,7 +269,14 @@ export const TestAttempt = () => {
           audio: false
         });
 
-        if (!isMounted) return;
+        // Ensure we cleanly terminate track if unmounted or submitting in the interim
+        if (!isMounted || isSubmittingRef.current) {
+          mediaStream.getTracks().forEach((t) => {
+            try { t.stop(); } catch {}
+          });
+          return;
+        }
+
         streamRef.current = mediaStream;
         setStream(mediaStream);
         setCameraActive(true);
@@ -194,12 +287,12 @@ export const TestAttempt = () => {
         }
 
         const model = await loadCocoModel();
-        if (!isMounted) return;
+        if (!isMounted || isSubmittingRef.current) return;
         setIsAiReady(true);
 
         // Run object detection loop every 800ms
         aiIntervalRef.current = setInterval(async () => {
-          if (!videoRef.current || isSubmitting) return;
+          if (!videoRef.current || isSubmittingRef.current) return;
 
           // Make sure stream is playing and attached
           if (videoRef.current.srcObject !== streamRef.current && streamRef.current) {
@@ -210,7 +303,7 @@ export const TestAttempt = () => {
           if (videoRef.current.readyState < 2 || videoRef.current.videoWidth === 0) return;
 
           const res = await detectObjectsInFrame(videoRef.current, model);
-          if (!isMounted || !res.isReady) return;
+          if (!isMounted || !res.isReady || isSubmittingRef.current) return;
 
           setPredictions(res.predictions);
           setLastAnalysisTime(Date.now());
@@ -222,7 +315,7 @@ export const TestAttempt = () => {
           if (res.personCount === 0) {
             missingFaceStreakRef.current += 1;
             if (missingFaceStreakRef.current === 3) {
-              registerViolation('FACE_MISSING', 'Face not detected in camera feed (candidate stepped away or looked away)');
+              registerViolationRef.current('FACE_MISSING', 'Face not detected in camera feed (candidate stepped away or looked away)');
             }
           } else {
             missingFaceStreakRef.current = 0;
@@ -232,7 +325,7 @@ export const TestAttempt = () => {
           if (res.personCount > 1) {
             multipleFaceStreakRef.current += 1;
             if (multipleFaceStreakRef.current === 2) {
-              registerViolation('MULTIPLE_FACES', `Multiple people (${res.personCount}) detected in camera feed`);
+              registerViolationRef.current('MULTIPLE_FACES', `Multiple people (${res.personCount}) detected in camera feed`);
             }
           } else {
             multipleFaceStreakRef.current = 0;
@@ -242,7 +335,7 @@ export const TestAttempt = () => {
           if (res.phoneDetected) {
             phoneStreakRef.current += 1;
             if (phoneStreakRef.current === 2) {
-              registerViolation('PHONE_DETECTED', 'Mobile phone detected in camera view');
+              registerViolationRef.current('PHONE_DETECTED', 'Mobile phone detected in camera view');
             }
           } else {
             phoneStreakRef.current = 0;
@@ -259,12 +352,9 @@ export const TestAttempt = () => {
 
     return () => {
       isMounted = false;
-      if (aiIntervalRef.current) clearInterval(aiIntervalRef.current);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop());
-      }
+      stopAllMediaTracks();
     };
-  }, [registerViolation, isSubmitting]);
+  }, [stopAllMediaTracks]);
 
   // Ensure video element receives stream whenever attempt loads and DOM mounts
   useEffect(() => {
@@ -285,55 +375,73 @@ export const TestAttempt = () => {
       
       setTimeLeft(remaining);
       
-      if (remaining === 0 && !isSubmitting) {
+      if (remaining === 0 && !isSubmittingRef.current) {
         handleAutoSubmit();
       }
     }, 1000);
     
     return () => clearInterval(interval);
-  }, [attempt, isSubmitting]);
+  }, [attempt]);
 
   // 6. Fullscreen lockdown & re-entry manager
   useEffect(() => {
-    if (!test?.settings.fullscreenRequired) return;
-
-    const requestFullscreen = async () => {
-      try {
-        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-        }
-      } catch (e) {
-        console.warn('Fullscreen request denied');
-      }
+    const checkIsFullscreen = () => {
+      return !!(
+        document.fullscreenElement || 
+        (document as any).webkitFullscreenElement || 
+        (document as any).mozFullScreenElement || 
+        (document as any).msFullscreenElement
+      );
     };
 
-    requestFullscreen();
+    const initialFs = checkIsFullscreen();
+    setIsFullscreen(initialFs);
+
+    if (test?.settings?.fullscreenRequired && !isTouchDevice) {
+      if (initialFs) {
+        hasEnteredFullscreenRef.current = true;
+        setShowFullscreenModal(false);
+      } else {
+        // Try auto requesting fullscreen; if blocked without user gesture, show modal cleanly
+        enterFullscreenSafe().catch(() => {
+          setShowFullscreenModal(true);
+        });
+      }
+    }
 
     const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = document.fullscreenElement !== null;
-      setIsFullscreen(isCurrentlyFullscreen);
+      const current = checkIsFullscreen();
+      setIsFullscreen(current);
       
-      if (!isCurrentlyFullscreen && !isSubmitting) {
-        setShowFullscreenModal(true);
-        registerViolation('FULLSCREEN_EXIT', 'Fullscreen mode was exited', 'critical');
-      } else if (isCurrentlyFullscreen) {
+      if (!test?.settings?.fullscreenRequired || isTouchDevice) return;
+
+      if (current) {
+        hasEnteredFullscreenRef.current = true;
         setShowFullscreenModal(false);
+      } else if (!isSubmittingRef.current) {
+        setShowFullscreenModal(true);
+        // Only trigger violation if student was legitimately in fullscreen previously
+        if (hasEnteredFullscreenRef.current) {
+          registerViolationRef.current('FULLSCREEN_EXIT', 'Fullscreen mode was exited', 'critical');
+        }
       }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [test, isSubmitting, registerViolation]);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, [test?.settings?.fullscreenRequired]);
 
   const handleReEnterFullscreen = async () => {
-    try {
-      if (document.documentElement.requestFullscreen) {
-        await document.documentElement.requestFullscreen();
-      }
-      setShowFullscreenModal(false);
-    } catch (e) {
-      console.warn('Re-entering fullscreen failed:', e);
-    }
+    await enterFullscreenSafe();
   };
 
   // 7. Answer Selection & Direct Online Sync
@@ -419,10 +527,13 @@ export const TestAttempt = () => {
     }
   };
 
-  // 8. Auto-submit & Normal Submit
+  // 8. Auto-submit & Normal Submit Flow
   const handleAutoSubmit = async (customLogs?: ViolationLog[], customViolations?: number) => {
-    if (!attempt || isSubmitting) return;
+    if (!attempt || isSubmittingRef.current) return;
     setIsSubmitting(true);
+    isSubmittingRef.current = true;
+    stopAllMediaTracks();
+
     try {
       const logsToSave = customLogs || violationLogsRef.current;
       const countToSave = customViolations !== undefined ? customViolations : violationsRef.current;
@@ -438,39 +549,48 @@ export const TestAttempt = () => {
       );
 
       syncService.clearLocalAttempt(attempt.id);
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
+      await exitFullscreenSafe();
       navigate(`/student/results/${test?.id}`);
     } catch (e) {
       setIsSubmitting(false);
+      isSubmittingRef.current = false;
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmitClick = () => {
     if (!attempt || isSubmitting) return;
-    if (window.confirm('Are you sure you want to submit the test? All answers will be finalized.')) {
-      setIsSubmitting(true);
-      try {
-        const summary = calculateProctoringSummary(violationLogs);
-        await testService.submitAttempt(
-          attempt.id,
-          false,
-          attempt.answers,
-          violations,
-          violationLogs,
-          summary
-        );
+    setShowSubmitModal(true);
+  };
 
-        syncService.clearLocalAttempt(attempt.id);
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {});
-        }
-        navigate(`/student/results/${test?.id}`);
-      } catch (e) {
-        setIsSubmitting(false);
-      }
+  const handleConfirmFinalSubmit = async () => {
+    if (!attempt || isSubmittingRef.current) return;
+    setIsSubmitting(true);
+    isSubmittingRef.current = true;
+    stopAllMediaTracks();
+
+    try {
+      const summary = calculateProctoringSummary(violationLogs);
+      await testService.submitAttempt(
+        attempt.id,
+        false,
+        attempt.answers,
+        violations,
+        violationLogs,
+        summary
+      );
+
+      syncService.clearLocalAttempt(attempt.id);
+      await exitFullscreenSafe();
+      navigate(`/student/results/${test?.id}`);
+    } catch (e) {
+      setIsSubmitting(false);
+      isSubmittingRef.current = false;
     }
+  };
+
+  const handleJumpToQuestionFromModal = (index: number) => {
+    setShowSubmitModal(false);
+    navigateQuestion(index);
   };
 
   const formatTime = (seconds: number) => {
@@ -514,39 +634,69 @@ export const TestAttempt = () => {
       </svg>
 
       {/* Top Bar */}
-      <header className="h-16 bg-slate-900 text-white flex items-center justify-between px-6 shrink-0 shadow-md z-20">
-        <div className="flex items-center gap-4">
-          <h1 className="font-bold tracking-tight text-lg hidden md:block">{test.title}</h1>
-          <Logo size="sm" variant="light" className="md:hidden" />
-          <span className="text-xs px-2.5 py-0.5 rounded bg-blue-600/30 text-blue-400 border border-blue-500/30 font-mono">
-            Proctored Session
+      <header className="h-14 sm:h-16 bg-slate-900 text-white flex items-center justify-between px-3 sm:px-6 shrink-0 shadow-md z-20">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <h1 className="font-bold tracking-tight text-sm sm:text-lg hidden sm:block truncate max-w-[200px] lg:max-w-none">{test.title}</h1>
+          <Logo size="sm" variant="light" className="sm:hidden" />
+          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 rounded bg-blue-600/30 text-blue-400 border border-blue-500/30 font-mono shrink-0">
+            {isTouchDevice ? 'Lite' : 'Proctored'}
           </span>
-          {test.settings.fullscreenRequired && (
-            <button
-              type="button"
-              onClick={handleReEnterFullscreen}
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                isFullscreen 
-                  ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40' 
-                  : 'bg-amber-950/70 text-amber-300 border-amber-500/50 hover:bg-amber-900/80 animate-pulse'
-              }`}
-              title={isFullscreen ? 'Fullscreen Locked & Active' : 'Click to enter fullscreen'}
-            >
-              <Maximize className="h-3 w-3" />
-              <span className="hidden sm:inline">{isFullscreen ? 'Fullscreen Active' : 'Enter Fullscreen'}</span>
-            </button>
+          
+          {/* Fullscreen Button — hidden on mobile touch devices */}
+          {!isTouchDevice && (
+            test.settings.fullscreenRequired ? (
+              <button
+                type="button"
+                onClick={handleReEnterFullscreen}
+                className={`hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  isFullscreen 
+                    ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40 cursor-default' 
+                    : 'bg-amber-950/70 text-amber-300 border-amber-500/50 hover:bg-amber-900/80 animate-pulse cursor-pointer'
+                }`}
+                title={isFullscreen ? 'Fullscreen Enforced & Active' : 'Click to enter fullscreen'}
+              >
+                <Maximize className="h-3 w-3" />
+                <span className="hidden sm:inline">{isFullscreen ? 'Fullscreen Enforced' : 'Enter Fullscreen'}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+                title={isFullscreen ? 'Exit Fullscreen' : 'Toggle Fullscreen Mode'}
+              >
+                {isFullscreen ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+              </button>
+            )
           )}
         </div>
         
-        <div className="flex items-center gap-6">
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-mono text-lg font-bold
+        <div className="flex items-center gap-2 sm:gap-6">
+          {/* Mobile right panel toggle */}
+          <button
+            type="button"
+            onClick={() => setShowRightPanel(!showRightPanel)}
+            className="lg:hidden flex items-center gap-1 text-xs px-2 py-1 rounded-full border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+          >
+            {showRightPanel ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">{showRightPanel ? 'Hide Panel' : 'Palette'}</span>
+          </button>
+
+          <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full font-mono text-sm sm:text-lg font-bold
             ${timeLeft < 300 ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-800 text-white'}`}>
-            <Clock className="h-5 w-5" />
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
             {formatTime(timeLeft)}
           </div>
           
-          <Button variant="primary" className="bg-blue-600 hover:bg-blue-700 font-bold px-6" onClick={handleSubmit} isLoading={isSubmitting}>
-            Submit Test
+          <Button 
+            variant="primary" 
+            className="bg-blue-600 hover:bg-blue-700 font-bold px-3 sm:px-6 shadow-md shadow-blue-600/30 text-xs sm:text-sm" 
+            onClick={handleSubmitClick} 
+            isLoading={isSubmitting}
+          >
+            <span className="hidden sm:inline">Submit Test</span>
+            <span className="sm:hidden">Submit</span>
           </Button>
         </div>
       </header>
@@ -555,8 +705,8 @@ export const TestAttempt = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Question Area */}
         <div className="flex-1 flex flex-col bg-white border-r border-slate-200 overflow-y-auto">
-          <div className="p-8 max-w-4xl mx-auto w-full">
-            <div className="flex justify-between items-end mb-6 pb-4 border-b">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 sm:mb-6 pb-3 sm:pb-4 border-b gap-2">
               <div>
                 <span className="text-sm font-semibold text-blue-600 uppercase tracking-wider">Question {currentIdx + 1} of {questions.length}</span>
                 <span className="ml-3 text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">{currentQ.category}</span>
@@ -564,15 +714,15 @@ export const TestAttempt = () => {
               <span className="text-sm font-medium text-slate-500">Marks: {currentQ.marks}</span>
             </div>
 
-            <h2 className="text-xl font-medium text-slate-900 mb-8 whitespace-pre-wrap leading-relaxed">
+            <h2 className="text-base sm:text-xl font-medium text-slate-900 mb-4 sm:mb-8 whitespace-pre-wrap leading-relaxed">
               {currentQ.question}
             </h2>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {['A', 'B', 'C', 'D'].map((opt) => (
                 <label 
                   key={opt} 
-                  className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  className={`flex items-center p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     currentAnswer?.selectedOption === opt 
                       ? 'border-blue-600 bg-blue-50 shadow-sm' 
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -594,29 +744,33 @@ export const TestAttempt = () => {
             </div>
           </div>
 
-          <div className="mt-auto p-6 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0 sticky bottom-0">
+          <div className="mt-auto p-3 sm:p-6 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-0 shrink-0 sticky bottom-0">
             <Button 
               variant="outline" 
               onClick={() => navigateQuestion(currentIdx - 1)}
               disabled={currentIdx === 0 || (!test.settings.allowBackNavigation)}
+              className="text-xs sm:text-sm"
             >
-              <ChevronLeft className="mr-2 h-4 w-4" /> Previous
+              <ChevronLeft className="mr-1 sm:mr-2 h-4 w-4" /> Previous
             </Button>
 
-            <div className="flex gap-3">
-              <Button variant="secondary" onClick={handleMarkReview}>
-                <Bookmark className={`mr-2 h-4 w-4 ${currentAnswer?.status === 'marked' ? 'fill-current text-purple-600' : ''}`} /> 
-                {currentAnswer?.status === 'marked' ? 'Unmark' : 'Mark for Review'}
+            <div className="flex gap-2 sm:gap-3">
+              <Button variant="secondary" onClick={handleMarkReview} className="flex-1 sm:flex-none text-xs sm:text-sm">
+                <Bookmark className={`mr-1 sm:mr-2 h-4 w-4 ${currentAnswer?.status === 'marked' ? 'fill-current text-purple-600' : ''}`} /> 
+                {currentAnswer?.status === 'marked' ? 'Unmark' : 'Review'}
               </Button>
-              <Button onClick={() => navigateQuestion(currentIdx + 1)} className="bg-blue-600 hover:bg-blue-700 font-bold">
-                {currentIdx === questions.length - 1 ? 'Save' : 'Save & Next'} <ChevronRight className="ml-2 h-4 w-4" />
+              <Button onClick={() => navigateQuestion(currentIdx + 1)} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 font-bold text-xs sm:text-sm">
+                {currentIdx === questions.length - 1 ? 'Save' : 'Next'} <ChevronRight className="ml-1 sm:ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
 
         {/* Right Side: Palette + Live AI Proctoring Feed */}
-        <div className="w-80 bg-slate-50 shrink-0 flex flex-col overflow-y-auto border-l border-slate-200">
+        <div className={`${showRightPanel ? 'fixed inset-0 z-30 bg-black/40 lg:static lg:bg-transparent' : 'hidden lg:block'}`}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowRightPanel(false); }}
+        >
+          <div className={`${showRightPanel ? 'absolute right-0 top-0 bottom-0 w-[300px] sm:w-80' : 'w-80'} bg-slate-50 shrink-0 flex flex-col overflow-y-auto border-l border-slate-200 h-full`}>
           <div className="p-5 space-y-6">
             {/* Live Camera & AI Detection Widget */}
             <ProctoringOverlay
@@ -681,9 +835,23 @@ export const TestAttempt = () => {
             )}
           </div>
         </div>
+        </div>
       </div>
 
-      {/* Mandatory Unclosable Fullscreen Blocker Overlay */}
+      {/* Question Analysis & Confirmation Modal */}
+      <SubmitAnalysisModal
+        isOpen={showSubmitModal}
+        isSubmitting={isSubmitting}
+        testTitle={test.title}
+        timeLeftFormatted={timeLeft !== null ? formatTime(timeLeft) : undefined}
+        questions={questions}
+        answers={attempt.answers}
+        onConfirmSubmit={handleConfirmFinalSubmit}
+        onCancel={() => setShowSubmitModal(false)}
+        onJumpToQuestion={handleJumpToQuestionFromModal}
+      />
+
+      {/* Mandatory Fullscreen Blocker Overlay */}
       <FullscreenWarningModal
         isOpen={showFullscreenModal}
         violations={violations}

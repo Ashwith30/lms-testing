@@ -65,7 +65,7 @@ export const StudentDashboard = () => {
 
       {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <div className="bg-white rounded-xl border border-[#e2e5ea] p-4 flex items-center gap-3.5 shadow-soft">
             <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
               <BookOpen className="h-5 w-5" />
@@ -115,7 +115,7 @@ export const StudentDashboard = () => {
             </div>
 
             {upcomingTests.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {upcomingTests.map((item) => (
                   <Card key={item.schedule.id} className="hover:shadow-lifted transition-all duration-200 group">
                     <CardContent className="p-5">
@@ -151,7 +151,7 @@ export const StudentDashboard = () => {
                         </p>
                       </div>
 
-                      <Link to={`/student/tests/${item.test.id}`}>
+                      <Link to={`/student/tests/${item.test.id}?scheduleId=${item.schedule.id}`}>
                         <Button className="w-full" variant={item.isAvailable ? 'primary' : 'outline'} size="sm">
                           {item.attempt?.status === 'in_progress' ? 'Resume' : 'View'}
                           <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -179,7 +179,8 @@ export const StudentDashboard = () => {
 
             {pastExams.length > 0 ? (
               <div className="bg-white rounded-xl border border-[#e2e5ea] shadow-soft overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop table */}
+                <div className="overflow-x-auto hidden sm:block">
                   <table className="w-full text-sm text-left">
                     <thead>
                       <tr className="border-b border-[#eef0f3]">
@@ -249,6 +250,45 @@ export const StudentDashboard = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile card layout */}
+                <div className="sm:hidden divide-y divide-[#eef0f3]">
+                  {pastExams.map(({ attempt, test }) => (
+                    <Link key={attempt.id} to={`/student/results/${test.id}`} className="block p-4 hover:bg-[#f7f8fa] transition-colors">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-[#1a1d23] text-[13px] truncate">{test.title}</p>
+                          <p className="text-[11px] text-[#9099a8] mt-0.5">
+                            {attempt.submittedAt
+                              ? new Date(attempt.submittedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                              : '—'}
+                          </p>
+                        </div>
+                        <span className={`shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                          (attempt.percentage ?? 0) >= 70
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : (attempt.percentage ?? 0) >= 40
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-red-50 text-red-700'
+                        }`}>
+                          {attempt.percentage != null ? `${attempt.percentage.toFixed(1)}%` : '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-[#9099a8]">
+                        <span>{attempt.score != null ? attempt.score : '—'} / {test.totalMarks}</span>
+                        {(attempt.violations ?? 0) > 0 && (
+                          <span className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md font-medium">
+                            <AlertTriangle className="h-3 w-3" />
+                            {attempt.violations}
+                          </span>
+                        )}
+                        <span className={attempt.status === 'auto_submitted' ? 'text-amber-600 font-medium' : 'text-emerald-600 font-medium'}>
+                          {attempt.status === 'auto_submitted' ? 'Auto' : 'Done'}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </div>
             ) : (

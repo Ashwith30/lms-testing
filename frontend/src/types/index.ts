@@ -120,6 +120,7 @@ export interface Attempt {
   id: string;
   studentId: string;
   testId: string;
+  scheduleId?: string;
   startedAt: string;
   expiresAt: string;
   submittedAt?: string;
@@ -145,4 +146,12 @@ export interface Material {
   assignedBatch?: string;
   createdAt: string;
 }
-
+export interface NotificationItem {
+  id: string;
+  title: string;
+  description: string;
+  time: string;
+  isRead: boolean;
+  type: 'info' | 'success' | 'alert';
+  link?: string;
+}

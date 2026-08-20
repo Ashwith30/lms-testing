@@ -94,6 +94,7 @@ class Attempt(Base):
     id = Column(String, primary_key=True, index=True)
     studentId = Column(String, ForeignKey("users.id"))
     testId = Column(String, ForeignKey("tests.id"))
+    scheduleId = Column(String, ForeignKey("schedules.id"), nullable=True)
     startedAt = Column(String, nullable=False)
     expiresAt = Column(String, nullable=False)
     submittedAt = Column(String, nullable=True)
