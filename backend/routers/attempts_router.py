@@ -1,7 +1,7 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 import models
 import schemas
 from database import get_db
@@ -9,11 +9,13 @@ from auth import get_current_user, require_roles
 
 router = APIRouter(prefix="/api/attempts", tags=["attempts"])
 
-@router.get("", response_model=List[schemas.Attempt])
+@router.get("", response_model=Union[schemas.PaginatedResponse[schemas.Attempt], List[schemas.Attempt]])
 def get_attempts(
     studentId: Optional[str] = None,
     testId: Optional[str] = None,
     scheduleId: Optional[str] = None,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -27,11 +29,21 @@ def get_attempts(
     if scheduleId:
         query = query.filter(models.Attempt.scheduleId == scheduleId)
     if testId:
-        # Filter attempts where schedule.testId == testId
-        query = query.join(models.Schedule, isouter=True).filter(
-            (models.Schedule.testId == testId) | (models.Attempt.scheduleId == None)
-        )
+        # Filter attempts belonging to schedules associated with this test
+        matching_schedules = db.query(models.Schedule.id).filter(models.Schedule.testId == testId).all()
+        sched_ids = [s[0] for s in matching_schedules]
+        if sched_ids:
+            query = query.filter(models.Attempt.scheduleId.in_(sched_ids))
+        else:
+            query = query.filter(False)
         
+    if page is not None:
+        p = max(1, page)
+        l = max(1, limit) if limit else 50
+        total = query.count()
+        items = query.offset((p - 1) * l).limit(l).all()
+        return {"data": items, "total": total, "page": p, "limit": l}
+
     return query.all()
 
 @router.post("", response_model=schemas.Attempt)
@@ -72,6 +84,37 @@ def create_attempt(
     # Normalize to lowercase
     if initial_status.lower() in ("started", "in_progress"):
         initial_status = "in_progress"
+
+    # Schedule validation for student attempts
+    if current_user.role == "student" and schedule_id:
+        sched = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
+        if sched:
+            if now < sched.startTime:
+                raise HTTPException(status_code=400, detail="Scheduled test has not started yet.")
+            if now > sched.endTime:
+                raise HTTPException(status_code=400, detail="Scheduled test has already ended.")
+            
+            # Check student batch / individual assignment
+            assigned_batch = sched.assignedBatch
+            assigned_students = sched.assignedStudents
+            is_assigned = True
+            if assigned_batch and assigned_batch.lower() != "all":
+                if not current_user.batch or current_user.batch.lower() != assigned_batch.lower():
+                    is_assigned = False
+            if assigned_students and len(assigned_students) > 0 and "all" not in assigned_students:
+                if current_user.id not in assigned_students:
+                    is_assigned = False
+            if not is_assigned:
+                raise HTTPException(status_code=403, detail="Student is not assigned to this scheduled test session.")
+
+            # Check attempt limits
+            submitted_count = db.query(models.Attempt).filter(
+                models.Attempt.studentId == st_id,
+                models.Attempt.scheduleId == schedule_id,
+                models.Attempt.status.in_(["submitted", "auto_submitted"])
+            ).count()
+            if submitted_count >= (sched.attemptsAllowed or 1):
+                raise HTTPException(status_code=400, detail=f"Maximum allowed attempts ({sched.attemptsAllowed}) reached for this test.")
 
     existing_att = db.query(models.Attempt).filter(models.Attempt.id == a_id).first()
     if existing_att:
@@ -131,6 +174,8 @@ def update_attempt(
     att = db.query(models.Attempt).filter(models.Attempt.id == attempt_id).first()
     if not att:
         raise HTTPException(status_code=404, detail="Attempt not found")
+    if current_user.role == "student" and att.studentId != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
         
     for k, v in updates.items():
         if k == "answers" and isinstance(v, dict):
@@ -172,6 +217,8 @@ def sync_answer(
     att = db.query(models.Attempt).filter(models.Attempt.id == attempt_id).first()
     if not att:
         raise HTTPException(status_code=404, detail="Attempt not found")
+    if current_user.role == "student" and att.studentId != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     qid = payload.get("questionId")
     if qid:
@@ -210,6 +257,8 @@ def submit_attempt(
     att = db.query(models.Attempt).filter(models.Attempt.id == attempt_id).first()
     if not att:
         raise HTTPException(status_code=404, detail="Attempt not found")
+    if current_user.role == "student" and att.studentId != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
         
     is_auto = data.get("isAutoSubmit", False)
     att.status = "auto_submitted" if is_auto else "submitted"

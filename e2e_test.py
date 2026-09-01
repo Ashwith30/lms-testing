@@ -8,14 +8,24 @@ def print_step(step_num, desc):
 
 def run_tests():
     try:
-        # Step 1: Register Trainer
-        print_step(1, "Registering Trainer")
+        # Step 0: Login as Admin
+        print_step(0, "Logging in as Admin")
+        admin_login = {"identifier": "admin@lms.com", "password": "admin123"}
+        res = requests.post(f"{BASE_URL}/auth/login", json=admin_login)
+        if res.status_code != 200:
+            print(f"Failed to login admin: {res.text}")
+            sys.exit(1)
+        admin_token = res.json()["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # Step 1: Register Trainer (as Admin)
+        print_step(1, "Registering Trainer as Admin")
         trainer_data = {
             "name": "E2E Trainer",
             "email": "e2etrainer@test.com",
             "password": "password123"
         }
-        res = requests.post(f"{BASE_URL}/auth/register/trainer", json=trainer_data)
+        res = requests.post(f"{BASE_URL}/auth/register/trainer", json=trainer_data, headers=admin_headers)
         if res.status_code != 200 and res.status_code != 400:
             print(f"Failed to register trainer: {res.text}")
             sys.exit(1)

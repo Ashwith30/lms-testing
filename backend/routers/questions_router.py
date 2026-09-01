@@ -9,15 +9,23 @@ from auth import get_current_user, require_roles
 
 router = APIRouter(prefix="/api", tags=["questions"])
 
-@router.get("/question-banks", response_model=List[schemas.QuestionBank])
+@router.get("/question-banks", response_model=Union[schemas.PaginatedResponse[schemas.QuestionBank], List[schemas.QuestionBank]])
 def get_question_banks(
     uploadedBy: Optional[str] = None,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
 ):
     query = db.query(models.QuestionBank)
     if uploadedBy:
         query = query.filter(models.QuestionBank.ownerId == uploadedBy)
+    if page is not None:
+        p = max(1, page)
+        l = max(1, limit) if limit else 50
+        total = query.count()
+        items = query.offset((p - 1) * l).limit(l).all()
+        return {"data": items, "total": total, "page": p, "limit": l}
     return query.all()
 
 @router.post("/question-banks", response_model=schemas.QuestionBank)
@@ -60,10 +68,12 @@ def delete_question_bank(
     db.commit()
     return {"message": "Deleted"}
 
-@router.get("/questions", response_model=List[schemas.Question])
+@router.get("/questions", response_model=Union[schemas.PaginatedResponse[schemas.Question], List[schemas.Question]])
 def get_questions(
     bankId: Optional[str] = None,
     questionBankId: Optional[str] = None,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -71,6 +81,12 @@ def get_questions(
     target_bank = bankId or questionBankId
     if target_bank:
         query = query.filter(models.Question.questionBankId == target_bank)
+    if page is not None:
+        p = max(1, page)
+        l = max(1, limit) if limit else 50
+        total = query.count()
+        items = query.offset((p - 1) * l).limit(l).all()
+        return {"data": items, "total": total, "page": p, "limit": l}
     return query.all()
 
 def _create_single_question(db: Session, q_data: dict, default_bank_id: Optional[str] = None) -> models.Question:

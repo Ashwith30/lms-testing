@@ -205,5 +205,5 @@ export const useMalpracticeLockdown = ({
         window.removeEventListener('keydown', handleKeyDown, true);
       }
     };
-  }, [isActive]);
+  }, [isActive, liteMode]);
 };

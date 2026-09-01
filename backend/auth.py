@@ -1,3 +1,4 @@
+import os
 import datetime
 import bcrypt
 import jwt
@@ -13,7 +14,12 @@ except ImportError:
     from database import get_db
     import models
 
-SECRET_KEY = "lms-production-secure-jwt-secret-key-super-secure"
+DEFAULT_DEV_SECRET = "dev-only-insecure-key-change-in-production"
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", DEFAULT_DEV_SECRET)
+if SECRET_KEY in (DEFAULT_DEV_SECRET, "lms-production-secure-jwt-secret-key-super-secure"):
+    import sys
+    print("[WARNING] Using default/dev JWT_SECRET_KEY. Please set JWT_SECRET_KEY in production.", file=sys.stderr)
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 

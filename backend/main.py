@@ -1,4 +1,3 @@
-import datetime
 import os
 import sys
 from fastapi import FastAPI
@@ -25,9 +24,16 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="LMS API", version="2.0.0")
 
+# CORS Origin Configuration
+cors_origins_env = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://localhost:8000")
+if cors_origins_env.strip() == "*":
+    origins = ["*"]
+else:
+    origins = [orig.strip() for orig in cors_origins_env.split(",") if orig.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

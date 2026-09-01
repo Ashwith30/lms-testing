@@ -9,12 +9,7 @@ export const testService = {
   },
 
   createTest: async (test: Omit<Test, 'id' | 'createdAt'>): Promise<Test> => {
-    const newTest = {
-      ...test,
-      id: `t-${Date.now()}`,
-      createdAt: new Date().toISOString()
-    };
-    const res = await api.post('/tests', newTest);
+    const res = await api.post('/tests', test);
     return res.data;
   },
 
@@ -28,11 +23,7 @@ export const testService = {
   },
 
   scheduleTest: async (schedule: Omit<Schedule, 'id'>): Promise<Schedule> => {
-    const newSchedule = {
-      ...schedule,
-      id: `s-${Date.now()}`,
-    };
-    const res = await api.post('/schedules', newSchedule);
+    const res = await api.post('/schedules', schedule);
     return res.data;
   },
 
@@ -203,7 +194,6 @@ export const testService = {
     });
 
     const newAttempt = {
-      id: `att-${Date.now()}`,
       studentId,
       testId,
       scheduleId: scheduleId || undefined,

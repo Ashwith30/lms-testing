@@ -8,11 +8,23 @@ import json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from database import engine, SessionLocal, Base
+from database import engine, SessionLocal, Base, DATABASE_URL
 import models
 from auth import hash_password
 
 def reset_and_seed():
+    is_sqlite = DATABASE_URL.startswith("sqlite")
+    if not is_sqlite and "--force" not in sys.argv and os.getenv("ALLOW_DB_RESET", "false").lower() != "true":
+        print("\n=======================================================")
+        print(" [SAFETY GUARD] Target database is NOT SQLite!")
+        db_target = DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else "Remote Database"
+        print(f" Target host: {db_target}")
+        print(" Calling reset_and_seed() will DROP ALL TABLES on this database.")
+        print(" To confirm dropping and recreating tables on PostgreSQL, pass '--force':")
+        print("    python seed.py --force")
+        print("=======================================================\n")
+        sys.exit(1)
+
     print("Resetting database tables and removing mock data...")
     # Drop all existing tables to ensure a clean slate
     models.Base.metadata.drop_all(bind=engine)

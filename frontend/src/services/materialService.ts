@@ -15,12 +15,7 @@ export const materialService = {
   },
 
   createMaterial: async (data: Omit<Material, 'id' | 'createdAt' | 'isReleased' | 'releasedAt'>): Promise<Material> => {
-    const payload = {
-      ...data,
-      id: `mat-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    const res = await api.post('/materials', payload);
+    const res = await api.post('/materials', data);
     return res.data;
   },
 

@@ -24,7 +24,6 @@ export const questionService = {
   importQuestionBank: async (name: string, description: string, questions: Omit<Question, 'id' | 'questionBankId'>[], uploadedBy: string): Promise<QuestionBank> => {
     // 1. Create bank
     const newBank = {
-      id: `qb-${Date.now()}`,
       name,
       description,
       uploadedBy,
@@ -34,9 +33,8 @@ export const questionService = {
     const bankRes = await api.post('/question-banks', newBank);
 
     // 2. Add questions
-    const qPayload = questions.map((q, idx) => ({
+    const qPayload = questions.map((q) => ({
       ...q,
-      id: `q-${Date.now()}-${idx}`,
       questionBankId: bankRes.data.id,
     }));
     await api.post('/questions', qPayload);

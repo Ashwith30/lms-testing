@@ -1,7 +1,7 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 import models
 import schemas
 from database import get_db
@@ -9,10 +9,12 @@ from auth import get_current_user, require_roles
 
 router = APIRouter(prefix="/api", tags=["tests"])
 
-@router.get("/tests", response_model=List[schemas.Test])
+@router.get("/tests", response_model=Union[schemas.PaginatedResponse[schemas.Test], List[schemas.Test]])
 def get_tests(
     createdBy: Optional[str] = None,
     authorId: Optional[str] = None,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -20,6 +22,12 @@ def get_tests(
     target_author = createdBy or authorId
     if target_author:
         query = query.filter(models.Test.authorId == target_author)
+    if page is not None:
+        p = max(1, page)
+        l = max(1, limit) if limit else 50
+        total = query.count()
+        items = query.offset((p - 1) * l).limit(l).all()
+        return {"data": items, "total": total, "page": p, "limit": l}
     return query.all()
 
 @router.get("/tests/{test_id}", response_model=schemas.Test)
@@ -247,12 +255,21 @@ def get_test_schedules(
 ):
     return db.query(models.Schedule).filter(models.Schedule.testId == test_id).all()
 
-@router.get("/schedules", response_model=List[schemas.Schedule])
+@router.get("/schedules", response_model=Union[schemas.PaginatedResponse[schemas.Schedule], List[schemas.Schedule]])
 def get_schedules(
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    return db.query(models.Schedule).all()
+    query = db.query(models.Schedule)
+    if page is not None:
+        p = max(1, page)
+        l = max(1, limit) if limit else 50
+        total = query.count()
+        items = query.offset((p - 1) * l).limit(l).all()
+        return {"data": items, "total": total, "page": p, "limit": l}
+    return query.all()
 
 @router.get("/schedules/{schedule_id}", response_model=schemas.Schedule)
 def get_schedule(
@@ -359,6 +376,23 @@ def delete_schedule(
     if not db_sched:
         raise HTTPException(status_code=404, detail="Schedule not found")
         
+    # Check for active in-progress attempts
+    in_progress = db.query(models.Attempt).filter(
+        models.Attempt.scheduleId == schedule_id,
+        models.Attempt.status == "in_progress"
+    ).first()
+    if in_progress:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, 
+            detail="Cannot delete schedule while a student test attempt is currently in progress."
+        )
+
+    # Clean up associated attempts and their answers
+    attempts = db.query(models.Attempt).filter(models.Attempt.scheduleId == schedule_id).all()
+    for att in attempts:
+        db.query(models.Answer).filter(models.Answer.attemptId == att.id).delete()
+        db.delete(att)
+
     db.delete(db_sched)
     db.commit()
     return {"message": "Deleted"}

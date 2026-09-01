@@ -1,50 +1,33 @@
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Union
 import models
 import schemas
 from database import get_db
 from auth import get_current_user, require_roles
+from helpers import get_or_create_department, get_or_create_batch
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
-def get_or_create_department(db: Session, dept_name: str) -> Optional[str]:
-    if not dept_name:
-        return None
-    dept = db.query(models.Department).filter(models.Department.name == dept_name).first()
-    if dept:
-        return dept.id
-    new_id = models.generate_uuid("dept-")
-    new_dept = models.Department(id=new_id, name=dept_name)
-    db.add(new_dept)
-    db.commit()
-    db.refresh(new_dept)
-    return new_id
-
-def get_or_create_batch(db: Session, batch_name: str, dept_id: Optional[str]) -> Optional[str]:
-    if not batch_name or not dept_id:
-        return None
-    batch = db.query(models.Batch).filter(models.Batch.name == batch_name, models.Batch.departmentId == dept_id).first()
-    if batch:
-        return batch.id
-    new_id = models.generate_uuid("batch-")
-    new_batch = models.Batch(id=new_id, name=batch_name, departmentId=dept_id)
-    db.add(new_batch)
-    db.commit()
-    db.refresh(new_batch)
-    return new_id
-
-@router.get("", response_model=List[schemas.User])
-@router.get("/all", response_model=List[schemas.User])
+@router.get("", response_model=Union[schemas.PaginatedResponse[schemas.User], List[schemas.User]])
+@router.get("/all", response_model=Union[schemas.PaginatedResponse[schemas.User], List[schemas.User]])
 def get_all_users(
     role: Optional[str] = None,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
 ):
     query = db.query(models.User)
     if role:
         query = query.filter(models.User.role == role)
+    if page is not None:
+        p = max(1, page)
+        l = max(1, limit) if limit else 50
+        total = query.count()
+        items = query.offset((p - 1) * l).limit(l).all()
+        return {"data": items, "total": total, "page": p, "limit": l}
     return query.all()
 
 @router.get("/{user_id}", response_model=schemas.User)

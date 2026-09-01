@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 
@@ -43,97 +44,99 @@ import { AdminAnalytics } from './pages/admin/Analytics';
 
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Auth Routes */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/trainer/login" element={<TrainerLogin />} />
-            <Route path="/student/login" element={<StudentLogin />} />
-            <Route path="/student/register" element={<StudentRegister />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/institution/login" element={<InstitutionLogin />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Auth Routes */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/trainer/login" element={<TrainerLogin />} />
+              <Route path="/student/login" element={<StudentLogin />} />
+              <Route path="/student/register" element={<StudentRegister />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/institution/login" element={<InstitutionLogin />} />
 
-            {/* Admin Routes - Strictly Protected */}
-            <Route element={<ProtectedRoute allowedRole="admin" />}>
-              <Route element={<DashboardLayout />}>
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/question-bank" element={<QuestionBanks />} />
-                <Route path="/admin/question-bank/upload" element={<QuestionBankUpload />} />
-                <Route path="/admin/tests" element={<TrainerTests />} />
-                <Route path="/admin/tests/create" element={<CreateTest />} />
-                <Route path="/admin/tests/:id/edit" element={<CreateTest />} />
-                <Route path="/admin/tests/schedule" element={<ScheduleTest />} />
-                <Route path="/admin/tests/schedule/:scheduleId/edit" element={<ScheduleTest />} />
-                <Route path="/admin/analytics" element={<AdminAnalytics />} />
-                <Route path="/admin/students" element={<TrainerStudents />} />
-                <Route path="/admin/results" element={<TrainerResults />} />
-                <Route path="/admin/materials" element={<TrainerMaterials />} />
-              </Route>
-            </Route>
-
-            {/* Institution Routes - Strictly Protected */}
-            <Route element={<ProtectedRoute allowedRole="institution" />}>
-              <Route element={<DashboardLayout />}>
-                <Route path="/institution/dashboard" element={<InstitutionDashboard />} />
-                <Route path="/institution/question-bank" element={<QuestionBanks />} />
-                <Route path="/institution/question-bank/upload" element={<QuestionBankUpload />} />
-                <Route path="/institution/tests" element={<TrainerTests />} />
-                <Route path="/institution/tests/create" element={<CreateTest />} />
-                <Route path="/institution/tests/:id/edit" element={<CreateTest />} />
-                <Route path="/institution/tests/schedule" element={<ScheduleTest />} />
-                <Route path="/institution/tests/schedule/:scheduleId/edit" element={<ScheduleTest />} />
-                <Route path="/institution/upcoming-tests" element={<InstitutionUpcomingTests />} />
-                <Route path="/institution/students" element={<InstitutionStudents />} />
-                <Route path="/institution/analytics" element={<InstitutionAnalytics />} />
-                <Route path="/institution/results" element={<TrainerResults />} />
-                <Route path="/institution/trainers" element={<InstitutionTrainers />} />
-                <Route path="/institution/materials" element={<TrainerMaterials />} />
-              </Route>
-            </Route>
-
-            {/* Trainer Routes - Strictly Protected */}
-            <Route element={<ProtectedRoute allowedRole="trainer" />}>
-              <Route element={<DashboardLayout />}>
-                <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
-                <Route path="/trainer/question-bank" element={<QuestionBanks />} />
-                <Route path="/trainer/question-bank/upload" element={<QuestionBankUpload />} />
-                <Route path="/trainer/tests" element={<TrainerTests />} />
-                <Route path="/trainer/tests/create" element={<CreateTest />} />
-                <Route path="/trainer/tests/:id/edit" element={<CreateTest />} />
-                <Route path="/trainer/tests/schedule" element={<ScheduleTest />} />
-                <Route path="/trainer/tests/schedule/:scheduleId/edit" element={<ScheduleTest />} />
-                <Route path="/trainer/analytics" element={<TrainerAnalytics />} />
-                <Route path="/trainer/materials" element={<TrainerMaterials />} />
-                <Route path="/trainer/students" element={<TrainerStudents />} />
-                <Route path="/trainer/results" element={<TrainerResults />} />
-              </Route>
-            </Route>
-
-            {/* Student Routes - Strictly Protected */}
-            <Route element={<ProtectedRoute allowedRole="student" />}>
-              <Route element={<DashboardLayout />}>
-                <Route path="/student/dashboard" element={<StudentDashboard />} />
-                <Route path="/student/tests" element={<StudentDashboard />} />
-                <Route path="/student/tests/:id" element={<TestDetails />} />
-                <Route path="/student/analytics" element={<StudentAnalytics />} />
-                <Route path="/student/materials" element={<StudentMaterials />} />
-                <Route path="/student/results" element={<StudentResults />} />
-                <Route path="/student/profile" element={<StudentProfile />} />
+              {/* Admin Routes - Strictly Protected */}
+              <Route element={<ProtectedRoute allowedRole="admin" />}>
+                <Route element={<DashboardLayout />}>
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/admin/question-bank" element={<QuestionBanks />} />
+                  <Route path="/admin/question-bank/upload" element={<QuestionBankUpload />} />
+                  <Route path="/admin/tests" element={<TrainerTests />} />
+                  <Route path="/admin/tests/create" element={<CreateTest />} />
+                  <Route path="/admin/tests/:id/edit" element={<CreateTest />} />
+                  <Route path="/admin/tests/schedule" element={<ScheduleTest />} />
+                  <Route path="/admin/tests/schedule/:scheduleId/edit" element={<ScheduleTest />} />
+                  <Route path="/admin/analytics" element={<AdminAnalytics />} />
+                  <Route path="/admin/students" element={<TrainerStudents />} />
+                  <Route path="/admin/results" element={<TrainerResults />} />
+                  <Route path="/admin/materials" element={<TrainerMaterials />} />
+                </Route>
               </Route>
 
-              {/* Fullscreen Test Interface (Outside Layout) */}
-              <Route path="/student/tests/:id/attempt" element={<TestAttempt />} />
-              <Route path="/student/results/:id" element={<TestResult />} />
-            </Route>
+              {/* Institution Routes - Strictly Protected */}
+              <Route element={<ProtectedRoute allowedRole="institution" />}>
+                <Route element={<DashboardLayout />}>
+                  <Route path="/institution/dashboard" element={<InstitutionDashboard />} />
+                  <Route path="/institution/question-bank" element={<QuestionBanks />} />
+                  <Route path="/institution/question-bank/upload" element={<QuestionBankUpload />} />
+                  <Route path="/institution/tests" element={<TrainerTests />} />
+                  <Route path="/institution/tests/create" element={<CreateTest />} />
+                  <Route path="/institution/tests/:id/edit" element={<CreateTest />} />
+                  <Route path="/institution/tests/schedule" element={<ScheduleTest />} />
+                  <Route path="/institution/tests/schedule/:scheduleId/edit" element={<ScheduleTest />} />
+                  <Route path="/institution/upcoming-tests" element={<InstitutionUpcomingTests />} />
+                  <Route path="/institution/students" element={<InstitutionStudents />} />
+                  <Route path="/institution/analytics" element={<InstitutionAnalytics />} />
+                  <Route path="/institution/results" element={<TrainerResults />} />
+                  <Route path="/institution/trainers" element={<InstitutionTrainers />} />
+                  <Route path="/institution/materials" element={<TrainerMaterials />} />
+                </Route>
+              </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </ToastProvider>
-    </AuthProvider>
+              {/* Trainer Routes - Strictly Protected */}
+              <Route element={<ProtectedRoute allowedRole="trainer" />}>
+                <Route element={<DashboardLayout />}>
+                  <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
+                  <Route path="/trainer/question-bank" element={<QuestionBanks />} />
+                  <Route path="/trainer/question-bank/upload" element={<QuestionBankUpload />} />
+                  <Route path="/trainer/tests" element={<TrainerTests />} />
+                  <Route path="/trainer/tests/create" element={<CreateTest />} />
+                  <Route path="/trainer/tests/:id/edit" element={<CreateTest />} />
+                  <Route path="/trainer/tests/schedule" element={<ScheduleTest />} />
+                  <Route path="/trainer/tests/schedule/:scheduleId/edit" element={<ScheduleTest />} />
+                  <Route path="/trainer/analytics" element={<TrainerAnalytics />} />
+                  <Route path="/trainer/materials" element={<TrainerMaterials />} />
+                  <Route path="/trainer/students" element={<TrainerStudents />} />
+                  <Route path="/trainer/results" element={<TrainerResults />} />
+                </Route>
+              </Route>
+
+              {/* Student Routes - Strictly Protected */}
+              <Route element={<ProtectedRoute allowedRole="student" />}>
+                <Route element={<DashboardLayout />}>
+                  <Route path="/student/dashboard" element={<StudentDashboard />} />
+                  <Route path="/student/tests" element={<StudentDashboard />} />
+                  <Route path="/student/tests/:id" element={<TestDetails />} />
+                  <Route path="/student/analytics" element={<StudentAnalytics />} />
+                  <Route path="/student/materials" element={<StudentMaterials />} />
+                  <Route path="/student/results" element={<StudentResults />} />
+                  <Route path="/student/profile" element={<StudentProfile />} />
+                </Route>
+
+                {/* Fullscreen Test Interface (Outside Layout) */}
+                <Route path="/student/tests/:id/attempt" element={<TestAttempt />} />
+                <Route path="/student/results/:id" element={<TestResult />} />
+              </Route>
+
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

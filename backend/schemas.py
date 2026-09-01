@@ -1,6 +1,14 @@
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Literal, Any
+from typing import List, Optional, Dict, Literal, Any, Generic, TypeVar, Union
 import datetime
+
+T = TypeVar("T")
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    data: List[T]
+    total: int
+    page: int
+    limit: int
 
 # --- Authentication & Users ---
 class UserBase(BaseModel):

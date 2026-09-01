@@ -19,6 +19,9 @@ def get_student_dashboard_data(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    if current_user.role == "student" and current_user.id != student_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
     student = db.query(models.User).filter(models.User.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -108,6 +111,9 @@ def get_student_analytics(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    if current_user.role == "student" and current_user.id != student_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
     student = db.query(models.User).filter(models.User.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -221,6 +227,12 @@ def get_analytics_summary(
         d = q.difficulty or "Medium"
         diff_counts[d] = diff_counts.get(d, 0) + 1
 
+    submitted_attempts = db.query(models.Attempt).filter(
+        models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])
+    ).all()
+    scores = [a.percentage or 0.0 for a in submitted_attempts]
+    calculated_avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+
     return {
         "kpis": {
             "totalUsers": total_users,
@@ -229,7 +241,7 @@ def get_analytics_summary(
             "totalTests": total_tests,
             "totalQuestions": total_questions,
             "totalAttempts": total_attempts,
-            "avgScore": 75.0
+            "avgScore": calculated_avg_score
         },
         "departmentCounts": dept_counts,
         "batchCounts": batch_counts,

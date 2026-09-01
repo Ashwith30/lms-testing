@@ -17,14 +17,14 @@ def generate_uuid(prefix=""):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(String, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    role = Column(String, nullable=False) # 'admin', 'institution', 'trainer', 'student'
-    status = Column(String, default='active') # 'active', 'suspended', 'archived'
-    lastLoginAt = Column(String, nullable=True)
-    createdAt = Column(String, default=get_utc_now)
-    updatedAt = Column(String, default=get_utc_now, onupdate=get_utc_now)
+    id = Column(String(64), primary_key=True, index=True)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(String(50), nullable=False) # 'admin', 'institution', 'trainer', 'student'
+    status = Column(String(50), default='active') # 'active', 'suspended', 'archived'
+    lastLoginAt = Column(String(64), nullable=True)
+    createdAt = Column(String(64), default=get_utc_now)
+    updatedAt = Column(String(64), default=get_utc_now, onupdate=get_utc_now)
 
     student_profile = relationship("StudentProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     trainer_profile = relationship("TrainerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
@@ -59,11 +59,11 @@ class User(Base):
 
 class InstitutionProfile(Base):
     __tablename__ = "institution_profiles"
-    userId = Column(String, ForeignKey("users.id"), primary_key=True)
-    institutionName = Column(String, nullable=False)
-    contactPersonName = Column(String, nullable=True)
-    supportEmail = Column(String, nullable=True)
-    website = Column(String, nullable=True)
+    userId = Column(String(64), ForeignKey("users.id"), primary_key=True)
+    institutionName = Column(String(255), nullable=False)
+    contactPersonName = Column(String(255), nullable=True)
+    supportEmail = Column(String(255), nullable=True)
+    website = Column(String(255), nullable=True)
     address = Column(Text, nullable=True)
 
     user = relationship("User", back_populates="institution_profile")
@@ -72,10 +72,10 @@ class InstitutionProfile(Base):
 
 class Department(Base):
     __tablename__ = "departments"
-    id = Column(String, primary_key=True, index=True)
-    institutionId = Column(String, ForeignKey("institution_profiles.userId"), nullable=True)
-    name = Column(String, nullable=False)
-    code = Column(String, nullable=True)
+    id = Column(String(64), primary_key=True, index=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId"), nullable=True)
+    name = Column(String(255), nullable=False)
+    code = Column(String(64), nullable=True)
 
     institution = relationship("InstitutionProfile", back_populates="departments")
     batches = relationship("Batch", back_populates="department")
@@ -83,11 +83,11 @@ class Department(Base):
 
 class Batch(Base):
     __tablename__ = "batches"
-    id = Column(String, primary_key=True, index=True)
-    departmentId = Column(String, ForeignKey("departments.id"))
-    name = Column(String, nullable=False)
-    startDate = Column(String, nullable=True)
-    endDate = Column(String, nullable=True)
+    id = Column(String(64), primary_key=True, index=True)
+    departmentId = Column(String(64), ForeignKey("departments.id"))
+    name = Column(String(255), nullable=False)
+    startDate = Column(String(64), nullable=True)
+    endDate = Column(String(64), nullable=True)
 
     department = relationship("Department", back_populates="batches")
     students = relationship("StudentProfile", back_populates="primaryBatch")
@@ -95,15 +95,15 @@ class Batch(Base):
 
 class StudentProfile(Base):
     __tablename__ = "student_profiles"
-    userId = Column(String, ForeignKey("users.id"), primary_key=True)
-    firstName = Column(String, nullable=False)
-    lastName = Column(String, nullable=False)
-    studentNumber = Column(String, unique=True, index=True, nullable=True)
-    phoneNumber = Column(String, nullable=True)
-    dateOfBirth = Column(String, nullable=True)
-    departmentId = Column(String, ForeignKey("departments.id"), nullable=True)
-    primaryBatchId = Column(String, ForeignKey("batches.id"), nullable=True)
-    enrollmentDate = Column(String, nullable=True)
+    userId = Column(String(64), ForeignKey("users.id"), primary_key=True)
+    firstName = Column(String(100), nullable=False)
+    lastName = Column(String(100), nullable=False)
+    studentNumber = Column(String(100), unique=True, index=True, nullable=True)
+    phoneNumber = Column(String(50), nullable=True)
+    dateOfBirth = Column(String(64), nullable=True)
+    departmentId = Column(String(64), ForeignKey("departments.id"), nullable=True)
+    primaryBatchId = Column(String(64), ForeignKey("batches.id"), nullable=True)
+    enrollmentDate = Column(String(64), nullable=True)
 
     user = relationship("User", back_populates="student_profile")
     primaryBatch = relationship("Batch", back_populates="students")
@@ -112,21 +112,21 @@ class StudentProfile(Base):
 
 class TrainerProfile(Base):
     __tablename__ = "trainer_profiles"
-    userId = Column(String, ForeignKey("users.id"), primary_key=True)
-    firstName = Column(String, nullable=False)
-    lastName = Column(String, nullable=False)
-    employeeId = Column(String, unique=True, index=True, nullable=True)
-    specialization = Column(String, nullable=True)
-    phoneNumber = Column(String, nullable=True)
-    hireDate = Column(String, nullable=True)
+    userId = Column(String(64), ForeignKey("users.id"), primary_key=True)
+    firstName = Column(String(100), nullable=False)
+    lastName = Column(String(100), nullable=False)
+    employeeId = Column(String(100), unique=True, index=True, nullable=True)
+    specialization = Column(String(255), nullable=True)
+    phoneNumber = Column(String(50), nullable=True)
+    hireDate = Column(String(64), nullable=True)
 
     user = relationship("User", back_populates="trainer_profile")
 
 
 class Course(Base):
     __tablename__ = "courses"
-    id = Column(String, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    id = Column(String(64), primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     durationWeeks = Column(Integer, nullable=True)
 
@@ -135,9 +135,9 @@ class Course(Base):
 
 class Topic(Base):
     __tablename__ = "topics"
-    id = Column(String, primary_key=True, index=True)
-    courseId = Column(String, ForeignKey("courses.id"))
-    name = Column(String, nullable=False)
+    id = Column(String(64), primary_key=True, index=True)
+    courseId = Column(String(64), ForeignKey("courses.id"))
+    name = Column(String(255), nullable=False)
     orderIndex = Column(Integer, default=0)
 
     course = relationship("Course", back_populates="topics")
@@ -145,37 +145,37 @@ class Topic(Base):
 
 class TrainerAssignment(Base):
     __tablename__ = "trainer_assignments"
-    id = Column(String, primary_key=True, index=True)
-    trainerId = Column(String, ForeignKey("users.id"), nullable=False)
-    batchId = Column(String, ForeignKey("batches.id"), nullable=True)
-    institutionId = Column(String, ForeignKey("users.id"), nullable=True)
-    topicId = Column(String, ForeignKey("topics.id"), nullable=True)
-    courseId = Column(String, ForeignKey("courses.id"), nullable=True)
-    startDate = Column(String, nullable=True)
-    endDate = Column(String, nullable=True)
+    id = Column(String(64), primary_key=True, index=True)
+    trainerId = Column(String(64), ForeignKey("users.id"), nullable=False)
+    batchId = Column(String(64), ForeignKey("batches.id"), nullable=True)
+    institutionId = Column(String(64), ForeignKey("users.id"), nullable=True)
+    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True)
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True)
+    startDate = Column(String(64), nullable=True)
+    endDate = Column(String(64), nullable=True)
 
 
 class StudentEnrollment(Base):
     __tablename__ = "student_enrollments"
-    id = Column(String, primary_key=True, index=True)
-    studentId = Column(String, ForeignKey("users.id"), nullable=False)
-    courseId = Column(String, ForeignKey("courses.id"), nullable=False)
-    status = Column(String, default="Enrolled") # Enrolled, In Progress, Completed, Dropped
-    enrollmentDate = Column(String, default=get_utc_now)
-    completionDate = Column(String, nullable=True)
+    id = Column(String(64), primary_key=True, index=True)
+    studentId = Column(String(64), ForeignKey("users.id"), nullable=False)
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=False)
+    status = Column(String(50), default="Enrolled") # Enrolled, In Progress, Completed, Dropped
+    enrollmentDate = Column(String(64), default=get_utc_now)
+    completionDate = Column(String(64), nullable=True)
 
 
 class QuestionBank(Base):
     __tablename__ = "question_banks"
-    id = Column(String, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-    courseId = Column(String, ForeignKey("courses.id"), nullable=True)
-    topicId = Column(String, ForeignKey("topics.id"), nullable=True)
-    ownerId = Column(String, ForeignKey("users.id"), nullable=False)
+    id = Column(String(64), primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True)
+    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True)
+    ownerId = Column(String(64), ForeignKey("users.id"), nullable=False)
     isPublic = Column(Boolean, default=False)
-    createdAt = Column(String, default=get_utc_now)
-    updatedAt = Column(String, default=get_utc_now, onupdate=get_utc_now)
+    createdAt = Column(String(64), default=get_utc_now)
+    updatedAt = Column(String(64), default=get_utc_now, onupdate=get_utc_now)
     
     questions = relationship("Question", back_populates="bank", cascade="all, delete-orphan")
 
@@ -190,12 +190,12 @@ class QuestionBank(Base):
 
 class Question(Base):
     __tablename__ = "questions"
-    id = Column(String, primary_key=True, index=True)
-    questionBankId = Column(String, ForeignKey("question_banks.id"))
-    type = Column(String, default="MCQ") # MCQ, MULTI_SELECT, TRUE_FALSE, SUBJECTIVE
+    id = Column(String(64), primary_key=True, index=True)
+    questionBankId = Column(String(64), ForeignKey("question_banks.id"))
+    type = Column(String(50), default="MCQ") # MCQ, MULTI_SELECT, TRUE_FALSE, SUBJECTIVE
     text = Column(Text, nullable=False)
     mediaUrl = Column(Text, nullable=True)
-    difficulty = Column(String, nullable=False)
+    difficulty = Column(String(50), nullable=False)
     marks = Column(Float, default=1.0)
     explanation = Column(Text, nullable=True)
     tags = Column(Text, nullable=True) # JSON array of tags
@@ -242,8 +242,8 @@ class Question(Base):
 
 class QuestionOption(Base):
     __tablename__ = "question_options"
-    id = Column(String, primary_key=True, index=True)
-    questionId = Column(String, ForeignKey("questions.id"))
+    id = Column(String(64), primary_key=True, index=True)
+    questionId = Column(String(64), ForeignKey("questions.id"))
     optionText = Column(Text, nullable=False)
     isCorrect = Column(Boolean, default=False)
     orderIndex = Column(Integer, default=0)
@@ -253,8 +253,8 @@ class QuestionOption(Base):
 
 class ProctoringProfile(Base):
     __tablename__ = "proctoring_profiles"
-    id = Column(String, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    id = Column(String(64), primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
     fullscreenRequired = Column(Boolean, default=True)
     cameraRequired = Column(Boolean, default=False)
     microphoneRequired = Column(Boolean, default=False)
@@ -264,18 +264,18 @@ class ProctoringProfile(Base):
 
 class Test(Base):
     __tablename__ = "tests"
-    id = Column(String, primary_key=True, index=True)
-    title = Column(String, nullable=False)
-    courseId = Column(String, ForeignKey("courses.id"), nullable=True)
-    topicId = Column(String, ForeignKey("topics.id"), nullable=True)
+    id = Column(String(64), primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True)
+    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True)
     description = Column(Text, nullable=True)
     passingPercentage = Column(Float, nullable=True)
     totalMarks = Column(Float, default=0.0)
-    authorId = Column(String, ForeignKey("users.id"))
-    status = Column(String, nullable=False, default="Draft") # 'Draft', 'Published', 'Archived'
-    proctoringProfileId = Column(String, ForeignKey("proctoring_profiles.id"), nullable=True)
+    authorId = Column(String(64), ForeignKey("users.id"))
+    status = Column(String(50), nullable=False, default="Draft") # 'Draft', 'Published', 'Archived'
+    proctoringProfileId = Column(String(64), ForeignKey("proctoring_profiles.id"), nullable=True)
     settings_json = Column(Text, nullable=True)
-    createdAt = Column(String, default=get_utc_now)
+    createdAt = Column(String(64), default=get_utc_now)
     
     test_questions = relationship("TestQuestion", backref="test", cascade="all, delete-orphan", order_by="TestQuestion.orderIndex")
     schedules = relationship("Schedule", back_populates="test", cascade="all, delete-orphan")
@@ -315,17 +315,17 @@ class Test(Base):
 
 class TestQuestion(Base):
     __tablename__ = "test_questions"
-    testId = Column(String, ForeignKey("tests.id"), primary_key=True)
-    questionId = Column(String, ForeignKey("questions.id"), primary_key=True)
+    testId = Column(String(64), ForeignKey("tests.id"), primary_key=True)
+    questionId = Column(String(64), ForeignKey("questions.id"), primary_key=True)
     orderIndex = Column(Integer, default=0)
 
 
 class Schedule(Base):
     __tablename__ = "schedules"
-    id = Column(String, primary_key=True, index=True)
-    testId = Column(String, ForeignKey("tests.id"))
-    startTime = Column(String, nullable=False)
-    endTime = Column(String, nullable=False)
+    id = Column(String(64), primary_key=True, index=True)
+    testId = Column(String(64), ForeignKey("tests.id"))
+    startTime = Column(String(64), nullable=False)
+    endTime = Column(String(64), nullable=False)
     durationMinutes = Column(Integer, nullable=True)
     attemptsAllowed = Column(Integer, default=1)
     
@@ -359,28 +359,28 @@ class Schedule(Base):
 
 class ScheduleAssignment(Base):
     __tablename__ = "schedule_assignments"
-    id = Column(String, primary_key=True, index=True)
-    scheduleId = Column(String, ForeignKey("schedules.id"))
-    assigneeType = Column(String, nullable=False) # 'Student', 'Batch', 'Institution'
-    assigneeId = Column(String, nullable=False)
+    id = Column(String(64), primary_key=True, index=True)
+    scheduleId = Column(String(64), ForeignKey("schedules.id"))
+    assigneeType = Column(String(50), nullable=False) # 'Student', 'Batch', 'Institution'
+    assigneeId = Column(String(64), nullable=False)
 
     schedule = relationship("Schedule", back_populates="assignments")
 
 
 class Attempt(Base):
     __tablename__ = "attempts"
-    id = Column(String, primary_key=True, index=True)
-    studentId = Column(String, ForeignKey("users.id"))
-    scheduleId = Column(String, ForeignKey("schedules.id"), nullable=True)
-    status = Column(String, nullable=False, default="in_progress") # 'in_progress', 'submitted', 'auto_submitted', 'terminated_violation'
-    startedAt = Column(String, nullable=False, default=get_utc_now)
-    submittedAt = Column(String, nullable=True)
+    id = Column(String(64), primary_key=True, index=True)
+    studentId = Column(String(64), ForeignKey("users.id"))
+    scheduleId = Column(String(64), ForeignKey("schedules.id"), nullable=True)
+    status = Column(String(50), nullable=False, default="in_progress") # 'in_progress', 'submitted', 'auto_submitted', 'terminated_violation'
+    startedAt = Column(String(64), nullable=False, default=get_utc_now)
+    submittedAt = Column(String(64), nullable=True)
     score = Column(Float, nullable=True)
     percentage = Column(Float, nullable=True)
     violations = Column(Integer, default=0)
     violationLogs_json = Column(Text, nullable=True)
     proctoringSummary_json = Column(Text, nullable=True)
-    ipAddress = Column(String, nullable=True)
+    ipAddress = Column(String(100), nullable=True)
     deviceInfo = Column(Text, nullable=True)
     
     schedule = relationship("Schedule", back_populates="attempts")
@@ -463,19 +463,19 @@ class Attempt(Base):
 
 class ProctoringLog(Base):
     __tablename__ = "proctoring_logs"
-    id = Column(String, primary_key=True, index=True)
-    attemptId = Column(String, ForeignKey("attempts.id"))
-    timestamp = Column(String, nullable=False)
-    violationType = Column(String, nullable=False)
+    id = Column(String(64), primary_key=True, index=True)
+    attemptId = Column(String(64), ForeignKey("attempts.id"))
+    timestamp = Column(String(64), nullable=False)
+    violationType = Column(String(100), nullable=False)
     screenshotUrl = Column(Text, nullable=True)
-    severity = Column(String, nullable=True)
+    severity = Column(String(50), nullable=True)
 
 
 class Answer(Base):
     __tablename__ = "answers"
-    id = Column(String, primary_key=True, index=True)
-    attemptId = Column(String, ForeignKey("attempts.id"))
-    questionId = Column(String, ForeignKey("questions.id"))
+    id = Column(String(64), primary_key=True, index=True)
+    attemptId = Column(String(64), ForeignKey("attempts.id"))
+    questionId = Column(String(64), ForeignKey("questions.id"))
     selectedOptionIds = Column(Text, nullable=True) # JSON array or string
     subjectiveText = Column(Text, nullable=True)
     timeTakenSeconds = Column(Integer, nullable=True)
@@ -487,18 +487,18 @@ class Answer(Base):
 
 class Material(Base):
     __tablename__ = "materials"
-    id = Column(String, primary_key=True, index=True)
-    title = Column(String, nullable=False)
+    id = Column(String(64), primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    type = Column(String, nullable=False) # 'PDF', 'Video', 'Link', 'Note'
-    courseId = Column(String, ForeignKey("courses.id"), nullable=True)
-    topicId = Column(String, ForeignKey("topics.id"), nullable=True)
+    type = Column(String(50), nullable=False) # 'PDF', 'Video', 'Link', 'Note'
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True)
+    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True)
     contentUrl = Column(Text, nullable=True)
-    authorId = Column(String, ForeignKey("users.id"), nullable=False)
+    authorId = Column(String(64), ForeignKey("users.id"), nullable=False)
     isReleased = Column(Boolean, default=True)
-    releasedAt = Column(String, nullable=True)
-    createdAt = Column(String, default=get_utc_now)
-    updatedAt = Column(String, default=get_utc_now, onupdate=get_utc_now)
+    releasedAt = Column(String(64), nullable=True)
+    createdAt = Column(String(64), default=get_utc_now)
+    updatedAt = Column(String(64), default=get_utc_now, onupdate=get_utc_now)
 
     author = relationship("User", foreign_keys=[authorId])
     assignments = relationship("MaterialAssignment", back_populates="material", cascade="all, delete-orphan")
@@ -518,10 +518,10 @@ class Material(Base):
 
 class MaterialAssignment(Base):
     __tablename__ = "material_assignments"
-    id = Column(String, primary_key=True, index=True)
-    materialId = Column(String, ForeignKey("materials.id"))
-    assigneeType = Column(String, nullable=False) # 'Student', 'Batch', 'Institution', 'Course'
-    assigneeId = Column(String, nullable=False)
-    releaseDate = Column(String, nullable=True)
+    id = Column(String(64), primary_key=True, index=True)
+    materialId = Column(String(64), ForeignKey("materials.id"))
+    assigneeType = Column(String(50), nullable=False) # 'Student', 'Batch', 'Institution', 'Course'
+    assigneeId = Column(String(64), nullable=False)
+    releaseDate = Column(String(64), nullable=True)
 
     material = relationship("Material", back_populates="assignments")

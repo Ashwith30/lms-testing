@@ -1,38 +1,42 @@
-import datetime
+import time
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from auth import hash_password, verify_password, create_access_token
+from auth import hash_password, verify_password, create_access_token, require_roles
+from helpers import get_or_create_department, get_or_create_batch
+from validators import validate_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-def get_or_create_department(db: Session, dept_name: str) -> str:
-    if not dept_name:
-        return None
-    dept = db.query(models.Department).filter(models.Department.name == dept_name).first()
-    if dept:
-        return dept.id
-    new_id = models.generate_uuid("dept-")
-    new_dept = models.Department(id=new_id, name=dept_name)
-    db.add(new_dept)
-    db.commit()
-    db.refresh(new_dept)
-    return new_id
+# Rate limiter: tracks failed login attempts: {identifier: [timestamp, ...]}
+FAILED_ATTEMPTS = {}
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_SECONDS = 300  # 5 minutes
 
-def get_or_create_batch(db: Session, batch_name: str, dept_id: str) -> str:
-    if not batch_name or not dept_id:
-        return None
-    batch = db.query(models.Batch).filter(models.Batch.name == batch_name, models.Batch.departmentId == dept_id).first()
-    if batch:
-        return batch.id
-    new_id = models.generate_uuid("batch-")
-    new_batch = models.Batch(id=new_id, name=batch_name, departmentId=dept_id)
-    db.add(new_batch)
-    db.commit()
-    db.refresh(new_batch)
-    return new_id
+def check_login_rate_limit(identifier: str):
+    now = time.time()
+    attempts = FAILED_ATTEMPTS.get(identifier, [])
+    # Filter attempts within the lockout window
+    recent_attempts = [t for t in attempts if now - t < LOCKOUT_SECONDS]
+    FAILED_ATTEMPTS[identifier] = recent_attempts
+    if len(recent_attempts) >= MAX_FAILED_ATTEMPTS:
+        remaining = int(LOCKOUT_SECONDS - (now - recent_attempts[0]))
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many failed login attempts. Please try again in {max(1, remaining)} seconds."
+        )
+
+def record_failed_login(identifier: str):
+    now = time.time()
+    if identifier not in FAILED_ATTEMPTS:
+        FAILED_ATTEMPTS[identifier] = []
+    FAILED_ATTEMPTS[identifier].append(now)
+
+def clear_failed_login(identifier: str):
+    if identifier in FAILED_ATTEMPTS:
+        del FAILED_ATTEMPTS[identifier]
 
 @router.post("/login", response_model=schemas.LoginResponse)
 def login(creds: dict, db: Session = Depends(get_db)):
@@ -41,6 +45,8 @@ def login(creds: dict, db: Session = Depends(get_db)):
     
     if not identifier or not password:
         raise HTTPException(status_code=400, detail="Identifier and password required")
+
+    check_login_rate_limit(identifier)
 
     # Find by email or studentNumber (in StudentProfile)
     user = db.query(models.User).filter(models.User.email == identifier).first()
@@ -51,6 +57,7 @@ def login(creds: dict, db: Session = Depends(get_db)):
             user = student_profile.user
 
     if user and verify_password(password, user.password_hash):
+        clear_failed_login(identifier)
         user.lastLoginAt = models.get_utc_now()
         db.commit()
         token = create_access_token({"sub": user.id, "role": user.role})
@@ -60,6 +67,7 @@ def login(creds: dict, db: Session = Depends(get_db)):
             "user": user
         }
             
+    record_failed_login(identifier)
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
 @router.post("/register/student", response_model=schemas.User)
@@ -80,6 +88,11 @@ def register_student(student: dict, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="A user with this Student ID already exists.")
         
     raw_password = student.get("password") or "student123"
+    if student.get("password"):
+        is_valid, err_msg = validate_password(raw_password)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=err_msg)
+
     hashed_pwd = hash_password(raw_password)
 
     user_id = student.get("id") or models.generate_uuid("u-student-")
@@ -116,7 +129,11 @@ def register_student(student: dict, db: Session = Depends(get_db)):
     return db_user
 
 @router.post("/register/trainer", response_model=schemas.User)
-def register_trainer(trainer: dict, db: Session = Depends(get_db)):
+def register_trainer(
+    trainer: dict, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("admin"))
+):
     email = trainer.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Email is required.")
@@ -126,6 +143,11 @@ def register_trainer(trainer: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="A user with this email address already exists.")
         
     raw_password = trainer.get("password") or "trainer123"
+    if trainer.get("password"):
+        is_valid, err_msg = validate_password(raw_password)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=err_msg)
+
     hashed_pwd = hash_password(raw_password)
 
     user_id = trainer.get("id") or models.generate_uuid("u-trainer-")

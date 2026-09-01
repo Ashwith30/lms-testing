@@ -1,7 +1,7 @@
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Union
 import models
 import schemas
 from database import get_db
@@ -9,10 +9,12 @@ from auth import get_current_user, require_roles
 
 router = APIRouter(prefix="/api/materials", tags=["materials"])
 
-@router.get("", response_model=List[schemas.Material])
+@router.get("", response_model=Union[schemas.PaginatedResponse[schemas.Material], List[schemas.Material]])
 def get_materials(
     uploadedBy: Optional[str] = None,
     studentId: Optional[str] = None,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -22,6 +24,12 @@ def get_materials(
     elif studentId:
         # If student requests, show released materials
         query = query.filter(models.Material.isReleased == True)
+    if page is not None:
+        p = max(1, page)
+        l = max(1, limit) if limit else 50
+        total = query.count()
+        items = query.offset((p - 1) * l).limit(l).all()
+        return {"data": items, "total": total, "page": p, "limit": l}
     return query.all()
 
 @router.post("", response_model=schemas.Material)
