@@ -18,6 +18,7 @@ import { TrainerAnalytics } from './pages/trainer/Analytics';
 import { TrainerStudents } from './pages/trainer/Students';
 
 import { StudentDashboard } from './pages/student/Dashboard';
+import { StudentTests } from './pages/student/Tests';
 import { TestDetails } from './pages/student/TestDetails';
 import { TestAttempt } from './pages/student/TestAttempt';
 import { TestResult } from './pages/student/TestResult';
@@ -25,6 +26,8 @@ import { StudentResults } from './pages/student/Results';
 import { StudentProfile } from './pages/student/Profile';
 import { StudentMaterials } from './pages/student/Materials';
 import { StudentAnalytics } from './pages/student/Analytics';
+import { LiveQuizzes } from './pages/student/LiveQuizzes';
+import { Games } from './pages/student/Games';
 
 import { InstitutionDashboard } from './pages/institution/Dashboard';
 import { InstitutionStudents } from './pages/institution/Students';
@@ -117,7 +120,9 @@ function App() {
               <Route element={<ProtectedRoute allowedRole="student" />}>
                 <Route element={<DashboardLayout />}>
                   <Route path="/student/dashboard" element={<StudentDashboard />} />
-                  <Route path="/student/tests" element={<StudentDashboard />} />
+                  <Route path="/student/tests" element={<StudentTests />} />
+                  <Route path="/student/live-quizzes" element={<LiveQuizzes />} />
+                  <Route path="/student/games" element={<Games />} />
                   <Route path="/student/tests/:id" element={<TestDetails />} />
                   <Route path="/student/analytics" element={<StudentAnalytics />} />
                   <Route path="/student/materials" element={<StudentMaterials />} />

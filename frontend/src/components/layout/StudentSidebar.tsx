@@ -4,7 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, 
   FileText, 
+  Radio,
+  Gamepad2,
   BarChart, 
+  LineChart,
   User, 
   BookOpen,
   LogOut 
@@ -22,16 +25,15 @@ export const StudentSidebar = () => {
     navigate('/');
   };
 
-  const mainNav = [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/student/dashboard' },
-    { label: 'My Tests',  icon: FileText,        path: '/student/tests' },
-    { label: 'Results',   icon: BarChart,         path: '/student/results' },
-  ];
-
-  const secondaryNav = [
-    { label: 'Analytics', icon: BarChart,        path: '/student/analytics' },
-    { label: 'Materials', icon: BookOpen,         path: '/student/materials' },
-    { label: 'Profile',   icon: User,             path: '/student/profile' },
+  const navItems = [
+    { label: 'Dashboard',    icon: LayoutDashboard, path: '/student/dashboard' },
+    { label: 'My Tests',     icon: FileText,        path: '/student/tests' },
+    { label: 'Analytics',    icon: LineChart,       path: '/student/analytics' },
+    { label: 'Live Quizzes', icon: Radio,           path: '/student/live-quizzes' },
+    { label: 'Games',        icon: Gamepad2,        path: '/student/games' },
+    { label: 'Results',      icon: BarChart,        path: '/student/results' },
+    { label: 'Materials',    icon: BookOpen,        path: '/student/materials' },
+    { label: 'Profile',      icon: User,            path: '/student/profile' },
   ];
 
   const linkClasses = ({ isActive }: { isActive: boolean }) => cn(
@@ -49,19 +51,8 @@ export const StudentSidebar = () => {
       
       <div className="flex-1 overflow-y-auto">
         <nav className="px-3">
-          <div className="mb-1">
-            {mainNav.map((item) => (
-              <NavLink key={item.path} to={item.path} className={linkClasses}>
-                <item.icon className="mr-2.5 h-[18px] w-[18px] flex-shrink-0 opacity-60 group-hover:opacity-80" />
-                {item.label}
-              </NavLink>
-            ))}
-          </div>
-
-          <div className="h-px bg-[#eef0f3] mx-1 my-3"></div>
-
-          <div>
-            {secondaryNav.map((item) => (
+          <div className="space-y-0.5">
+            {navItems.map((item) => (
               <NavLink key={item.path} to={item.path} className={linkClasses}>
                 <item.icon className="mr-2.5 h-[18px] w-[18px] flex-shrink-0 opacity-60 group-hover:opacity-80" />
                 {item.label}
