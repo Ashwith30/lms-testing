@@ -36,7 +36,7 @@ export const Logo: React.FC<LogoProps> = ({
 
   return (
     <div className={`flex items-center ${currentSize.container} ${className}`}>
-      <img src={pLogo} alt="Phonetic Logo" className={`object-contain ${currentSize.image}`} />
+      <img src={pLogo} alt="Phonetic Logo" className={`object-contain -translate-y-0.5 ${currentSize.image}`} />
       <span className={`font-semibold ${textTheme} ${currentSize.text}`}>
         PHONETIC
       </span>

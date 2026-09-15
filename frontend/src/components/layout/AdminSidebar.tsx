@@ -10,7 +10,9 @@ import {
   Users, 
   BarChart3, 
   BarChart,
-  LogOut 
+  LogOut,
+  Puzzle,
+  Gamepad2
 } from 'lucide-react';
 import { cn } from '../ui/Button';
 import { Logo } from '../ui/Logo';
@@ -25,17 +27,20 @@ export const AdminSidebar = () => {
   };
 
   const mainNav = [
-    { label: 'Management',       icon: LayoutDashboard, path: '/admin/dashboard' },
+    { label: 'Dashboard',        icon: LayoutDashboard, path: '/admin/dashboard' },
+    { label: 'Management',       icon: LayoutDashboard, path: '/admin/management' },
     { label: 'Tests',             icon: FileText,        path: '/admin/tests' },
     { label: 'Schedule Test',     icon: Calendar,        path: '/admin/tests/schedule' },
     { label: 'Students',          icon: Users,           path: '/admin/students' },
     { label: 'Results',           icon: BarChart,        path: '/admin/results' },
+    { label: 'Analytics',         icon: BarChart3,       path: '/admin/analytics' },
   ];
 
   const secondaryNav = [
     { label: 'Question Banks',    icon: Database,        path: '/admin/question-bank' },
     { label: 'Upload Questions',  icon: Upload,          path: '/admin/question-bank/upload' },
-    { label: 'Analytics',         icon: BarChart3,       path: '/admin/analytics' },
+    { label: 'Quizzes',           icon: Puzzle,          path: '/admin/quizzes' },
+    { label: 'Games',             icon: Gamepad2,        path: '/admin/games' },
   ];
 
   const linkClasses = ({ isActive }: { isActive: boolean }) => cn(

@@ -192,18 +192,18 @@ export const Navbar = () => {
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b border-[#e2e5ea] h-14 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
+    <header className="bg-white/85 backdrop-blur-md border-b border-slate-200/80 h-14 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
       <div className="flex flex-1 items-center gap-3 sm:gap-4">
         {/* Logo visible on mobile (sidebar hidden) */}
         <div className="lg:hidden">
           <Logo size="sm" />
         </div>
         <div className="relative max-w-sm w-full hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#9099a8]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <input 
             type="text" 
-            placeholder="Search..." 
-            className="w-full pl-9 pr-4 py-1.5 bg-[#f0f2f5] border-0 rounded-md text-sm text-[#1a1d23] placeholder:text-[#9099a8] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus:shadow-sm transition-all duration-150"
+            placeholder="Search tests, topics, analytics..." 
+            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus:border-blue-500 transition-all duration-150"
           />
         </div>
       </div>
@@ -212,26 +212,26 @@ export const Navbar = () => {
         {/* Bell Button */}
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className={`relative p-1.5 transition-colors rounded-md ${
-            isOpen ? 'text-blue-600 bg-blue-50' : 'text-[#9099a8] hover:text-[#5a6170] hover:bg-[#f0f2f5]'
+          className={`relative p-2 transition-colors rounded-lg cursor-pointer ${
+            isOpen ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/80'
           }`}
           title="Notifications"
         >
           <Bell className="h-[18px] w-[18px]" />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 h-2 w-2 bg-blue-600 rounded-full ring-2 ring-white"></span>
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-blue-600 rounded-full ring-2 ring-white"></span>
           )}
         </button>
 
         {/* Notifications Dropdown Panel */}
         {isOpen && (
-          <div className="absolute right-0 mt-2 top-full w-[calc(100vw-2rem)] sm:w-[360px] max-w-[360px] bg-white rounded-xl border border-[#e2e5ea] shadow-dropdown py-1 origin-top-right animate-in z-50">
+          <div className="absolute right-0 mt-2 top-full w-[calc(100vw-2rem)] sm:w-[360px] max-w-[360px] bg-white rounded-xl border border-slate-200 shadow-xl py-1 origin-top-right animate-in z-50 text-slate-800">
             {/* Header */}
-            <div className="px-4 py-2.5 flex items-center justify-between border-b border-[#eef0f3]">
+            <div className="px-4 py-2.5 flex items-center justify-between border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-[#1a1d23] text-[13px]">Notifications</span>
+                <span className="font-semibold text-slate-900 text-[13px]">Notifications</span>
                 {unreadCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-100">
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">
                     {unreadCount} new
                   </span>
                 )}
@@ -247,7 +247,7 @@ export const Navbar = () => {
             </div>
 
             {/* List */}
-            <div className="max-h-80 overflow-y-auto divide-y divide-[#f5f6f8]">
+            <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
               {notifications.length > 0 ? (
                 notifications.map((notification) => (
                   <div 
@@ -260,37 +260,36 @@ export const Navbar = () => {
                         handleNotificationClick(notification);
                       }
                     }}
-                    className={`group flex items-start gap-2.5 px-4 py-3 hover:bg-[#f7f8fa] transition-colors cursor-pointer relative ${
+                    className={`group flex items-start gap-2.5 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer relative ${
                       !notification.isRead ? 'bg-blue-50/30' : ''
                     }`}
                   >
                     {renderIcon(notification.type)}
                     <div className="flex-1 min-w-0 pr-2">
                       <div className="flex items-center justify-between gap-1">
-                        <p className={`text-[13px] leading-snug group-hover:text-blue-600 transition-colors ${!notification.isRead ? 'font-semibold text-[#1a1d23]' : 'text-[#5a6170]'}`}>
+                        <p className={`text-[13px] leading-snug group-hover:text-blue-600 transition-colors ${!notification.isRead ? 'font-semibold text-slate-900' : 'text-slate-700'}`}>
                           {notification.title}
                         </p>
                       </div>
-                      <p className="text-xs text-[#9099a8] mt-0.5 leading-normal line-clamp-2">
+                      <p className="text-xs text-slate-500 mt-0.5 leading-normal line-clamp-2">
                         {notification.description}
                       </p>
-                      <span className="text-[10px] text-[#9099a8] mt-1 block">
+                      <span className="text-[10px] text-slate-400 mt-1 block">
                         {notification.time}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1 self-center">
-                      {/* Unread indicator dot */}
                       {!notification.isRead && (
                         <span className="h-2 w-2 bg-blue-600 rounded-full" title="Unread"></span>
                       )}
-                      <ArrowRight className="h-3.5 w-3.5 text-[#9099a8] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                      <ArrowRight className="h-3.5 w-3.5 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="py-8 text-center text-[#9099a8] flex flex-col items-center justify-center gap-1.5">
-                  <Bell className="h-6 w-6 text-[#e2e5ea]" />
+                <div className="py-8 text-center text-slate-400 flex flex-col items-center justify-center gap-1.5">
+                  <Bell className="h-6 w-6 text-slate-300" />
                   <span className="text-[13px]">All caught up!</span>
                 </div>
               )}
@@ -298,15 +297,15 @@ export const Navbar = () => {
           </div>
         )}
         
-        <div className="h-6 w-px bg-[#eef0f3] mx-0.5"></div>
+        <div className="h-6 w-px bg-slate-200 mx-0.5"></div>
         
         {/* User Profile Info */}
         <div className="flex items-center gap-2.5">
           <div className="hidden sm:flex flex-col items-end">
-            <span className="text-[13px] font-medium text-[#1a1d23] leading-tight">{user?.name}</span>
-            <span className="text-[11px] text-[#9099a8] capitalize leading-tight">{user?.role}</span>
+            <span className="text-[13px] font-medium text-slate-800 leading-tight">{user?.name}</span>
+            <span className="text-[11px] text-slate-400 capitalize leading-tight">{user?.role}</span>
           </div>
-          <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-[13px] font-semibold shadow-sm">
+          <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white text-[13px] font-semibold shadow-xs">
             {user?.name?.charAt(0).toUpperCase()}
           </div>
         </div>

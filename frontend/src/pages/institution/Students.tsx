@@ -3,7 +3,7 @@ import { api } from '../../services/api';
 import { Card, CardContent, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Search, User, Award, ShieldAlert, ShieldCheck, BookOpen, AlertTriangle, Eye, X, UserPlus } from 'lucide-react';
+import { Search, User, Award, ShieldAlert, ShieldCheck, BookOpen, AlertTriangle, Eye, X, UserPlus, Activity } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { authService } from '../../services/authService';
 import { ProctoringAuditModal } from '../../components/common/ProctoringAuditModal';
@@ -138,7 +138,7 @@ export const InstitutionStudents = () => {
   const topScore = submittedAttempts.length > 0
     ? Math.max(...submittedAttempts.map((a) => a.percentage || 0))
     : 0;
-  const totalViolationsCount = attempts.reduce((sum, a) => sum + (a.violations || 0), 0);
+  const activeStudentsCount = new Set(attempts.map((a) => a.studentId)).size;
 
   const filteredStudents = students.filter((s) => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -247,13 +247,13 @@ export const InstitutionStudents = () => {
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 sm:p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">Violations</p>
-                <div className="p-2 bg-amber-50 text-amber-600 rounded-lg shrink-0">
-                  <ShieldAlert className="h-4 w-4 sm:h-5 sm:w-5" />
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">Active</p>
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
+                  <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
               </div>
               <p className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
-                {totalViolationsCount} <span className="text-xs font-normal text-slate-500">Flags</span>
+                {activeStudentsCount} <span className="text-xs font-normal text-slate-500">Students</span>
               </p>
             </div>
           </div>

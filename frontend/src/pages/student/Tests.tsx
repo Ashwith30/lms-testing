@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Search, Filter, Calendar, Clock, Award, Play, CheckCircle2,
-  FileText, Database, Code, Cpu, Binary, Network, Check, ArrowRight
+  Search, Calendar, Clock, Play, CheckCircle2,
+  FileText, ArrowRight
 } from 'lucide-react';
-import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { testService } from '../../services/testService';
 import { useAuth } from '../../context/AuthContext';
 import { Test, Schedule, Attempt } from '../../types';
@@ -28,83 +26,96 @@ interface TestCardItem {
 
 const defaultTests: TestCardItem[] = [
   {
-    id: 'test-cn-2',
-    title: 'Computer Networks – Module 2',
-    subject: 'Computer Networks',
+    id: 'test-quant-1',
+    title: 'Quantitative Aptitude – Arithmetic & Speed Math',
+    subject: 'Quantitative Aptitude',
     difficulty: 'MEDIUM',
-    questionsCount: 20,
-    durationMinutes: 30,
+    questionsCount: 25,
+    durationMinutes: 35,
     totalMarks: 50,
-    deadlineText: 'Available until Sep 10, 2024',
+    deadlineText: 'Available until Sep 14, 2024',
     status: 'in_progress',
-    progress: 70,
+    progress: 60,
     iconBg: 'bg-blue-50',
     iconColor: 'text-blue-600',
   },
   {
-    id: 'test-dbms-norm',
-    title: 'DBMS – Normalization',
-    subject: 'Database Management',
+    id: 'test-lr-1',
+    title: 'Logical Reasoning – Puzzles & Data Interpretation',
+    subject: 'Logical Reasoning',
     difficulty: 'EASY',
-    questionsCount: 15,
-    durationMinutes: 20,
-    totalMarks: 30,
-    deadlineText: 'Available until Sep 8, 2024',
+    questionsCount: 20,
+    durationMinutes: 30,
+    totalMarks: 40,
+    deadlineText: 'Available until Sep 12, 2024',
     status: 'available',
     iconBg: 'bg-emerald-50',
     iconColor: 'text-emerald-600',
   },
   {
-    id: 'test-web-basics',
-    title: 'HTML & CSS Basics',
-    subject: 'Web Technologies',
+    id: 'test-verbal-1',
+    title: 'Verbal Ability – Sentence Correction & Grammar',
+    subject: 'Verbal Ability',
     difficulty: 'EASY',
-    questionsCount: 15,
-    durationMinutes: 15,
-    totalMarks: 20,
-    deadlineText: 'Available until Sep 12, 2024',
+    questionsCount: 20,
+    durationMinutes: 25,
+    totalMarks: 30,
+    deadlineText: 'Available until Sep 15, 2024',
     status: 'available',
-    iconBg: 'bg-purple-50',
-    iconColor: 'text-purple-600',
+    iconBg: 'bg-sky-50',
+    iconColor: 'text-sky-600',
   },
   {
-    id: 'test-os-cpu',
-    title: 'Operating Systems – CPU Scheduling',
-    subject: 'Operating Systems',
+    id: 'test-tech-1',
+    title: 'Technical Aptitude – Core CS & Output Prediction',
+    subject: 'Technical Aptitude',
     difficulty: 'MEDIUM',
-    questionsCount: 25,
-    durationMinutes: 30,
-    totalMarks: 50,
-    deadlineText: 'Available until Sep 11, 2024',
+    questionsCount: 30,
+    durationMinutes: 45,
+    totalMarks: 60,
+    deadlineText: 'Available until Sep 16, 2024',
     status: 'available',
     iconBg: 'bg-amber-50',
     iconColor: 'text-amber-600',
   },
   {
-    id: 'test-dsa-arrays',
-    title: 'Data Structures – Arrays',
-    subject: 'Data Structures',
+    id: 'test-tcs-mock',
+    title: 'Company Mock Test – TCS NQT National Qualifier',
+    subject: 'Company Mock Test',
     difficulty: 'HARD',
-    questionsCount: 25,
-    durationMinutes: 35,
-    totalMarks: 50,
-    deadlineText: 'Available until Sep 18, 2024',
+    questionsCount: 40,
+    durationMinutes: 60,
+    totalMarks: 80,
+    deadlineText: 'Available until Sep 20, 2024',
     status: 'available',
     iconBg: 'bg-rose-50',
     iconColor: 'text-rose-600',
   },
   {
-    id: 'test-cn-1',
-    title: 'Computer Networks – Module 1',
-    subject: 'Computer Networks',
-    difficulty: 'EASY',
-    questionsCount: 15,
-    durationMinutes: 20,
-    totalMarks: 30,
-    deadlineText: 'Completed on May 5, 2024',
+    id: 'test-infosys-mock',
+    title: 'Company Mock Test – Infosys Placement Assessment',
+    subject: 'Company Mock Test',
+    difficulty: 'MEDIUM',
+    questionsCount: 35,
+    durationMinutes: 50,
+    totalMarks: 70,
+    deadlineText: 'Completed on May 10, 2024',
     status: 'completed',
     iconBg: 'bg-cyan-50',
     iconColor: 'text-cyan-600',
+  },
+  {
+    id: 'test-coding-logic',
+    title: 'Coding & Pseudocode Logic Assessment',
+    subject: 'Coding & Logic',
+    difficulty: 'MEDIUM',
+    questionsCount: 15,
+    durationMinutes: 30,
+    totalMarks: 40,
+    deadlineText: 'Completed on May 4, 2024',
+    status: 'completed',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
   },
 ];
 
@@ -112,8 +123,7 @@ export const StudentTests = () => {
   const { user } = useAuth();
   const [tests, setTests] = useState<TestCardItem[]>(defaultTests);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
+  const [selectedTrack, setSelectedTrack] = useState('all');
   const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'completed'>('all');
 
   useEffect(() => {
@@ -128,7 +138,7 @@ export const StudentTests = () => {
               return {
                 id: item.test.id,
                 title: item.test.title,
-                subject: (item.test as any).category || 'General',
+                subject: (item.test as any).category || 'Placement Assessment',
                 difficulty: (((item.test as any).difficulty?.toUpperCase() as any) || 'MEDIUM'),
                 questionsCount: item.test.questionIds?.length || 20,
                 durationMinutes: item.test.settings?.duration || (item.test as any).durationMinutes || 30,
@@ -151,6 +161,12 @@ export const StudentTests = () => {
     fetchLiveTests();
   }, [user]);
 
+  // KPI Calculations
+  const totalCount = tests.length;
+  const availableCount = tests.filter(t => t.status === 'available').length;
+  const inProgressCount = tests.filter(t => t.status === 'in_progress').length;
+  const completedCount = tests.filter(t => t.status === 'completed').length;
+
   // Filtering
   const filteredTests = tests.filter((t) => {
     // Tab filter
@@ -162,13 +178,8 @@ export const StudentTests = () => {
       return false;
     }
 
-    // Subject filter
-    if (selectedSubject !== 'all' && t.subject.toLowerCase() !== selectedSubject.toLowerCase()) {
-      return false;
-    }
-
-    // Difficulty filter
-    if (selectedDifficulty !== 'all' && t.difficulty.toLowerCase() !== selectedDifficulty.toLowerCase()) {
+    // Track filter
+    if (selectedTrack !== 'all' && t.subject.toLowerCase() !== selectedTrack.toLowerCase()) {
       return false;
     }
 
@@ -176,52 +187,102 @@ export const StudentTests = () => {
   });
 
   return (
-    <div className="space-y-6 animate-in pb-10">
+    <div className="space-y-6 animate-in pb-10 font-sans text-slate-800">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#1a1d23]">My Tests</h1>
-        <p className="text-[#9099a8] text-sm mt-0.5">Find and attempt tests to improve your skills.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Placement Tests</h1>
+        <p className="text-slate-500 text-sm mt-0.5">Attempt placement mock tests, aptitude assessments, and company recruitment drills.</p>
+      </div>
+
+      {/* Top Test KPI Metrics Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Total Tests */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-blue-300 hover:shadow-sm transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Tests</span>
+            <div className="h-8 w-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+              <FileText className="h-4 w-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{totalCount}</div>
+            <p className="text-xs text-slate-500 mt-1 font-medium">Placement curriculum</p>
+          </div>
+        </div>
+
+        {/* Card 2: Available Now */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-blue-300 hover:shadow-sm transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Available Now</span>
+            <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+              <Play className="h-4 w-4 fill-emerald-600" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{availableCount}</div>
+            <p className="text-xs text-emerald-600 mt-1 font-semibold">
+              Ready to attempt
+            </p>
+          </div>
+        </div>
+
+        {/* Card 3: In Progress */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-blue-300 hover:shadow-sm transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">In Progress</span>
+            <div className="h-8 w-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+              <Clock className="h-4 w-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{inProgressCount}</div>
+            <p className="text-xs text-amber-600 mt-1 font-semibold">Resume pending</p>
+          </div>
+        </div>
+
+        {/* Card 4: Completed */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-blue-300 hover:shadow-sm transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed</span>
+            <div className="h-8 w-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{completedCount}</div>
+            <p className="text-xs text-slate-500 mt-1 font-medium">Evaluated mock tests</p>
+          </div>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-xl border border-[#e2e5ea] p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2.5 flex-1">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px] max-w-xs">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#9099a8]" />
             <input
               type="text"
-              placeholder="Search tests..."
+              placeholder="Search placement tests, companies..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#f7f8fa] border border-[#e2e5ea] rounded-lg focus:outline-none focus:border-blue-500 text-slate-800"
             />
           </div>
 
-          {/* Subject Dropdown */}
+          {/* Placement Track Dropdown */}
           <select
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
+            value={selectedTrack}
+            onChange={(e) => setSelectedTrack(e.target.value)}
             className="text-xs bg-[#f7f8fa] border border-[#e2e5ea] text-slate-700 py-1.5 px-3 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer"
           >
-            <option value="all">All Subjects</option>
-            <option value="Computer Networks">Computer Networks</option>
-            <option value="Database Management">Database Management</option>
-            <option value="Operating Systems">Operating Systems</option>
-            <option value="Data Structures">Data Structures</option>
-            <option value="Web Technologies">Web Technologies</option>
-          </select>
-
-          {/* Difficulty Dropdown */}
-          <select
-            value={selectedDifficulty}
-            onChange={(e) => setSelectedDifficulty(e.target.value)}
-            className="text-xs bg-[#f7f8fa] border border-[#e2e5ea] text-slate-700 py-1.5 px-3 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer"
-          >
-            <option value="all">All Difficulty</option>
-            <option value="EASY">Easy</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HARD">Hard</option>
+            <option value="all">All Placement Tracks</option>
+            <option value="Quantitative Aptitude">Quantitative Aptitude</option>
+            <option value="Logical Reasoning">Logical Reasoning</option>
+            <option value="Verbal Ability">Verbal Ability</option>
+            <option value="Technical Aptitude">Technical Aptitude</option>
+            <option value="Company Mock Test">Company Mock Tests</option>
+            <option value="Coding & Logic">Coding & Logic</option>
           </select>
         </div>
 
@@ -231,7 +292,7 @@ export const StudentTests = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3.5 py-1 text-xs font-semibold rounded-md transition-all capitalize ${
+              className={`px-3.5 py-1 text-xs font-semibold rounded-md transition-all capitalize cursor-pointer ${
                 activeTab === tab
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-[#5a6170] hover:text-[#1a1d23]'
@@ -251,7 +312,7 @@ export const StudentTests = () => {
             className="bg-white rounded-xl border border-[#e2e5ea] p-5 shadow-xs hover:shadow-sm hover:border-blue-200 transition-all flex flex-col justify-between"
           >
             <div>
-              {/* Header: Icon, Title & Difficulty Badge */}
+              {/* Header: Icon, Title & Track Tag */}
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex items-start gap-3">
                   <div className={`h-10 w-10 rounded-lg ${test.iconBg} ${test.iconColor} flex items-center justify-center flex-shrink-0 font-bold`}>
@@ -265,12 +326,8 @@ export const StudentTests = () => {
                   </div>
                 </div>
 
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded tracking-wider ${
-                  test.difficulty === 'EASY' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                  test.difficulty === 'MEDIUM' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                  'bg-rose-50 text-rose-700 border border-rose-200'
-                }`}>
-                  {test.difficulty}
+                <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100">
+                  {test.subject}
                 </span>
               </div>
 
@@ -301,19 +358,17 @@ export const StudentTests = () => {
             <div className="pt-3 border-t border-[#f0f2f5] flex items-center justify-end">
               {test.status === 'completed' ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                  <Check className="h-3.5 w-3.5 stroke-[2.5]" />
-                  Completed
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Completed
                 </span>
               ) : test.status === 'in_progress' ? (
                 <Link to={`/student/tests/${test.id}`}>
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-xs px-4">
-                    Continue Test
-                    <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer">
+                    Continue Test <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
               ) : (
                 <Link to={`/student/tests/${test.id}`}>
-                  <Button size="sm" variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs px-4">
+                  <Button size="sm" variant="outline" className="text-xs px-4 py-1.5 rounded-lg text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer">
                     Start Test
                   </Button>
                 </Link>

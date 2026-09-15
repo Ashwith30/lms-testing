@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { User, Mail, Shield, BookOpen, GraduationCap, Calendar, Edit3, KeyRound, CheckCircle2 } from 'lucide-react';
+import { 
+  User, 
+  Mail, 
+  Shield, 
+  BookOpen, 
+  GraduationCap, 
+  Calendar, 
+  Edit3, 
+  KeyRound, 
+  CheckCircle2, 
+  Award,
+  Lock,
+  BadgeCheck,
+  Building
+} from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -20,7 +34,7 @@ export const StudentProfile = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   if (!user) {
-    return <div className="text-center py-12 text-slate-500">Loading profile...</div>;
+    return <div className="text-center py-12 text-slate-500 font-medium">Loading profile...</div>;
   }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -55,28 +69,34 @@ export const StudentProfile = () => {
     }
   };
 
-  const profileItems = [
-    { label: 'Full Name', value: user.name, icon: User, desc: 'Your registered primary name' },
-    { label: 'Email Address', value: user.email, icon: Mail, desc: 'Contact address for notifications' },
-    { label: 'Student ID', value: user.studentId || 'N/A', icon: Shield, desc: 'Your unique identifier (LMS ID)' },
-    { label: 'Department', value: user.department || 'N/A', icon: BookOpen, desc: 'Academic department branch' },
-    { label: 'Graduation Batch', value: user.batch || 'N/A', icon: GraduationCap, desc: 'Year of course completion' },
-    {
-      label: 'Account Created',
+  const academicDetails = [
+    { label: 'Full Name', value: user.name, icon: User, desc: 'Registered primary name in portal' },
+    { label: 'Email Address', value: user.email, icon: Mail, desc: 'Official student email address' },
+    { label: 'Department / Major', value: user.department || 'Computer Science and Engineering', icon: Building, desc: 'Academic engineering discipline' },
+    { label: 'Graduation Year', value: user.batch ? `Class of ${user.batch}` : 'Class of 2026', icon: GraduationCap, desc: 'Expected placement cycle batch' },
+  ];
+
+  const systemDetails = [
+    { label: 'Student Portal ID', value: user.studentId || 'LMS001', icon: Shield, desc: 'Unique LMS candidate identifier' },
+    { label: 'Account Role', value: user.role === 'student' ? 'Placement Candidate' : user.role, icon: Award, desc: 'System authorization level' },
+    { 
+      label: 'Enrolled Since', 
       value: user.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, {
         year: 'numeric', month: 'long', day: 'numeric'
-      }) : 'N/A',
-      icon: Calendar,
-      desc: 'Registration date in this system'
+      }) : 'September 3, 2026', 
+      icon: Calendar, 
+      desc: 'Account registration date' 
     },
+    { label: 'Security Status', value: 'Password Protected', icon: Lock, desc: 'Active secure credentials' },
   ];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Student Profile</h1>
-          <p className="text-slate-500 text-sm">View and update your account information and academic details.</p>
+          <p className="text-slate-500 text-sm mt-0.5">Manage your academic credentials, placement tracks, and security settings.</p>
         </div>
         <Button 
           variant={isEditing ? "secondary" : "outline"}
@@ -88,59 +108,94 @@ export const StudentProfile = () => {
             setCurrentPassword('');
             setNewPassword('');
           }}
+          className={isEditing ? "bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs" : "border-slate-300 text-slate-700 hover:bg-slate-50 text-xs shadow-xs"}
         >
-          <Edit3 className="mr-2 h-4 w-4" />
+          <Edit3 className="mr-1.5 h-3.5 w-3.5" />
           {isEditing ? 'Cancel Edit' : 'Edit Profile'}
         </Button>
       </div>
 
-      <Card className="overflow-hidden border border-slate-200 shadow-sm">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-32 relative">
-          <div className="absolute -bottom-10 left-8">
-            <div className="bg-white p-2 rounded-full shadow-lg border">
-              <div className="bg-blue-100 text-blue-600 rounded-full h-16 w-16 flex items-center justify-center font-bold text-2xl uppercase">
-                {user.name.substring(0, 2)}
+      {/* Main Profile Card */}
+      <Card className="overflow-hidden border border-slate-200 shadow-xs bg-white rounded-2xl">
+        {/* Banner with Sapphire Blue Gradient */}
+        <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-sky-700 h-36 relative px-8 flex items-end">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+          
+          {/* Avatar Placement */}
+          <div className="absolute -bottom-11 left-6 sm:left-8 flex items-end gap-4">
+            <div className="relative">
+              <div className="h-22 w-22 rounded-2xl bg-white p-1.5 shadow-md border border-slate-200">
+                <div className="w-full h-full rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center font-bold text-2xl tracking-wider shadow-inner">
+                  {user.name.substring(0, 2).toUpperCase()}
+                </div>
+              </div>
+              <div className="absolute -bottom-1 -right-1 bg-white p-0.5 rounded-full shadow-xs">
+                <BadgeCheck className="h-5 w-5 text-blue-600 fill-blue-50" />
               </div>
             </div>
           </div>
         </div>
 
-        <CardContent className="pt-14 pb-6 sm:pb-8 px-4 sm:px-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">{user.name}</h2>
-            <p className="text-sm font-medium text-slate-400 capitalize flex items-center gap-1.5 mt-1">
-              <Shield className="h-4 w-4 text-blue-500" />
-              Role: {user.role} {user.studentId && `• ID: ${user.studentId}`}
-            </p>
+        <CardContent className="pt-14 pb-8 px-6 sm:px-8">
+          {/* Identity Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                  Active Candidate
+                </span>
+              </div>
+              <p className="text-xs font-medium text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                <span>{user.department || 'Computer Science and Engineering'}</span>
+                <span>•</span>
+                <span>ID: {user.studentId || 'LMS001'}</span>
+                <span>•</span>
+                <span>{user.batch ? `Class of ${user.batch}` : 'Class of 2026'}</span>
+              </p>
+            </div>
           </div>
 
           {isEditing ? (
-            <form onSubmit={handleUpdateProfile} className="space-y-6 pt-4 border-t border-slate-100 animate-in">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Full Name"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  required
-                />
-                <Input
-                  label="Department"
-                  value={department}
-                  placeholder="e.g. CSE or IT"
-                  onChange={e => setDepartment(e.target.value)}
-                />
-                <Input
-                  label="Graduation Batch"
-                  value={batch}
-                  placeholder="e.g. 2026"
-                  onChange={e => setBatch(e.target.value)}
-                />
+            /* Edit Form */
+            <form onSubmit={handleUpdateProfile} className="space-y-6 pt-6 animate-in">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <User className="h-4 w-4 text-blue-600" />
+                  Academic & Personal Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Full Name"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Department / Branch"
+                    value={department}
+                    placeholder="e.g. Computer Science & Engineering"
+                    onChange={e => setDepartment(e.target.value)}
+                  />
+                  <Input
+                    label="Graduation Batch"
+                    value={batch}
+                    placeholder="e.g. 2026"
+                    onChange={e => setBatch(e.target.value)}
+                  />
+                  <Input
+                    label="Registered Email"
+                    value={user.email}
+                    disabled
+                    className="bg-slate-50 text-slate-500 cursor-not-allowed"
+                  />
+                </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 space-y-4">
+              <div className="pt-5 border-t border-slate-100 space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <KeyRound className="h-4 w-4 text-blue-600" />
-                  Change Password (Optional)
+                  Change Security Password (Optional)
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
@@ -160,29 +215,76 @@ export const StudentProfile = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+              <div className="flex justify-end gap-3 pt-5 border-t border-slate-100">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditing(false)}
+                  className="text-xs"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" isLoading={isSaving}>
-                  <CheckCircle2 className="mr-2 h-4 w-4" /> Save Changes
+                <Button 
+                  type="submit" 
+                  isLoading={isSaving}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-5 shadow-xs"
+                >
+                  <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Save Changes
                 </Button>
               </div>
             </form>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 pt-6 border-t border-slate-100">
-              {profileItems.map((item, idx) => (
-                <div key={idx} className="flex gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="p-3 bg-slate-100 text-slate-500 rounded-lg h-fit">
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{item.label}</p>
-                    <p className="text-base font-semibold text-slate-900">{item.value}</p>
-                    <p className="text-xs text-slate-400">{item.desc}</p>
-                  </div>
+            /* Information Sections */
+            <div className="space-y-6 pt-6">
+              {/* Academic & Personal Details */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+                  Academic Profile
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {academicDetails.map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      className="p-4 rounded-xl bg-[#f8fafc] border border-slate-200/80 hover:border-blue-200 transition-colors flex items-start gap-3.5"
+                    >
+                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 flex-shrink-0 mt-0.5">
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{item.label}</p>
+                        <p className="text-sm font-bold text-slate-900 truncate mt-0.5">{item.value}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Portal & Security Details */}
+              <div className="pt-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5 text-blue-600" />
+                  Portal & Security Information
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {systemDetails.map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      className="p-4 rounded-xl bg-[#f8fafc] border border-slate-200/80 hover:border-blue-200 transition-colors flex items-start gap-3.5"
+                    >
+                      <div className="p-2.5 bg-slate-100 text-slate-600 rounded-lg border border-slate-200 flex-shrink-0 mt-0.5">
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{item.label}</p>
+                        <p className="text-sm font-bold text-slate-900 truncate mt-0.5">{item.value}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

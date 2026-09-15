@@ -90,12 +90,11 @@ export const Landing = () => {
         <div ref={dropdownRef} className="relative">
           <Button 
             variant="outline" 
-            size="sm"
-            className="flex items-center gap-1.5 bg-white/90 border-[#e2e5ea] text-[#5a6170] shadow-sm hover:shadow-md"
+            className="flex items-center gap-1.5 bg-white/90 border-[#e2e5ea] text-[#5a6170] shadow-sm hover:shadow-md px-4 py-2"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           >
-            <span>Sign in</span>
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            <span className="text-base font-medium">Sign in</span>
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
           </Button>
 
           {isDropdownOpen && (
@@ -125,13 +124,13 @@ export const Landing = () => {
         </div>
       </header>
       
-      <main className="flex-1 flex flex-col justify-center px-6 lg:px-10 relative z-10 py-8 max-w-5xl mx-auto w-full">
-        <div className="animate-in">
+      <main className="flex-1 flex flex-col justify-center items-center text-center px-6 lg:px-10 relative z-10 py-8 max-w-5xl mx-auto w-full">
+        <div className="animate-in flex flex-col items-center">
           <p className="text-[13px] font-medium text-blue-600 mb-3 tracking-wide uppercase">Placement Assessment Platform</p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#1a1d23] mb-4 leading-[1.15] sm:leading-[1.1]">
             Run placement tests<br className="hidden sm:inline" /> without the headache.
           </h1>
-          <p className="text-base sm:text-lg text-[#5a6170] max-w-xl leading-relaxed">
+          <p className="text-base sm:text-lg text-[#5a6170] max-w-xl mx-auto leading-relaxed">
             Create assessments, schedule them for your cohorts, and get real-time analytics with proctoring telemetry.
           </p>
         </div>

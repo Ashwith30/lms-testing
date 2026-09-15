@@ -44,6 +44,7 @@ import { InstitutionLogin } from './pages/auth/InstitutionLogin';
 
 import { AdminDashboard } from './pages/admin/Dashboard';
 import { AdminAnalytics } from './pages/admin/Analytics';
+import { AdminManagement } from './pages/admin/Management';
 
 function App() {
   return (
@@ -64,6 +65,7 @@ function App() {
               <Route element={<ProtectedRoute allowedRole="admin" />}>
                 <Route element={<DashboardLayout />}>
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/admin/management" element={<AdminManagement />} />
                   <Route path="/admin/question-bank" element={<QuestionBanks />} />
                   <Route path="/admin/question-bank/upload" element={<QuestionBankUpload />} />
                   <Route path="/admin/tests" element={<TrainerTests />} />
@@ -75,6 +77,8 @@ function App() {
                   <Route path="/admin/students" element={<TrainerStudents />} />
                   <Route path="/admin/results" element={<TrainerResults />} />
                   <Route path="/admin/materials" element={<TrainerMaterials />} />
+                  <Route path="/admin/quizzes" element={<LiveQuizzes />} />
+                  <Route path="/admin/games" element={<Games />} />
                 </Route>
               </Route>
 

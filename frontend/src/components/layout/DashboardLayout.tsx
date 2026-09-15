@@ -12,7 +12,7 @@ export const DashboardLayout = () => {
   const { user } = useAuth();
 
   return (
-    <div className="flex h-screen bg-[#f7f8fa] overflow-hidden">
+    <div className="flex h-screen bg-[#f8fafc] text-slate-900 overflow-hidden">
       {/* Sidebar — hidden on mobile, visible on lg: */}
       <div className="hidden lg:block">
         {user?.role === 'admin' ? (
