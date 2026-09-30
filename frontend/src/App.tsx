@@ -45,6 +45,7 @@ import { InstitutionLogin } from './pages/auth/InstitutionLogin';
 import { AdminDashboard } from './pages/admin/Dashboard';
 import { AdminAnalytics } from './pages/admin/Analytics';
 import { AdminManagement } from './pages/admin/Management';
+import { VideoLibrary } from './pages/student/Videos';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
                   <Route path="/admin/materials" element={<TrainerMaterials />} />
                   <Route path="/admin/quizzes" element={<LiveQuizzes />} />
                   <Route path="/admin/games" element={<Games />} />
+                  <Route path="/admin/videos" element={<VideoLibrary />} />
                 </Route>
               </Route>
 
@@ -99,6 +101,7 @@ function App() {
                   <Route path="/institution/results" element={<TrainerResults />} />
                   <Route path="/institution/trainers" element={<InstitutionTrainers />} />
                   <Route path="/institution/materials" element={<TrainerMaterials />} />
+                  <Route path="/institution/videos" element={<VideoLibrary />} />
                 </Route>
               </Route>
 
@@ -115,6 +118,7 @@ function App() {
                   <Route path="/trainer/tests/schedule/:scheduleId/edit" element={<ScheduleTest />} />
                   <Route path="/trainer/analytics" element={<TrainerAnalytics />} />
                   <Route path="/trainer/materials" element={<TrainerMaterials />} />
+                  <Route path="/trainer/videos" element={<VideoLibrary />} />
                   <Route path="/trainer/students" element={<TrainerStudents />} />
                   <Route path="/trainer/results" element={<TrainerResults />} />
                 </Route>
@@ -127,6 +131,7 @@ function App() {
                   <Route path="/student/tests" element={<StudentTests />} />
                   <Route path="/student/live-quizzes" element={<LiveQuizzes />} />
                   <Route path="/student/games" element={<Games />} />
+                  <Route path="/student/videos" element={<VideoLibrary />} />
                   <Route path="/student/tests/:id" element={<TestDetails />} />
                   <Route path="/student/analytics" element={<StudentAnalytics />} />
                   <Route path="/student/materials" element={<StudentMaterials />} />

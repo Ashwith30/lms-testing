@@ -12,7 +12,8 @@ import {
   BarChart,
   LogOut,
   Puzzle,
-  Gamepad2
+  Gamepad2,
+  Video
 } from 'lucide-react';
 import { cn } from '../ui/Button';
 import { Logo } from '../ui/Logo';
@@ -41,6 +42,7 @@ export const AdminSidebar = () => {
     { label: 'Upload Questions',  icon: Upload,          path: '/admin/question-bank/upload' },
     { label: 'Quizzes',           icon: Puzzle,          path: '/admin/quizzes' },
     { label: 'Games',             icon: Gamepad2,        path: '/admin/games' },
+    { label: 'Video Lectures',    icon: Video,           path: '/admin/videos' },
   ];
 
   const linkClasses = ({ isActive }: { isActive: boolean }) => cn(

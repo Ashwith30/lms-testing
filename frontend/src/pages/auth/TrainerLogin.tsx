@@ -6,7 +6,8 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
-import { ArrowLeft, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
+import phoneticLogoFull from '../../assets/phonetic-logo-full.jpg';
 
 export const TrainerLogin = () => {
   const [email, setEmail] = useState('trainer@lms.com');
@@ -42,32 +43,49 @@ export const TrainerLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa] flex">
+    <div className="min-h-screen bg-white flex">
       {/* Left branding panel */}
-      <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 relative overflow-hidden">
-        <div className="absolute inset-0 bg-dots opacity-[0.06]"></div>
-        <div className="relative z-10 flex flex-col justify-between p-10 w-full">
-          <Logo size="md" variant="light" />
-          <div>
-            <div className="p-3 bg-white/10 rounded-xl w-fit mb-6 backdrop-blur-sm">
-              <BookOpen className="h-8 w-8 text-white/90" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-3 leading-tight">
-              Build tests,<br/>track progress.
-            </h2>
-            <p className="text-indigo-100/80 text-[15px] max-w-sm leading-relaxed">
-              Create question banks, schedule assessments for your batches, and review results with detailed analytics.
-            </p>
+      <div
+        className="hidden lg:flex lg:w-[48%] relative overflow-hidden items-center justify-center"
+        style={{ background: 'linear-gradient(160deg, #eef4ff 0%, #e4edff 40%, #dde7ff 70%, #eef3ff 100%)' }}
+      >
+        {/* Large decorative curved blobs like the reference */}
+        <div
+          className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full"
+          style={{ background: 'rgba(186, 210, 255, 0.45)' }}
+        />
+        <div
+          className="absolute -top-20 -right-20 w-[350px] h-[350px] rounded-full"
+          style={{ background: 'rgba(196, 216, 255, 0.35)' }}
+        />
+        <div
+          className="absolute bottom-20 right-10 w-[200px] h-[200px] rounded-full"
+          style={{ background: 'rgba(176, 204, 255, 0.25)' }}
+        />
+
+        {/* Logo + tagline */}
+        <div className="relative z-10 flex flex-col items-center px-10">
+          <img
+            src={phoneticLogoFull}
+            alt="Phonetic"
+            className="w-[340px] max-w-[85%] object-contain"
+            style={{ mixBlendMode: 'multiply' }}
+          />
+          <div className="mt-8 flex items-center gap-3 text-[13px] font-semibold tracking-[0.2em] text-blue-400/80 uppercase">
+            <span>Learn</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-300/60" />
+            <span>Practice</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-300/60" />
+            <span>Grow</span>
           </div>
-          <p className="text-indigo-200/50 text-[12px]">&copy; {new Date().getFullYear()} Phonetic</p>
         </div>
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-12">
-        <div className="w-full max-w-[380px] mx-auto lg:mx-0">
-          <Link to="/" className="inline-flex items-center gap-1.5 text-[13px] text-[#9099a8] hover:text-[#5a6170] mb-8 transition-colors">
-            <ArrowLeft className="h-3.5 w-3.5" />
+      <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-20 py-12">
+        <div className="w-full max-w-[420px] mx-auto lg:mx-0">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-[13px] text-slate-400 hover:text-slate-600 mb-8 transition-colors">
+            <ArrowLeft className="h-4 w-4" />
             Back to home
           </Link>
 
@@ -75,27 +93,27 @@ export const TrainerLogin = () => {
             <Logo size="md" />
           </div>
 
-          <div className="flex items-center justify-between mb-1">
-            <h1 className="text-2xl font-bold text-[#1a1d23] tracking-tight">Trainer sign in</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-[28px] font-bold text-slate-900 tracking-tight">Trainer sign in</h1>
             <button
               type="button"
               onClick={fillDemo}
-              className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-md transition-colors"
+              className="flex items-center gap-1.5 text-[12px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors"
               title="Auto-fill demo trainer credentials"
             >
-              <Sparkles className="h-3 w-3 text-indigo-500" />
+              <Sparkles className="h-3.5 w-3.5 text-blue-500" />
               <span>Fill Demo</span>
             </button>
           </div>
-          <p className="text-sm text-[#9099a8] mb-6">Access your dashboard and manage assessments.</p>
+          <p className="text-[15px] text-slate-400 mb-6 leading-relaxed">Access your dashboard and manage assessments.</p>
 
           {/* Demo credential callout */}
-          <div className="mb-5 p-2.5 bg-indigo-50/70 border border-indigo-100 rounded-lg flex items-center justify-between text-[11px]">
+          <div className="mb-6 p-3 bg-blue-50/70 border border-blue-100 rounded-xl flex items-center justify-between text-xs">
             <div>
-              <span className="font-semibold text-indigo-900">Demo Login:</span>{' '}
-              <code className="text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-indigo-200">trainer@lms.com</code>
+              <span className="font-semibold text-blue-900">Demo Login:</span>{' '}
+              <code className="text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200">trainer@lms.com</code>
             </div>
-            <code className="text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-indigo-200">trainer123</code>
+            <code className="text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200">trainer123</code>
           </div>
 
           <form className="space-y-4" onSubmit={handleLogin}>
@@ -115,13 +133,17 @@ export const TrainerLogin = () => {
               onChange={e => setPassword(e.target.value)}
               placeholder="Enter your password"
             />
-            <Button type="submit" className="w-full" isLoading={isLoading}>
+            <Button
+              type="submit"
+              className="w-full !h-12 !rounded-xl !text-[15px] !font-semibold !shadow-lg !shadow-blue-500/20 hover:!shadow-blue-500/30"
+              isLoading={isLoading}
+            >
               Sign in
             </Button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-[#eef0f3] text-[13px]">
-            <Link to="/" className="font-medium text-blue-600 hover:text-blue-700">
+          <div className="mt-8 text-center text-[14px]">
+            <Link to="/" className="text-slate-400 hover:text-slate-600 transition-colors">
               Back to home
             </Link>
           </div>
@@ -130,3 +152,4 @@ export const TrainerLogin = () => {
     </div>
   );
 };
+

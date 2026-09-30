@@ -16,6 +16,7 @@ import {
   CalendarClock,
   BookMarked,
   Upload,
+  Video,
   LogOut,
   MoreHorizontal,
   X,
@@ -39,6 +40,7 @@ const getNavItems = (role: Role): { primary: NavItem[]; overflow: NavItem[] } =>
           { label: 'Profile', icon: User, path: '/student/profile' },
         ],
         overflow: [
+          { label: 'Videos', icon: Video, path: '/student/videos' },
           { label: 'Analytics', icon: BarChart3, path: '/student/analytics' },
           { label: 'Materials', icon: BookOpen, path: '/student/materials' },
         ],
@@ -52,6 +54,7 @@ const getNavItems = (role: Role): { primary: NavItem[]; overflow: NavItem[] } =>
           { label: 'Results', icon: BarChart, path: '/trainer/results' },
         ],
         overflow: [
+          { label: 'Video Lectures', icon: Video, path: '/trainer/videos' },
           { label: 'Schedule', icon: Calendar, path: '/trainer/tests/schedule' },
           { label: 'Question Banks', icon: Database, path: '/trainer/question-bank' },
           { label: 'Upload Questions', icon: Upload, path: '/trainer/question-bank/upload' },
@@ -68,6 +71,7 @@ const getNavItems = (role: Role): { primary: NavItem[]; overflow: NavItem[] } =>
           { label: 'Results', icon: BarChart, path: '/admin/results' },
         ],
         overflow: [
+          { label: 'Video Lectures', icon: Video, path: '/admin/videos' },
           { label: 'Schedule', icon: Calendar, path: '/admin/tests/schedule' },
           { label: 'Question Banks', icon: Database, path: '/admin/question-bank' },
           { label: 'Upload Questions', icon: Upload, path: '/admin/question-bank/upload' },
@@ -83,6 +87,7 @@ const getNavItems = (role: Role): { primary: NavItem[]; overflow: NavItem[] } =>
           { label: 'Analytics', icon: BarChart3, path: '/institution/analytics' },
         ],
         overflow: [
+          { label: 'Video Lectures', icon: Video, path: '/institution/videos' },
           { label: 'Faculty', icon: GraduationCap, path: '/institution/trainers' },
           { label: 'Upcoming', icon: CalendarClock, path: '/institution/upcoming-tests' },
           { label: 'Tests', icon: FileText, path: '/institution/tests' },

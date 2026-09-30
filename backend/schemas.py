@@ -338,3 +338,35 @@ class MaterialBase(BaseModel):
 class Material(MaterialBase):
     class Config:
         from_attributes = True
+
+# --- Notifications ---
+class NotificationCreate(BaseModel):
+    title: str
+    message: str
+    type: Optional[str] = "info"  # 'info', 'alert', 'success', 'warning', 'announcement'
+    targetBatch: Optional[str] = "all"
+    targetRole: Optional[str] = "student"
+    link: Optional[str] = None
+    priority: Optional[str] = "normal"
+    sendEmail: Optional[bool] = False
+
+class NotificationResponse(BaseModel):
+    id: str
+    title: str
+    message: str
+    description: Optional[str] = None
+    type: str
+    targetBatch: Optional[str] = "all"
+    targetRole: Optional[str] = "student"
+    link: Optional[str] = None
+    priority: Optional[str] = "normal"
+    sendEmail: Optional[bool] = False
+    senderId: Optional[str] = None
+    senderName: Optional[str] = None
+    createdAt: str
+    isRead: Optional[bool] = False
+    time: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+

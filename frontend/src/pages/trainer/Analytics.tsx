@@ -11,9 +11,9 @@ import {
   CheckCircle2, Clock, HelpCircle, Layers, Target, Compass
 } from 'lucide-react';
 
-const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6'];
+const COLORS = ['#2563eb', '#22c55e', '#f59e0b', '#ef4444', '#0284c7', '#06b6d4', '#0d9488', '#3b82f6'];
 const SCORE_COLORS: Record<string, string> = { '80-100': '#22c55e', '60-79': '#3b82f6', '40-59': '#f59e0b', '0-39': '#ef4444' };
-const OPTION_COLORS = { 'A': '#6366f1', 'B': '#3b82f6', 'C': '#f59e0b', 'D': '#ec4899' };
+const OPTION_COLORS = { 'A': '#2563eb', 'B': '#0284c7', 'C': '#f59e0b', 'D': '#10b981' };
 
 export const TrainerAnalytics = () => {
   const [data, setData] = useState<any>(null);
@@ -61,16 +61,42 @@ export const TrainerAnalytics = () => {
   } = data;
 
   const statCards = [
-    { title: 'Assessments', value: kpis.totalTests ?? 0, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-    { title: 'Submissions', value: kpis.totalSubmissions ?? 0, icon: CheckCircle2, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-    { title: 'Cohort Avg', value: `${kpis.avgScore ?? 0}%`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-    { title: 'Pass Rate', value: `${kpis.passRate ?? 0}%`, icon: Award, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-    { title: 'Highest', value: `${kpis.highestScore ?? 0}%`, icon: Award, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-    { title: 'Lowest', value: `${kpis.lowestScore ?? 0}%`, icon: Target, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
-    { title: 'Median', value: `${kpis.medianScore ?? 0}%`, icon: Compass, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
-    { title: 'Avg Duration', value: `${kpis.avgDuration ?? 0}m`, icon: Clock, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
-    { title: 'Questions', value: kpis.questionsCreated ?? 0, icon: HelpCircle, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
-    { title: 'Violations', value: kpis.totalViolations ?? 0, icon: ShieldAlert, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
+    { 
+      title: 'Total Assessments', 
+      value: kpis.totalTests ?? 0, 
+      subtitle: `${kpis.questionsCreated ?? 0} Questions Created`,
+      icon: FileText, 
+      color: 'text-blue-600', 
+      bg: 'bg-blue-50', 
+      border: 'border-blue-100 hover:border-blue-300' 
+    },
+    { 
+      title: 'Total Submissions', 
+      value: kpis.totalSubmissions ?? 0, 
+      subtitle: `${attemptStatusBreakdown.submitted || 0} completed • ${kpis.avgDuration ?? 0}m avg time`,
+      icon: CheckCircle2, 
+      color: 'text-sky-600', 
+      bg: 'bg-sky-50', 
+      border: 'border-sky-100 hover:border-sky-300' 
+    },
+    { 
+      title: 'Cohort Avg Score', 
+      value: `${kpis.avgScore ?? 0}%`, 
+      subtitle: `Highest: ${kpis.highestScore ?? 0}% • Lowest: ${kpis.lowestScore ?? 0}%`,
+      icon: TrendingUp, 
+      color: 'text-emerald-600', 
+      bg: 'bg-emerald-50', 
+      border: 'border-emerald-100 hover:border-emerald-300' 
+    },
+    { 
+      title: 'Pass Rate (≥60%)', 
+      value: `${kpis.passRate ?? 0}%`, 
+      subtitle: `Median: ${kpis.medianScore ?? 0}% • ${kpis.totalViolations ?? 0} Flags`,
+      icon: Award, 
+      color: 'text-amber-600', 
+      bg: 'bg-amber-50', 
+      border: 'border-amber-100 hover:border-amber-300' 
+    },
   ];
 
   // Chart transformations
@@ -88,7 +114,7 @@ export const TrainerAnalytics = () => {
   const attemptStatusData = [
     { name: 'Submitted', value: attemptStatusBreakdown.submitted || 0, color: '#22c55e' },
     { name: 'Auto-Submitted', value: attemptStatusBreakdown.autoSubmitted || 0, color: '#f59e0b' },
-    { name: 'In Progress', value: attemptStatusBreakdown.inProgress || 0, color: '#6366f1' }
+    { name: 'In Progress', value: attemptStatusBreakdown.inProgress || 0, color: '#0284c7' }
   ].filter(d => d.value > 0);
 
   const questionChartData = questionAnalysis.map((q: any, idx: number) => ({
@@ -113,8 +139,8 @@ export const TrainerAnalytics = () => {
 
   const answerStatusData = [
     { name: 'Answered', count: answerStatusBreakdown.answered || 0, color: '#22c55e' },
-    { name: 'Marked Review', count: answerStatusBreakdown.marked || 0, color: '#8b5cf6' },
-    { name: 'Visited Skipped', count: answerStatusBreakdown.visited || 0, color: '#f59e0b' },
+    { name: 'Marked Review', count: answerStatusBreakdown.marked || 0, color: '#f59e0b' },
+    { name: 'Visited Skipped', count: answerStatusBreakdown.visited || 0, color: '#0284c7' },
     { name: 'Not Visited', count: answerStatusBreakdown.notVisited || 0, color: '#94a3b8' }
   ];
 
@@ -146,20 +172,23 @@ export const TrainerAnalytics = () => {
         </p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-10 gap-3">
+      {/* KPI Cards (Reduced to 4 clean, prominent cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, i) => (
-          <Card key={i} className={`border ${stat.border} hover:shadow-md transition-all duration-200`}>
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2">
-                <div className={`p-1.5 rounded-lg ${stat.bg} ${stat.color}`}>
-                  <stat.icon className="h-3.5 w-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">{stat.title}</p>
-                  <h3 className="text-base font-bold text-slate-900 truncate">{stat.value}</h3>
+          <Card key={i} className={`border ${stat.border} shadow-sm hover:shadow-md transition-all duration-200`}>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+                    <stat.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{stat.title}</p>
+                    <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{stat.value}</h3>
+                  </div>
                 </div>
               </div>
+              <p className="text-xs text-slate-400 font-medium mt-3 pt-2.5 border-t border-slate-100">{stat.subtitle}</p>
             </CardContent>
           </Card>
         ))}
@@ -171,7 +200,7 @@ export const TrainerAnalytics = () => {
         <Card className="border border-slate-200">
           <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b py-3 px-5">
             <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-purple-600" />
+              <TrendingUp className="h-4 w-4 text-sky-600" />
               Score Distribution
             </CardTitle>
           </CardHeader>
@@ -184,7 +213,7 @@ export const TrainerAnalytics = () => {
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Submissions">
                   {scoreChartData.map((entry, i) => (
-                    <Cell key={i} fill={SCORE_COLORS[entry.bracket] || '#6366f1'} />
+                    <Cell key={i} fill={SCORE_COLORS[entry.bracket] || '#2563eb'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -257,7 +286,7 @@ export const TrainerAnalytics = () => {
       <Card className="border border-slate-200">
         <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b py-3 px-5 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <HelpCircle className="h-4 w-4 text-indigo-600" />
+            <HelpCircle className="h-4 w-4 text-blue-600" />
             Psychometric Question Analysis ({questionAnalysis.length} Questions)
           </CardTitle>
           <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
@@ -265,7 +294,7 @@ export const TrainerAnalytics = () => {
               onClick={() => setSelectedQuestionTab('accuracy')}
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                 selectedQuestionTab === 'accuracy'
-                  ? 'bg-white text-indigo-600 shadow-sm'
+                  ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -275,7 +304,7 @@ export const TrainerAnalytics = () => {
               onClick={() => setSelectedQuestionTab('distractors')}
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                 selectedQuestionTab === 'distractors'
-                  ? 'bg-white text-indigo-600 shadow-sm'
+                  ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -323,7 +352,7 @@ export const TrainerAnalytics = () => {
         <Card className="border border-slate-200">
           <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b py-3 px-5">
             <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Compass className="h-4 w-4 text-violet-600" />
+              <Compass className="h-4 w-4 text-blue-600" />
               Category-Wise Performance Radar
             </CardTitle>
           </CardHeader>
@@ -334,7 +363,7 @@ export const TrainerAnalytics = () => {
                   <PolarGrid stroke="#e2e8f0" />
                   <PolarAngleAxis dataKey="category" tick={{ fontSize: 10, fill: '#64748b' }} />
                   <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
-                  <Radar name="Accuracy %" dataKey="accuracy" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} />
+                  <Radar name="Accuracy %" dataKey="accuracy" stroke="#2563eb" fill="#3b82f6" fillOpacity={0.4} />
                   <Tooltip />
                 </RadarChart>
               </ResponsiveContainer>
@@ -345,7 +374,7 @@ export const TrainerAnalytics = () => {
                   <XAxis dataKey="category" tick={{ fontSize: 10, fill: '#64748b' }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#64748b' }} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="accuracy" fill="#8b5cf6" radius={[6, 6, 0, 0]} name="Accuracy %" />
+                  <Bar dataKey="accuracy" fill="#2563eb" radius={[6, 6, 0, 0]} name="Accuracy %" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (

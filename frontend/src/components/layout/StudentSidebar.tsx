@@ -10,6 +10,7 @@ import {
   LineChart,
   User, 
   BookOpen,
+  Video,
   LogOut 
 } from 'lucide-react';
 
@@ -31,6 +32,7 @@ export const StudentSidebar = () => {
     { label: 'Analytics',    icon: LineChart,       path: '/student/analytics' },
     { label: 'Live Quizzes', icon: Radio,           path: '/student/live-quizzes' },
     { label: 'Games',        icon: Gamepad2,        path: '/student/games' },
+    { label: 'Videos',       icon: Video,           path: '/student/videos' },
     { label: 'Results',      icon: BarChart,        path: '/student/results' },
     { label: 'Materials',    icon: BookOpen,        path: '/student/materials' },
     { label: 'Profile',      icon: User,            path: '/student/profile' },

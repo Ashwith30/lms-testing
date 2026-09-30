@@ -213,19 +213,19 @@ export const ReconductModal: React.FC<ReconductModalProps> = ({
                 onClick={() => setReconductMode('clone_and_schedule')}
                 className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
                   reconductMode === 'clone_and_schedule'
-                    ? 'border-indigo-600 bg-indigo-50/40 shadow-sm ring-2 ring-indigo-100'
+                    ? 'border-blue-600 bg-blue-50/40 shadow-sm ring-2 ring-blue-100'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
                 }`}
               >
                 <div className="flex items-start gap-2.5">
-                  <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${reconductMode === 'clone_and_schedule' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${reconductMode === 'clone_and_schedule' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
                     <Copy className="h-4 w-4" />
                   </div>
                   <div>
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-bold text-slate-900">Clone & Schedule</p>
                       {reconductMode === 'clone_and_schedule' && (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-indigo-600" />
+                        <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
                       )}
                     </div>
                     <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
@@ -239,7 +239,7 @@ export const ReconductModal: React.FC<ReconductModalProps> = ({
 
           {/* Cloned Test Title (if clone mode) */}
           {reconductMode === 'clone_and_schedule' && (
-            <div className="space-y-1.5 p-3 bg-indigo-50/40 border border-indigo-100 rounded-xl">
+            <div className="space-y-1.5 p-3 bg-blue-50/40 border border-blue-100 rounded-xl">
               <label className="block text-xs font-semibold text-slate-800">New Duplicated Assessment Title</label>
               <Input
                 value={customTitle}
@@ -282,7 +282,7 @@ export const ReconductModal: React.FC<ReconductModalProps> = ({
           <div className="space-y-3 pt-1">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-indigo-600" />
+                <Clock className="h-3.5 w-3.5 text-blue-600" />
                 Testing Window
               </label>
               <div className="flex items-center gap-1 text-[11px]">

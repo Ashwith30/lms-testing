@@ -167,11 +167,11 @@ export const TestDetails = () => {
 
             {/* Lite Proctoring Banner for Mobile/Tablet */}
             {isTouchDevice && (
-              <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-800 text-sm flex items-start gap-3">
-                <Smartphone className="h-5 w-5 text-indigo-500 shrink-0 mt-0.5" />
+              <div className="p-4 bg-sky-50 border border-sky-200 rounded-lg text-sky-900 text-sm flex items-start gap-3">
+                <Smartphone className="h-5 w-5 text-sky-600 shrink-0 mt-0.5" />
                 <div>
                   <strong>Lite Proctoring Mode (Mobile Device)</strong>
-                  <p className="mt-1 text-indigo-700 text-xs leading-relaxed">
+                  <p className="mt-1 text-sky-700 text-xs leading-relaxed">
                     You are on a mobile/tablet device. The exam will run in <strong>Lite Proctoring</strong> mode — camera monitoring is active, but fullscreen enforcement and keyboard lockdown are disabled. Your attempt will be marked as a "Mobile Attempt" for your trainer to review. You have 5 violation warnings before auto-submission.
                   </p>
                 </div>

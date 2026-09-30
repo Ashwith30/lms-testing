@@ -43,6 +43,8 @@ export const CreateTest = () => {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [autoSelectCounts, setAutoSelectCounts] = useState({ Easy: 0, Medium: 0, Hard: 0 });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -102,6 +104,25 @@ export const CreateTest = () => {
 
   const selectAllAvailable = () => {
     setSelectedQuestionIds(availableQuestions.map(q => q.id));
+    setErrors(prev => ({ ...prev, questions: '' }));
+  };
+
+  const handleAutoSelect = () => {
+    const pickRandom = (arr: Question[], count: number) => {
+      const shuffled = [...arr].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count).map(q => q.id);
+    };
+
+    const easyQs = availableQuestions.filter(q => q.difficulty === 'Easy');
+    const medQs = availableQuestions.filter(q => q.difficulty === 'Medium');
+    const hardQs = availableQuestions.filter(q => q.difficulty === 'Hard');
+
+    const selectedEasy = pickRandom(easyQs, autoSelectCounts.Easy);
+    const selectedMedium = pickRandom(medQs, autoSelectCounts.Medium);
+    const selectedHard = pickRandom(hardQs, autoSelectCounts.Hard);
+
+    setSelectedQuestionIds([...selectedEasy, ...selectedMedium, ...selectedHard]);
+    setErrors(prev => ({ ...prev, questions: '' }));
   };
 
   const handleSave = async () => {
@@ -184,7 +205,8 @@ export const CreateTest = () => {
               label="Test Name" 
               placeholder="e.g. Campus Placement Assessment" 
               value={title}
-              onChange={e => setTitle(e.target.value)}
+              onChange={e => { setTitle(e.target.value); setErrors(prev => ({ ...prev, title: '' })); }}
+              error={errors.title}
             />
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-slate-700">Description</label>
@@ -205,7 +227,7 @@ export const CreateTest = () => {
                       type="checkbox" 
                       className="h-4 w-4 text-blue-600 rounded border-slate-300"
                       checked={selectedBankIds.includes(bank.id)}
-                      onChange={() => toggleBank(bank.id)}
+                      onChange={() => { toggleBank(bank.id); setErrors(prev => ({ ...prev, banks: '' })); }}
                     />
                     <div className="ml-3">
                       <p className="text-sm font-medium text-slate-900">{bank.name}</p>
@@ -217,13 +239,21 @@ export const CreateTest = () => {
                   <p className="text-sm text-slate-500 italic col-span-2">No question banks available. Please upload one first.</p>
                 )}
               </div>
+              {errors.banks && <p className="text-[13px] text-red-500 mt-1.5">{errors.banks}</p>}
             </div>
 
             <div className="flex justify-end pt-4">
               <Button onClick={() => {
-                if (!title) toast('Please enter a test name', 'error');
-                else if (selectedBankIds.length === 0) toast('Please select at least one question bank', 'error');
-                else setStep(2);
+                const newErrors: Record<string, string> = {};
+                if (!title.trim()) newErrors.title = 'Please enter a test name';
+                if (selectedBankIds.length === 0) newErrors.banks = 'Please select at least one question bank';
+                
+                if (Object.keys(newErrors).length > 0) {
+                  setErrors(newErrors);
+                } else {
+                  setErrors({});
+                  setStep(2);
+                }
               }}>Next Step</Button>
             </div>
           </CardContent>
@@ -243,6 +273,40 @@ export const CreateTest = () => {
               </div>
             </div>
 
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+              <h4 className="text-sm font-medium text-slate-700">Auto-Select by Difficulty</h4>
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <Input 
+                    type="number" 
+                    min={0}
+                    label={`Easy (Max: ${availableQuestions.filter(q => q.difficulty === 'Easy').length})`}
+                    value={autoSelectCounts.Easy}
+                    onChange={e => setAutoSelectCounts(prev => ({ ...prev, Easy: Math.max(0, parseInt(e.target.value) || 0) }))}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input 
+                    type="number" 
+                    min={0}
+                    label={`Medium (Max: ${availableQuestions.filter(q => q.difficulty === 'Medium').length})`}
+                    value={autoSelectCounts.Medium}
+                    onChange={e => setAutoSelectCounts(prev => ({ ...prev, Medium: Math.max(0, parseInt(e.target.value) || 0) }))}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input 
+                    type="number" 
+                    min={0}
+                    label={`Hard (Max: ${availableQuestions.filter(q => q.difficulty === 'Hard').length})`}
+                    value={autoSelectCounts.Hard}
+                    onChange={e => setAutoSelectCounts(prev => ({ ...prev, Hard: Math.max(0, parseInt(e.target.value) || 0) }))}
+                  />
+                </div>
+                <Button onClick={handleAutoSelect} variant="outline" className="bg-white">Auto Select</Button>
+              </div>
+            </div>
+
             <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
               {availableQuestions.map((q, i) => (
                 <label key={q.id} className="flex items-start p-3 border border-slate-100 bg-slate-50 rounded-lg hover:bg-slate-100 cursor-pointer">
@@ -250,7 +314,7 @@ export const CreateTest = () => {
                     type="checkbox" 
                     className="mt-1 h-4 w-4 text-blue-600 rounded border-slate-300"
                     checked={selectedQuestionIds.includes(q.id)}
-                    onChange={() => toggleQuestion(q.id)}
+                    onChange={() => { toggleQuestion(q.id); setErrors(prev => ({ ...prev, questions: '' })); }}
                   />
                   <div className="ml-3 flex-1">
                     <p className="text-sm font-medium text-slate-900 line-clamp-2">Q{i+1}: {q.question}</p>
@@ -262,12 +326,17 @@ export const CreateTest = () => {
                 </label>
               ))}
             </div>
+            {errors.questions && <p className="text-[13px] text-red-500 mt-1.5">{errors.questions}</p>}
 
             <div className="flex justify-between pt-4">
               <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
               <Button onClick={() => {
-                if (selectedQuestionIds.length === 0) toast('Please select at least one question', 'error');
-                else setStep(3);
+                if (selectedQuestionIds.length === 0) {
+                  setErrors({ questions: 'Please select at least one question' });
+                } else {
+                  setErrors({});
+                  setStep(3);
+                }
               }}>Next Step</Button>
             </div>
           </CardContent>

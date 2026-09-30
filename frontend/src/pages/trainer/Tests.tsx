@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { Test, Schedule } from '../../types';
 import { api } from '../../services/api';
 import { ReconductModal } from '../../components/trainer/ReconductModal';
+import { ExtendTimeModal } from '../../components/trainer/ExtendTimeModal';
 
 export const Tests = () => {
   const { user } = useAuth();
@@ -21,6 +22,11 @@ export const Tests = () => {
   // Reconduct modal state
   const [selectedTestForReconduct, setSelectedTestForReconduct] = useState<Test | null>(null);
   const [isReconductModalOpen, setIsReconductModalOpen] = useState(false);
+
+  // Extend time modal state
+  const [selectedScheduleForExtend, setSelectedScheduleForExtend] = useState<Schedule | null>(null);
+  const [selectedTestForExtend, setSelectedTestForExtend] = useState<Test | null>(null);
+  const [isExtendTimeModalOpen, setIsExtendTimeModalOpen] = useState(false);
 
   const fetchTests = async () => {
     try {
@@ -73,6 +79,12 @@ export const Tests = () => {
   const openReconduct = (test: Test) => {
     setSelectedTestForReconduct(test);
     setIsReconductModalOpen(true);
+  };
+
+  const openExtendTime = (schedule: Schedule, test: Test) => {
+    setSelectedScheduleForExtend(schedule);
+    setSelectedTestForExtend(test);
+    setIsExtendTimeModalOpen(true);
   };
 
   const basePath = user?.role === 'institution' ? '/institution' : user?.role === 'admin' ? '/admin' : '/trainer';
@@ -140,6 +152,7 @@ export const Tests = () => {
                     const activeSchedule = testSchedules.find(s => now >= s.startTime && now <= s.endTime);
                     const upcomingSchedules = testSchedules.filter(s => s.startTime > now);
                     const pastSchedules = testSchedules.filter(s => s.endTime < now);
+                    const latestSchedule = activeSchedule || upcomingSchedules[0] || pastSchedules[pastSchedules.length - 1];
 
                     return (
                       <tr key={test.id} className="hover:bg-slate-50/60 transition-colors group">
@@ -162,32 +175,62 @@ export const Tests = () => {
                             {testSchedules.length > 0 ? (
                               <div className="flex flex-wrap gap-1.5 max-w-sm">
                                 {activeSchedule && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 animate-pulse">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    Live: {activeSchedule.assignedBatch ? `Batch ${activeSchedule.assignedBatch}` : 'All'}
-                                  </span>
+                                  <button
+                                    onClick={() => openExtendTime(activeSchedule, test)}
+                                    title="Click to extend time or manage missed students"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shadow-xs group/btn cursor-pointer"
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span>Live: {activeSchedule.assignedBatch ? `Batch ${activeSchedule.assignedBatch}` : 'All'}</span>
+                                    <Clock className="h-3 w-3 ml-0.5 opacity-60 group-hover/btn:opacity-100" />
+                                  </button>
                                 )}
                                 {upcomingSchedules.map((s, idx) => (
-                                  <span key={s.id || idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                  <button
+                                    key={s.id || idx}
+                                    onClick={() => openExtendTime(s, test)}
+                                    title="Click to modify time window or student assignments"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors cursor-pointer"
+                                  >
                                     <Clock className="h-3 w-3" />
-                                    {s.assignedBatch ? `Batch ${s.assignedBatch}` : 'All'} ({new Date(s.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' })})
-                                  </span>
+                                    <span>{s.assignedBatch ? `Batch ${s.assignedBatch}` : 'All'} ({new Date(s.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' })})</span>
+                                  </button>
                                 ))}
                                 {pastSchedules.map((s, idx) => (
-                                  <span key={s.id || idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] text-slate-500 bg-slate-100">
-                                    {s.assignedBatch ? `Batch ${s.assignedBatch}` : 'All'} (Ended)
-                                  </span>
+                                  <button
+                                    key={s.id || idx}
+                                    onClick={() => openExtendTime(s, test)}
+                                    title="Session Ended. Click to extend time or setup makeup session for missed students."
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium text-slate-600 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border border-slate-200 transition-colors cursor-pointer"
+                                  >
+                                    <span>{s.assignedBatch ? `Batch ${s.assignedBatch}` : 'All'} (Ended)</span>
+                                    <span className="text-[9px] font-bold bg-white text-slate-500 px-1 rounded shadow-2xs border border-slate-200">Extend</span>
+                                  </button>
                                 ))}
                               </div>
                             ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
-                                Draft / Unscheduled
-                              </span>
+                              <Link 
+                                to={`${basePath}/tests/schedule?testId=${test.id}`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-500 transition-colors"
+                              >
+                                <Clock className="h-3 w-3" />
+                                Schedule Test
+                              </Link>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {latestSchedule && (
+                              <button
+                                onClick={() => openExtendTime(latestSchedule, test)}
+                                title="Extend Test Window / Makeup for Missed Students"
+                                className="bg-amber-50 hover:bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 text-xs font-semibold border border-amber-200 shadow-2xs"
+                              >
+                                <Clock className="h-3.5 w-3.5 text-amber-600" />
+                                <span>Extend Time</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => openReconduct(test)}
                               title="Reconduct / Schedule for Another Batch"
@@ -200,7 +243,7 @@ export const Tests = () => {
                               onClick={() => handleClone(test)}
                               disabled={isCloning === test.id}
                               title="Duplicate Test"
-                              className="text-slate-500 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors inline-flex items-center"
+                              className="text-slate-500 hover:text-sky-600 p-1.5 rounded-lg hover:bg-sky-50 transition-colors inline-flex items-center"
                             >
                               <Copy className="h-4 w-4" />
                             </button>
@@ -278,6 +321,15 @@ export const Tests = () => {
 
                     {/* Actions row */}
                     <div className="flex items-center gap-2 pt-1">
+                      {testSchedules.length > 0 && (
+                        <button
+                          onClick={() => openExtendTime(activeSchedule || upcomingSchedules[0] || testSchedules[0], test)}
+                          className="bg-amber-50 hover:bg-amber-100 text-amber-800 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold border border-amber-200 flex items-center justify-center gap-1"
+                        >
+                          <Clock className="h-3 w-3" />
+                          Extend
+                        </button>
+                      )}
                       <button
                         onClick={() => openReconduct(test)}
                         className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 py-1.5 rounded-lg text-[11px] font-semibold border border-blue-200 flex items-center justify-center gap-1"
@@ -294,7 +346,7 @@ export const Tests = () => {
                       <button
                         onClick={() => handleClone(test)}
                         disabled={isCloning === test.id}
-                        className="p-2 rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+                        className="p-2 rounded-lg text-slate-500 hover:bg-sky-50 hover:text-sky-600"
                       >
                         <Copy className="h-4 w-4" />
                       </button>
@@ -338,6 +390,19 @@ export const Tests = () => {
         onClose={() => {
           setIsReconductModalOpen(false);
           setSelectedTestForReconduct(null);
+        }}
+        onSuccess={fetchTests}
+      />
+
+      {/* Extend Time & Missed Students Modal */}
+      <ExtendTimeModal
+        schedule={selectedScheduleForExtend}
+        test={selectedTestForExtend}
+        isOpen={isExtendTimeModalOpen}
+        onClose={() => {
+          setIsExtendTimeModalOpen(false);
+          setSelectedScheduleForExtend(null);
+          setSelectedTestForExtend(null);
         }}
         onSuccess={fetchTests}
       />

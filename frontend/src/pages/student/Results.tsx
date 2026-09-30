@@ -74,7 +74,7 @@ export const StudentResults = () => {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed Tests</p>
-                <div className="p-2 bg-purple-50 text-purple-600 rounded-lg shrink-0">
+                <div className="p-2 bg-sky-50 text-sky-600 rounded-lg shrink-0">
                   <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
               </div>

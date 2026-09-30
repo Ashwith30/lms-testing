@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, ArrowUpRight, Sparkles, MoreHorizontal,
-  Database, Network, Cpu, Code2
+  Database, Network, Cpu, Code2, CheckCircle2, Award, Clock,
+  Video, Play, Star
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -19,6 +20,12 @@ import { Button } from '../../components/ui/Button';
 import { testService } from '../../services/testService';
 import { useAuth } from '../../context/AuthContext';
 import { Test, Schedule, Attempt } from '../../types';
+import {
+  StudyCircleModal,
+  CourseDetailsModal,
+  BaseModal
+} from '../../components/common/DashboardModals';
+import { useToast } from '../../context/ToastContext';
 
 interface DashboardData {
   upcoming_tests: {
@@ -106,7 +113,7 @@ const dailyActivityData = [
   { day: '30', questions: 52 },
 ];
 
-// Peer Study Circle Avatars (Shades of Blue, Sky, Cyan, Teal, Emerald, Amber, Slate - NO Purple)
+// Peer Study Circle Avatars (Shades of Blue, Sky, Cyan, Teal, Emerald, Amber, Slate)
 const studyCircleMembers = [
   { name: 'Aarav Patel', initial: 'AP', color: 'from-blue-600 to-sky-500', score: '96%' },
   { name: 'Sarah Jenkins', initial: 'SJ', color: 'from-sky-500 to-cyan-500', score: '94%' },
@@ -122,9 +129,17 @@ const studyCircleMembers = [
 
 export const StudentDashboard = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [performanceTab, setPerformanceTab] = useState<PerformanceTabType>('assessments');
+
+  // Modals state
+  const [isStudyCircleOpen, setIsStudyCircleOpen] = useState(false);
+  const [selectedCourseDetails, setSelectedCourseDetails] = useState<string | null>(null);
+  const [infoModalTitle, setInfoModalTitle] = useState<string | null>(null);
+  const [infoModalDesc, setInfoModalDesc] = useState<string | null>(null);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -148,7 +163,7 @@ export const StudentDashboard = () => {
 
   return (
     <div className="space-y-6 animate-in pb-12 font-sans text-slate-800">
-      {/* Top Banner / Welcome Row (Clean Royal Blue to Sky Blue Palette) */}
+      {/* Top Banner / Welcome Row */}
       <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-700 p-5 sm:p-6 rounded-2xl border border-blue-600/30 shadow-md text-white">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -160,12 +175,10 @@ export const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* Main 3-Column Layout (Shades of Blue, White & Silver) */}
+      {/* Main 3-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* ========================================================================= */}
-        {/* COLUMN 1: Hero Metrics & Spotlight Focus Cards (Col Span 3 / 12)          */}
-        {/* ========================================================================= */}
+        {/* COLUMN 1: Hero Metrics & Spotlight Focus Cards */}
         <div className="lg:col-span-3 space-y-5">
           
           {/* 1. Overall Grade Index */}
@@ -196,13 +209,11 @@ export const StudentDashboard = () => {
 
           {/* 2. Spotlight Focus Card */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-blue-300 hover:shadow-md transition-all relative overflow-hidden group">
-            {/* Ambient subtle blue glow */}
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none"></div>
 
             <div className="relative z-10">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  {/* Circular Ring Gauge */}
                   <div className="relative h-12 w-12 flex items-center justify-center">
                     <svg className="h-12 w-12 transform -rotate-90" viewBox="0 0 36 36">
                       <path
@@ -233,9 +244,15 @@ export const StudentDashboard = () => {
                   </div>
                 </div>
 
-                <span className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xs">
+                <button
+                  onClick={() => {
+                    setInfoModalTitle('Tasks Overview (Quantitative Aptitude)');
+                    setInfoModalDesc('You have completed 74% of the assigned practice questions in Module 2 (Time, Speed & Distance). Completing the remaining 8 questions will unlock the Module Benchmark Assessment.');
+                  }}
+                  className="h-6 w-6 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center text-slate-400 text-xs transition-colors cursor-pointer"
+                >
                   ⓘ
-                </span>
+                </button>
               </div>
 
               <div className="mt-4 bg-slate-50/80 rounded-xl p-3.5 border border-slate-200/80">
@@ -272,7 +289,6 @@ export const StudentDashboard = () => {
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-blue-300 hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {/* Circular Gauge */}
                 <div className="relative h-12 w-12 flex items-center justify-center">
                   <svg className="h-12 w-12 transform -rotate-90" viewBox="0 0 36 36">
                     <path
@@ -301,11 +317,22 @@ export const StudentDashboard = () => {
                 </div>
               </div>
 
-              <span className="text-slate-400 text-xs">ⓘ</span>
+              <button
+                onClick={() => {
+                  setInfoModalTitle('Accuracy Rate (94%)');
+                  setInfoModalDesc('Your accuracy represents the percentage of questions solved correctly on the first attempt across all recent mock tests and domain quizzes.');
+                }}
+                className="h-6 w-6 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center text-slate-400 text-xs transition-colors cursor-pointer"
+              >
+                ⓘ
+              </button>
             </div>
 
             {/* Peer Avatars Stack */}
-            <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between">
+            <div 
+              onClick={() => setIsStudyCircleOpen(true)}
+              className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
+            >
               <div className="flex -space-x-2 overflow-hidden">
                 {studyCircleMembers.slice(0, 4).map((member, i) => (
                   <div
@@ -317,29 +344,26 @@ export const StudentDashboard = () => {
                   </div>
                 ))}
               </div>
-              <span className="text-[11px] font-medium text-slate-500">
-                +24 classmates active
+              <span className="text-[11px] font-semibold text-blue-600 hover:underline">
+                +24 classmates active →
               </span>
             </div>
           </div>
 
         </div>
 
-        {/* ========================================================================= */}
-        {/* COLUMN 2: Deep Analytics & Multi-Line Progression Charts (Col Span 6 / 12)*/}
-        {/* ========================================================================= */}
+        {/* COLUMN 2: Deep Analytics & Progression Charts */}
         <div className="lg:col-span-6 space-y-5">
           
-          {/* 1. Score Trajectory Performance Chart */}
+          {/* Score Trajectory Performance Chart */}
           <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xs relative overflow-hidden">
-            {/* Header with Subtitle, Title & Tab Group */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
               <div>
                 <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Academic Progress</p>
                 <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-slate-900 mt-0.5">Score Trajectory</h2>
               </div>
 
-              {/* 3-Button Pill Toggle Group (Assessments, Accuracy, Study Hours) */}
+              {/* 3-Button Pill Toggle Group */}
               <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200/80 self-start sm:self-auto shadow-xs">
                 {(['assessments', 'accuracy', 'study_hours'] as const).map((tab) => {
                   const labels = {
@@ -366,7 +390,7 @@ export const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Monthly Spline Line Chart with Dots */}
+            {/* Monthly Line Chart */}
             <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyPerformanceData[performanceTab]} margin={{ top: 15, right: 15, left: -20, bottom: 5 }}>
@@ -413,7 +437,7 @@ export const StudentDashboard = () => {
             </div>
           </div>
 
-          {/* 2. Daily Practice Wave Activity Chart */}
+          {/* Daily Practice Activity Chart */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -448,21 +472,24 @@ export const StudentDashboard = () => {
 
         </div>
 
-        {/* ========================================================================= */}
-        {/* COLUMN 3: Right Sidebar KPIs & Community Widgets (Col Span 3 / 12)       */}
-        {/* ========================================================================= */}
+        {/* COLUMN 3: Right Sidebar KPIs & Community Widgets */}
         <div className="lg:col-span-3 space-y-5">
           
           {/* 1. Statistics Mini-Bars */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-slate-900 text-sm">Statistics</h3>
-              <MoreHorizontal className="h-4 w-4 text-slate-400 cursor-pointer hover:text-slate-600" />
+              <MoreHorizontal 
+                onClick={() => setIsStatsModalOpen(true)}
+                className="h-4 w-4 text-slate-400 cursor-pointer hover:text-slate-600 transition-colors" 
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              {/* Mini Left KPI */}
-              <div className="bg-blue-50/60 rounded-xl p-3 border border-blue-100">
+              <div 
+                onClick={() => setIsStatsModalOpen(true)}
+                className="bg-blue-50/60 rounded-xl p-3 border border-blue-100 hover:border-blue-300 cursor-pointer transition-colors"
+              >
                 <div className="flex items-end gap-1 h-8 mb-2">
                   <div className="w-1.5 h-3 bg-blue-300 rounded-full"></div>
                   <div className="w-1.5 h-5 bg-blue-400 rounded-full"></div>
@@ -475,8 +502,10 @@ export const StudentDashboard = () => {
                 <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider mt-0.5">Tests Done</p>
               </div>
 
-              {/* Mini Right KPI */}
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
+              <div 
+                onClick={() => setIsStatsModalOpen(true)}
+                className="bg-slate-50 rounded-xl p-3 border border-slate-200/80 hover:border-slate-300 cursor-pointer transition-colors"
+              >
                 <div className="flex items-end gap-1 h-8 mb-2">
                   <div className="w-1.5 h-4 bg-amber-300 rounded-full"></div>
                   <div className="w-1.5 h-6 bg-amber-400 rounded-full"></div>
@@ -502,13 +531,16 @@ export const StudentDashboard = () => {
 
             <div className="space-y-3.5">
               {/* Category 1 */}
-              <div className="flex items-center justify-between">
+              <div 
+                onClick={() => setSelectedCourseDetails('Aptitude')}
+                className="flex items-center justify-between p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center font-bold">
+                  <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center font-bold group-hover:scale-105 transition-transform">
                     <Network className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-xs text-slate-900">Quantitative Aptitude</h4>
+                    <h4 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors">Quantitative Aptitude</h4>
                     <p className="text-[10px] text-slate-500">Speed Math & Logic</p>
                   </div>
                 </div>
@@ -516,13 +548,16 @@ export const StudentDashboard = () => {
               </div>
 
               {/* Category 2 */}
-              <div className="flex items-center justify-between">
+              <div 
+                onClick={() => setSelectedCourseDetails('Reasoning')}
+                className="flex items-center justify-between p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center font-bold">
+                  <div className="h-9 w-9 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center font-bold group-hover:scale-105 transition-transform">
                     <Code2 className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-xs text-slate-900">Logical Reasoning</h4>
+                    <h4 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors">Logical Reasoning</h4>
                     <p className="text-[10px] text-slate-500">Puzzles & Deductions</p>
                   </div>
                 </div>
@@ -530,13 +565,16 @@ export const StudentDashboard = () => {
               </div>
 
               {/* Category 3 */}
-              <div className="flex items-center justify-between">
+              <div 
+                onClick={() => setSelectedCourseDetails('Verbal')}
+                className="flex items-center justify-between p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-100 flex items-center justify-center font-bold">
+                  <div className="h-9 w-9 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-100 flex items-center justify-center font-bold group-hover:scale-105 transition-transform">
                     <Database className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-xs text-slate-900">Verbal Ability</h4>
+                    <h4 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors">Verbal Ability</h4>
                     <p className="text-[10px] text-slate-500">Grammar & Reading</p>
                   </div>
                 </div>
@@ -544,13 +582,16 @@ export const StudentDashboard = () => {
               </div>
 
               {/* Category 4 */}
-              <div className="flex items-center justify-between">
+              <div 
+                onClick={() => setSelectedCourseDetails('Technical')}
+                className="flex items-center justify-between p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold">
+                  <div className="h-9 w-9 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold group-hover:scale-105 transition-transform">
                     <Cpu className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-xs text-slate-900">Technical MCQs</h4>
+                    <h4 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors">Technical MCQs</h4>
                     <p className="text-[10px] text-slate-500">Core CS & Output</p>
                   </div>
                 </div>
@@ -563,20 +604,26 @@ export const StudentDashboard = () => {
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
             <div className="flex items-center justify-between mb-3.5">
               <h3 className="font-bold text-slate-900 text-sm">Study Circle (28 Peers)</h3>
-              <span className="text-xs font-bold text-blue-600 hover:text-blue-700 tracking-wider cursor-pointer">
+              <span 
+                onClick={() => setIsStudyCircleOpen(true)}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 tracking-wider cursor-pointer"
+              >
                 VIEW ALL
               </span>
             </div>
 
-            {/* 2 Rows of 5 Member Avatars */}
+            {/* Avatars */}
             <div className="grid grid-cols-5 gap-2.5">
               {studyCircleMembers.map((member, idx) => (
-                <div key={idx} className="group relative flex flex-col items-center">
+                <div 
+                  key={idx} 
+                  onClick={() => setIsStudyCircleOpen(true)}
+                  className="group relative flex flex-col items-center"
+                >
                   <div className={`h-8 w-8 rounded-full bg-gradient-to-tr ${member.color} text-white font-bold text-[10px] flex items-center justify-center shadow-xs cursor-pointer group-hover:scale-110 transition-transform`}>
                     {member.initial}
                   </div>
                   
-                  {/* Tooltip on hover */}
                   <div className="absolute bottom-full mb-1 hidden group-hover:flex flex-col items-center z-20 pointer-events-none">
                     <div className="bg-slate-900 text-white text-[10px] font-semibold py-1 px-2 rounded-md whitespace-nowrap shadow-lg">
                       {member.name} ({member.score})
@@ -591,6 +638,194 @@ export const StudentDashboard = () => {
 
       </div>
 
+      {/* ============================================================ */}
+      {/* FEATURED VIDEO LECTURES & MASTERCLASSES SECTION              */}
+      {/* ============================================================ */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-1.5 text-blue-600 font-bold text-xs uppercase tracking-wider mb-0.5">
+              <Video className="h-4 w-4" />
+              <span>Video Learning Hub</span>
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Featured Lectures & Masterclasses</h3>
+            <p className="text-slate-500 text-xs mt-0.5">
+              High-definition recorded workshops and problem-solving sessions from expert faculty.
+            </p>
+          </div>
+
+          <Link
+            to="/student/videos"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3.5 py-2 rounded-xl transition-all self-start sm:self-auto"
+          >
+            <span>Explore All Videos</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+          {[
+            {
+              id: 'vid-1',
+              title: 'DBMS & SQL Query Optimization: Deep Dive',
+              track: 'Technical Core',
+              instructor: 'Kiran Mehta',
+              duration: '45:30',
+              level: 'Intermediate',
+              rating: 4.9,
+              progress: 70,
+              gradient: 'from-blue-600 to-blue-800',
+            },
+            {
+              id: 'vid-2',
+              title: 'Quantitative Aptitude: Time, Speed & Distance Hacks',
+              track: 'Quantitative Aptitude',
+              instructor: 'Rahul Kumar',
+              duration: '38:15',
+              level: 'Beginner',
+              rating: 4.8,
+              progress: 100,
+              gradient: 'from-sky-600 to-blue-700',
+            },
+            {
+              id: 'vid-4',
+              title: 'Dynamic Programming & Recursion Masterclass',
+              track: 'DSA & Algorithms',
+              instructor: 'Rahul Kumar',
+              duration: '1:15:20',
+              level: 'Advanced',
+              rating: 5.0,
+              progress: 15,
+              gradient: 'from-amber-600 to-orange-800',
+            },
+          ].map((vid) => (
+            <Link
+              key={vid.id}
+              to="/student/videos"
+              className="group p-3 rounded-xl border border-slate-200/80 hover:border-blue-300 hover:shadow-md transition-all flex flex-col justify-between bg-slate-50/50 hover:bg-white"
+            >
+              <div className="space-y-3">
+                <div className={`relative h-28 rounded-lg bg-gradient-to-br ${vid.gradient} p-2.5 flex flex-col justify-between text-white overflow-hidden shadow-xs`}>
+                  <div className="flex items-center justify-between text-[10px] font-bold">
+                    <span className="bg-black/40 px-2 py-0.5 rounded backdrop-blur-xs">{vid.track}</span>
+                    <span className="bg-white/20 px-2 py-0.5 rounded">{vid.level}</span>
+                  </div>
+
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all shadow-md">
+                      <Play className="h-4 w-4 fill-white ml-0.5" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] font-semibold">
+                    <span className="bg-black/60 px-1.5 py-0.5 rounded">{vid.duration}</span>
+                    <span className="flex items-center gap-1 text-amber-300">
+                      <Star className="h-3 w-3 fill-amber-300" /> {vid.rating}
+                    </span>
+                  </div>
+
+                  {vid.progress > 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+                      <div
+                        className={`h-full ${vid.progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                        style={{ width: `${vid.progress}%` }}
+                      ></div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-xs text-slate-900 leading-snug group-hover:text-blue-600 transition-colors line-clamp-1">
+                    {vid.title}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-1">Instructor: {vid.instructor}</p>
+                </div>
+              </div>
+
+              <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span className="text-slate-400 font-medium">
+                  {vid.progress === 100 ? '✓ Completed' : vid.progress > 0 ? `${vid.progress}% Watched` : 'Not started'}
+                </span>
+                <span className="font-bold text-blue-600 group-hover:translate-x-0.5 transition-transform">
+                  Watch Now →
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ============================================================ */}
+      {/* STUDENT MODALS                                               */}
+      {/* ============================================================ */}
+
+      {/* 1. Study Circle Modal */}
+      <StudyCircleModal
+        isOpen={isStudyCircleOpen}
+        onClose={() => setIsStudyCircleOpen(false)}
+        members={studyCircleMembers}
+      />
+
+      {/* 2. Course Details Modal */}
+      <CourseDetailsModal
+        isOpen={selectedCourseDetails !== null}
+        onClose={() => setSelectedCourseDetails(null)}
+        courseName={selectedCourseDetails}
+      />
+
+      {/* 3. Info Explanation Dialog */}
+      {infoModalTitle && (
+        <BaseModal
+          isOpen={infoModalTitle !== null}
+          onClose={() => setInfoModalTitle(null)}
+          title={infoModalTitle}
+          icon={<Award className="h-5 w-5 text-blue-600" />}
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-slate-600 leading-relaxed">{infoModalDesc}</p>
+            <button
+              onClick={() => setInfoModalTitle(null)}
+              className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-xs cursor-pointer"
+            >
+              Got it
+            </button>
+          </div>
+        </BaseModal>
+      )}
+
+      {/* 4. Statistics Detailed Breakdown */}
+      <BaseModal
+        isOpen={isStatsModalOpen}
+        onClose={() => setIsStatsModalOpen(false)}
+        title="Learning & Practice Summary"
+        subtitle="Cumulative assessment milestones and hours invested"
+        icon={<Clock className="h-5 w-5 text-blue-600" />}
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+              <span className="text-[10px] uppercase font-bold text-blue-600">Completed Exams</span>
+              <span className="text-xl font-bold text-slate-900 block mt-1">{completedCount} Tests</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-[10px] uppercase font-bold text-slate-500">Total Practice Time</span>
+              <span className="text-xl font-bold text-slate-900 block mt-1">24.5 Hours</span>
+            </div>
+          </div>
+          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-800">
+            <p className="font-bold">Placement Readiness: 92%</p>
+            <p className="mt-0.5 text-[11px]">You are ahead of 95% of candidates in Batch 2026.</p>
+          </div>
+          <button
+            onClick={() => setIsStatsModalOpen(false)}
+            className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-semibold text-xs cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </BaseModal>
     </div>
   );
 };

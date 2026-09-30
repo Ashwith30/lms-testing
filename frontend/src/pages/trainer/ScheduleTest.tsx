@@ -99,6 +99,16 @@ export const ScheduleTest = () => {
     }
   }, [selectedTestId]);
 
+  const handleQuickDuration = (extraMinutes: number) => {
+    if (!startTime) return;
+    const [h, m] = startTime.split(':').map(Number);
+    const startMins = h * 60 + m;
+    const endMins = (startMins + extraMinutes) % (24 * 60);
+    const endH = String(Math.floor(endMins / 60)).padStart(2, '0');
+    const endM = String(endMins % 60).padStart(2, '0');
+    setEndTime(`${endH}:${endM}`);
+  };
+
   const handleSaveSchedule = async () => {
     if (!selectedTestId || !date || !startTime || !endTime) {
       toast('Please fill all required fields', 'error');
@@ -161,7 +171,7 @@ export const ScheduleTest = () => {
         </h1>
         <p className="text-slate-500 text-sm mt-0.5">
           {isEditMode 
-            ? 'Modify testing window, start/end times, and assigned student batches.' 
+            ? 'Modify testing window, extend time for missed students, and update assigned batches.' 
             : 'Assign tests to specific student batches, setup makeup sessions, or reconduct across cohorts.'}
         </p>
       </div>
@@ -217,19 +227,58 @@ export const ScheduleTest = () => {
             onChange={e => setDate(e.target.value)}
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Input 
-              type="time"
-              label="Start Time" 
-              value={startTime}
-              onChange={e => setStartTime(e.target.value)}
-            />
-            <Input 
-              type="time"
-              label="End Time" 
-              value={endTime}
-              onChange={e => setEndTime(e.target.value)}
-            />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-blue-600" />
+                Testing Window Duration Presets
+              </label>
+              <div className="flex items-center gap-1 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDuration(30)}
+                  className="px-2 py-0.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded text-slate-600 font-medium transition-colors"
+                >
+                  +30m
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDuration(60)}
+                  className="px-2 py-0.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded text-slate-600 font-medium transition-colors"
+                >
+                  +1h
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDuration(120)}
+                  className="px-2 py-0.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded text-slate-600 font-medium transition-colors"
+                >
+                  +2h
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDuration(1440)}
+                  className="px-2 py-0.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded text-slate-600 font-medium transition-colors"
+                >
+                  +24h
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <Input 
+                type="time"
+                label="Start Time" 
+                value={startTime}
+                onChange={e => setStartTime(e.target.value)}
+              />
+              <Input 
+                type="time"
+                label="End Time" 
+                value={endTime}
+                onChange={e => setEndTime(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">

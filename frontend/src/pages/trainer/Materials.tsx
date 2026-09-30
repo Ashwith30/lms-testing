@@ -11,7 +11,7 @@ import { Material } from '../../types';
 
 const TYPE_META: Record<Material['type'], { icon: React.ElementType; color: string; bg: string; label: string }> = {
   pdf:   { icon: FileText, color: 'text-red-600',    bg: 'bg-red-50',    label: 'PDF / Document' },
-  video: { icon: Video,    color: 'text-purple-600', bg: 'bg-purple-50', label: 'Video' },
+  video: { icon: Video,    color: 'text-sky-600',    bg: 'bg-sky-50',    label: 'Video' },
   link:  { icon: Link2,    color: 'text-blue-600',   bg: 'bg-blue-50',   label: 'Link' },
   note:  { icon: StickyNote, color: 'text-amber-600', bg: 'bg-amber-50', label: 'Note / Text' },
 };
@@ -261,7 +261,7 @@ export const TrainerMaterials = () => {
       ) : (
         <div className="space-y-3">
           {materials.map(mat => {
-            const meta = TYPE_META[mat.type];
+            const meta = TYPE_META[mat.type as keyof typeof TYPE_META] || { icon: FileText, color: 'text-slate-600', bg: 'bg-slate-50', label: mat.type || 'Unknown' };
             const Icon = meta.icon;
             return (
               <Card key={mat.id} className={`transition-all hover:shadow-sm ${mat.isReleased ? 'border-green-200' : 'border-slate-200'}`}>

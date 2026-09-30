@@ -1,4 +1,4 @@
-import { Test, Schedule, Attempt, Question } from '../types';
+import { Test, Schedule, Attempt, Question, ScheduleAttendance, ExtendSchedulePayload } from '../types';
 import { api } from './api';
 
 export const testService = {
@@ -72,6 +72,19 @@ export const testService = {
     return res.data;
   },
 
+  getScheduleAttendance: async (scheduleId: string): Promise<ScheduleAttendance> => {
+    const res = await api.get(`/schedules/${scheduleId}/attendance`);
+    return res.data;
+  },
+
+  extendSchedule: async (
+    scheduleId: string, 
+    payload: ExtendSchedulePayload
+  ): Promise<{ schedule: Schedule; isMakeupSession?: boolean; targetStudentsCount?: number; message: string }> => {
+    const res = await api.post(`/schedules/${scheduleId}/extend`, payload);
+    return res.data;
+  },
+
   getSchedulesForTest: async (testId: string): Promise<Schedule[]> => {
     try {
       const res = await api.get(`/tests/${testId}/schedules`);
@@ -113,11 +126,9 @@ export const testService = {
         }
       }
 
-      // Find attempt specific to this schedule, or matching the test
-      const attempt = attempts.find(a => 
-        (a.scheduleId && a.scheduleId === s.id) || 
-        (!a.scheduleId && a.testId === s.testId && a.startedAt >= s.startTime)
-      ) || attempts.find(a => a.testId === s.testId);
+      // Find attempt specific to this schedule, or matching test without another scheduleId
+      const attempt = attempts.find(a => a.scheduleId === s.id) || 
+                      attempts.find(a => !a.scheduleId && a.testId === s.testId);
       
       const isCompleted = attempt?.status === 'submitted' || attempt?.status === 'auto_submitted';
       const isAvailable = now >= s.startTime && now <= s.endTime && !isCompleted;

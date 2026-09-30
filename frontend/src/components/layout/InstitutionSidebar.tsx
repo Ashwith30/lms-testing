@@ -12,6 +12,7 @@ import {
   BarChart3, 
   BarChart,
   GraduationCap,
+  Video,
   LogOut 
 } from 'lucide-react';
 
@@ -41,6 +42,7 @@ export const InstitutionSidebar = () => {
     { label: 'Schedule Test',    icon: Calendar,        path: '/institution/tests/schedule' },
     { label: 'Question Banks',   icon: Database,        path: '/institution/question-bank' },
     { label: 'Upload Questions', icon: Upload,          path: '/institution/question-bank/upload' },
+    { label: 'Video Lectures',   icon: Video,           path: '/institution/videos' },
   ];
 
   const linkClasses = ({ isActive }: { isActive: boolean }) => cn(

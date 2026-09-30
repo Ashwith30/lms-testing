@@ -202,6 +202,45 @@ export interface ScheduleAssignment {
   assigneeId: string;
 }
 
+export interface ScheduleAttendanceStudent {
+  id: string;
+  name: string;
+  email: string;
+  studentId?: string;
+  batch?: string;
+  department?: string;
+  status: 'completed' | 'in_progress' | 'missed';
+  score?: number | null;
+  percentage?: number | null;
+  startedAt?: string | null;
+  submittedAt?: string | null;
+  attemptId?: string | null;
+}
+
+export interface ScheduleAttendance {
+  scheduleId: string;
+  testId: string;
+  testTitle: string;
+  startTime: string;
+  endTime: string;
+  assignedBatch?: string;
+  totalEligible: number;
+  completedCount: number;
+  inProgressCount: number;
+  missedCount: number;
+  students: ScheduleAttendanceStudent[];
+}
+
+export interface ExtendSchedulePayload {
+  extensionMinutes?: number;
+  newEndTime?: string;
+  mode?: 'all' | 'missed_only' | 'selected_students';
+  selectedStudentIds?: string[];
+  createMakeupSession?: boolean;
+  resetIncompleteAttempts?: boolean;
+  attemptsAllowed?: number;
+}
+
 export interface ProctoringSummary {
   tabSwitches: number;
   windowBlurs: number;
@@ -307,9 +346,29 @@ export type ViolationType =
 export interface NotificationItem {
   id: string;
   title: string;
+  message?: string;
   description: string;
   time: string;
   isRead: boolean;
-  type: 'info' | 'success' | 'alert';
+  type: 'info' | 'success' | 'alert' | 'warning' | 'announcement';
   link?: string;
+  targetBatch?: string;
+  targetRole?: string;
+  priority?: 'normal' | 'high' | 'urgent';
+  sendEmail?: boolean;
+  senderId?: string;
+  senderName?: string;
+  createdAt?: string;
 }
+
+export interface BatchNotificationPayload {
+  title: string;
+  message: string;
+  type?: 'info' | 'success' | 'alert' | 'warning' | 'announcement';
+  targetBatch?: string;
+  targetRole?: string;
+  link?: string;
+  priority?: 'normal' | 'high' | 'urgent';
+  sendEmail?: boolean;
+}
+

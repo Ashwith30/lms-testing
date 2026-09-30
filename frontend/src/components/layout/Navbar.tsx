@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Search, Check, AlertCircle, Info, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 import { useAuth } from '../../context/AuthContext';
+import { notificationService } from '../../services/notificationService';
 
 export interface Notification {
   id: string;
@@ -10,7 +11,7 @@ export interface Notification {
   description: string;
   time: string;
   isRead: boolean;
-  type: 'info' | 'success' | 'alert';
+  type: 'info' | 'success' | 'alert' | 'warning' | 'announcement';
   link?: string;
 }
 
@@ -131,11 +132,22 @@ export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Initialize notifications based on user role
+  // Initialize notifications from backend, fallback to initial list
   useEffect(() => {
     const role = user?.role || 'student';
-    const initialList = mockNotifications[role] || mockNotifications.student;
-    setNotifications(initialList);
+    const fallbackList = mockNotifications[role] || mockNotifications.student;
+
+    notificationService.getNotifications()
+      .then((realList) => {
+        if (realList && realList.length > 0) {
+          setNotifications(realList as any);
+        } else {
+          setNotifications(fallbackList);
+        }
+      })
+      .catch(() => {
+        setNotifications(fallbackList);
+      });
   }, [user]);
 
   // Click outside to close dropdown
@@ -151,14 +163,20 @@ export const Navbar = () => {
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  const handleMarkAllRead = (e: React.MouseEvent) => {
+  const handleMarkAllRead = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    try {
+      await notificationService.markAllAsRead();
+    } catch {}
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     // Mark as read
     setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n));
+    try {
+      await notificationService.markAsRead(notification.id);
+    } catch {}
     // Close dropdown
     setIsOpen(false);
     // Redirect to the referenced page

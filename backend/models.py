@@ -525,3 +525,37 @@ class MaterialAssignment(Base):
     releaseDate = Column(String(64), nullable=True)
 
     material = relationship("Material", back_populates="assignments")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(String(64), primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    type = Column(String(50), default="info")  # 'info', 'alert', 'success', 'warning', 'announcement'
+    targetBatch = Column(String(100), default="all")  # 'all' or batch name or batch id (e.g. 'Class of 2026', 'batch-2026')
+    targetRole = Column(String(50), default="student")  # 'all', 'student', 'trainer', 'institution'
+    link = Column(String(255), nullable=True)
+    priority = Column(String(20), default="normal")  # 'normal', 'high', 'urgent'
+    sendEmail = Column(Boolean, default=False)
+    senderId = Column(String(64), ForeignKey("users.id"), nullable=True)
+    senderName = Column(String(255), nullable=True)
+    createdAt = Column(String(64), default=get_utc_now)
+
+    sender = relationship("User", foreign_keys=[senderId])
+    reads = relationship("NotificationRead", back_populates="notification", cascade="all, delete-orphan")
+
+    @property
+    def description(self):
+        return self.message
+
+
+class NotificationRead(Base):
+    __tablename__ = "notification_reads"
+    id = Column(String(64), primary_key=True, index=True)
+    notificationId = Column(String(64), ForeignKey("notifications.id", ondelete="CASCADE"), nullable=False)
+    userId = Column(String(64), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    readAt = Column(String(64), default=get_utc_now)
+
+    notification = relationship("Notification", back_populates="reads")
+    user = relationship("User")

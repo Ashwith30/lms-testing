@@ -101,8 +101,8 @@ export const TestResult = () => {
         return {
           title: 'Multiple Faces Detected',
           icon: Users,
-          color: 'text-purple-600 bg-purple-50 border-purple-200',
-          badgeColor: 'bg-purple-100 text-purple-800 border-purple-200'
+          color: 'text-sky-600 bg-sky-50 border-sky-200',
+          badgeColor: 'bg-sky-100 text-sky-800 border-sky-200'
         };
       case 'FULLSCREEN_EXIT':
         return {
@@ -214,7 +214,7 @@ export const TestResult = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-6 pt-4 pb-12">
       <Card className="overflow-hidden border-0 shadow-lg relative">
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-blue-600 to-blue-500"></div>
         <CardContent className="p-8 relative pt-24 text-center">
           <div className="bg-white rounded-full p-4 inline-block shadow-lg mb-4 ring-4 ring-slate-50">
             <Trophy className={`h-12 w-12 ${isPassed ? 'text-yellow-500' : 'text-slate-400'}`} />

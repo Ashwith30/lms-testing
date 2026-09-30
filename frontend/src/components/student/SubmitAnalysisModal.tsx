@@ -133,14 +133,14 @@ export const SubmitAnalysisModal: React.FC<SubmitAnalysisModalProps> = ({
               </p>
             </div>
 
-            <div className={`rounded-xl p-3.5 text-center border ${hasMarked ? 'bg-purple-50 border-purple-200' : 'bg-slate-50 border-slate-200'}`}>
+            <div className={`rounded-xl p-3.5 text-center border ${hasMarked ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
               <div className="flex items-center justify-center gap-1">
-                <Bookmark className={`h-3.5 w-3.5 ${hasMarked ? 'text-purple-600 fill-purple-600' : 'text-slate-400'}`} />
-                <p className={`text-[11px] font-semibold uppercase tracking-wider ${hasMarked ? 'text-purple-700' : 'text-slate-500'}`}>
+                <Bookmark className={`h-3.5 w-3.5 ${hasMarked ? 'text-amber-600 fill-amber-600' : 'text-slate-400'}`} />
+                <p className={`text-[11px] font-semibold uppercase tracking-wider ${hasMarked ? 'text-amber-700' : 'text-slate-500'}`}>
                   For Review
                 </p>
               </div>
-              <p className={`text-2xl font-black mt-1 ${hasMarked ? 'text-purple-800' : 'text-slate-700'}`}>
+              <p className={`text-2xl font-black mt-1 ${hasMarked ? 'text-amber-800' : 'text-slate-700'}`}>
                 {markedCount}
               </p>
             </div>
@@ -190,8 +190,8 @@ export const SubmitAnalysisModal: React.FC<SubmitAnalysisModalProps> = ({
 
                 if (isMarked) {
                   badgeStyle = isAnswered 
-                    ? 'bg-purple-100 border-purple-400 text-purple-900 font-bold hover:bg-purple-200'
-                    : 'bg-purple-50 border-purple-300 text-purple-700 font-bold hover:bg-purple-100';
+                    ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold hover:bg-amber-200'
+                    : 'bg-amber-50 border-amber-300 text-amber-700 font-bold hover:bg-amber-100';
                   statusLabel = isAnswered ? 'Answered & Marked' : 'Marked for Review';
                 } else if (isAnswered) {
                   badgeStyle = 'bg-emerald-600 border-emerald-700 text-white font-bold hover:bg-emerald-700 shadow-sm';
@@ -211,7 +211,7 @@ export const SubmitAnalysisModal: React.FC<SubmitAnalysisModalProps> = ({
                   >
                     <span>{idx + 1}</span>
                     {isMarked && (
-                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-purple-600 rounded-full flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-amber-600 rounded-full flex items-center justify-center">
                         <Bookmark className="h-2 w-2 text-white fill-white" />
                       </span>
                     )}
@@ -235,8 +235,8 @@ export const SubmitAnalysisModal: React.FC<SubmitAnalysisModalProps> = ({
                 <span>Not Visited</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-purple-50 border border-purple-300 flex items-center justify-center">
-                  <Bookmark className="h-2 w-2 text-purple-600 fill-purple-600" />
+                <div className="w-3 h-3 rounded bg-amber-50 border border-amber-300 flex items-center justify-center">
+                  <Bookmark className="h-2 w-2 text-amber-600 fill-amber-600" />
                 </div>
                 <span>Marked for Review ({markedCount})</span>
               </div>

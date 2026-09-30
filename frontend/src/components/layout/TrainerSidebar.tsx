@@ -10,6 +10,7 @@ import {
   Users, 
   BarChart, 
   BookMarked,
+  Video,
   LogOut 
 } from 'lucide-react';
 
@@ -38,6 +39,7 @@ export const TrainerSidebar = () => {
     { label: 'Upload Questions',icon: Upload,          path: '/trainer/question-bank/upload' },
     { label: 'Analytics',       icon: BarChart,        path: '/trainer/analytics' },
     { label: 'Materials',       icon: BookMarked,      path: '/trainer/materials' },
+    { label: 'Video Lectures',  icon: Video,           path: '/trainer/videos' },
   ];
 
   const linkClasses = ({ isActive }: { isActive: boolean }) => cn(

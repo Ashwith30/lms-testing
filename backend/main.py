@@ -16,7 +16,8 @@ from routers import (
     tests_router,
     attempts_router,
     analytics_router,
-    materials_router
+    materials_router,
+    notifications_router
 )
 
 # Ensure models are created
@@ -48,6 +49,7 @@ app.include_router(tests_router.router)
 app.include_router(attempts_router.router)
 app.include_router(analytics_router.router)
 app.include_router(materials_router.router)
+app.include_router(notifications_router.router)
 
 @app.get("/health")
 @app.get("/api/health")

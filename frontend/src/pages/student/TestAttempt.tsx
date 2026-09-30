@@ -774,7 +774,7 @@ export const TestAttempt = () => {
 
             <div className="flex gap-2 sm:gap-3">
               <Button variant="secondary" onClick={handleMarkReview} className="flex-1 sm:flex-none text-xs sm:text-sm">
-                <Bookmark className={`mr-1 sm:mr-2 h-4 w-4 ${currentAnswer?.status === 'marked' ? 'fill-current text-purple-600' : ''}`} /> 
+                <Bookmark className={`mr-1 sm:mr-2 h-4 w-4 ${currentAnswer?.status === 'marked' ? 'fill-current text-amber-600' : ''}`} /> 
                 {currentAnswer?.status === 'marked' ? 'Unmark' : 'Review'}
               </Button>
               <Button onClick={() => navigateQuestion(currentIdx + 1)} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 font-bold text-xs sm:text-sm">
@@ -816,7 +816,7 @@ export const TestAttempt = () => {
                     let bgColor = 'bg-white border-slate-300 text-slate-600'; // not visited
                     
                     if (status === 'answered') bgColor = 'bg-green-500 border-green-600 text-white';
-                    else if (status === 'marked') bgColor = 'bg-purple-500 border-purple-600 text-white';
+                    else if (status === 'marked') bgColor = 'bg-amber-500 border-amber-600 text-white';
                     else if (status === 'visited') bgColor = 'bg-red-500 border-red-600 text-white';
                     
                     return (
@@ -845,7 +845,7 @@ export const TestAttempt = () => {
                     Not Visited
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 rounded bg-purple-500 border border-purple-600"></div>
+                    <div className="w-3.5 h-3.5 rounded bg-amber-500 border border-amber-600"></div>
                     Marked
                   </div>
                 </div>

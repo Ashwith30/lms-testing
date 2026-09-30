@@ -30,7 +30,7 @@ const difficultyData = [
 const subjectsData = [
   { name: 'Computer Networks', score: 82, color: 'bg-blue-600' },
   { name: 'Database Management', score: 68, color: 'bg-cyan-500' },
-  { name: 'Operating Systems', score: 74, color: 'bg-indigo-600' },
+  { name: 'Operating Systems', score: 74, color: 'bg-sky-600' },
   { name: 'Data Structures', score: 58, color: 'bg-amber-500' },
   { name: 'Web Technologies', score: 91, color: 'bg-emerald-500' },
 ];
@@ -99,7 +99,7 @@ export const StudentAnalytics = () => {
         {/* 3. Pass Rate */}
         <div className="bg-white rounded-xl border border-[#e2e5ea] p-4 shadow-xs">
           <div className="flex items-center gap-2 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+            <div className="h-8 w-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <span className="text-[11px] font-semibold text-[#9099a8] uppercase tracking-wider">Pass Rate</span>

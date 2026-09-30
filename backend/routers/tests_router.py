@@ -1,4 +1,5 @@
 import json
+import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional, Union
@@ -396,3 +397,227 @@ def delete_schedule(
     db.delete(db_sched)
     db.commit()
     return {"message": "Deleted"}
+
+@router.get("/schedules/{schedule_id}/attendance")
+def get_schedule_attendance(
+    schedule_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
+):
+    sched = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
+    if not sched:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    assigned_batch = sched.assignedBatch
+    assigned_students = sched.assignedStudents
+
+    query = db.query(models.User).filter(models.User.role == "student")
+    
+    if assigned_students and len(assigned_students) > 0 and "all" not in assigned_students:
+        query = query.filter(models.User.id.in_(assigned_students))
+    elif assigned_batch and assigned_batch.lower() != "all":
+        batch_obj = db.query(models.Batch).filter(models.Batch.name == assigned_batch).first()
+        if batch_obj:
+            query = query.join(models.StudentProfile, models.StudentProfile.userId == models.User.id)\
+                         .filter(models.StudentProfile.primaryBatchId == batch_obj.id)
+        else:
+            query = query.join(models.StudentProfile, models.StudentProfile.userId == models.User.id)\
+                         .filter(models.StudentProfile.primaryBatchId == assigned_batch)
+
+    students = query.all()
+
+    attempts = db.query(models.Attempt).filter(models.Attempt.scheduleId == schedule_id).all()
+    attempts_by_student = {att.studentId: att for att in attempts}
+
+    student_list = []
+    completed_count = 0
+    in_progress_count = 0
+    missed_count = 0
+
+    for st in students:
+        att = attempts_by_student.get(st.id)
+        if not att and sched.testId:
+            att = db.query(models.Attempt).filter(
+                models.Attempt.studentId == st.id,
+                models.Attempt.scheduleId == None,
+                models.Attempt.testId == sched.testId
+            ).first()
+
+        status_str = "missed"
+        score = None
+        percentage = None
+        started_at = None
+        submitted_at = None
+        attempt_id = None
+
+        if att:
+            attempt_id = att.id
+            started_at = att.startedAt
+            submitted_at = att.submittedAt
+            if att.status in ("submitted", "auto_submitted", "completed"):
+                status_str = "completed"
+                score = att.score
+                percentage = att.percentage
+                completed_count += 1
+            elif att.status == "in_progress":
+                status_str = "in_progress"
+                in_progress_count += 1
+            else:
+                status_str = "missed"
+                missed_count += 1
+        else:
+            missed_count += 1
+
+        student_list.append({
+            "id": st.id,
+            "name": st.name,
+            "email": st.email,
+            "studentId": st.studentId,
+            "batch": st.batch,
+            "department": st.department,
+            "status": status_str,
+            "score": score,
+            "percentage": percentage,
+            "startedAt": started_at,
+            "submittedAt": submitted_at,
+            "attemptId": attempt_id
+        })
+
+    return {
+        "scheduleId": sched.id,
+        "testId": sched.testId,
+        "testTitle": sched.test.title if sched.test else "Assessment",
+        "startTime": sched.startTime,
+        "endTime": sched.endTime,
+        "assignedBatch": sched.assignedBatch,
+        "totalEligible": len(students),
+        "completedCount": completed_count,
+        "inProgressCount": in_progress_count,
+        "missedCount": missed_count,
+        "students": student_list
+    }
+
+@router.post("/schedules/{schedule_id}/extend")
+def extend_schedule(
+    schedule_id: str,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
+):
+    sched = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
+    if not sched:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    extension_minutes = payload.get("extensionMinutes")
+    new_end_time = payload.get("newEndTime")
+    mode = payload.get("mode", "all")  # 'all', 'missed_only', 'selected_students'
+    selected_student_ids = payload.get("selectedStudentIds", [])
+    create_makeup_session = payload.get("createMakeupSession", False)
+    reset_incomplete_attempts = payload.get("resetIncompleteAttempts", False)
+    attempts_allowed = payload.get("attemptsAllowed")
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    
+    # Compute target end time
+    if new_end_time:
+        target_end_iso = new_end_time
+    elif extension_minutes:
+        try:
+            curr_end = datetime.datetime.fromisoformat(sched.endTime.replace("Z", "+00:00"))
+            base_time = max(now, curr_end)
+            new_end = base_time + datetime.timedelta(minutes=int(extension_minutes))
+            target_end_iso = new_end.isoformat()
+        except Exception:
+            target_end_iso = (now + datetime.timedelta(minutes=int(extension_minutes))).isoformat()
+    else:
+        target_end_iso = (now + datetime.timedelta(minutes=60)).isoformat()
+
+    # Determine target student IDs if filtered
+    target_student_ids = list(selected_student_ids) if selected_student_ids else []
+    if mode == "missed_only" and not target_student_ids:
+        att_sub = db.query(models.Attempt.studentId).filter(
+            models.Attempt.scheduleId == schedule_id,
+            models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])
+        ).all()
+        submitted_ids = {row[0] for row in att_sub}
+
+        query = db.query(models.User.id).filter(models.User.role == "student")
+        if sched.assignedStudents and len(sched.assignedStudents) > 0 and "all" not in sched.assignedStudents:
+            query = query.filter(models.User.id.in_(sched.assignedStudents))
+        elif sched.assignedBatch and sched.assignedBatch.lower() != "all":
+            batch_obj = db.query(models.Batch).filter(models.Batch.name == sched.assignedBatch).first()
+            if batch_obj:
+                query = query.join(models.StudentProfile, models.StudentProfile.userId == models.User.id)\
+                             .filter(models.StudentProfile.primaryBatchId == batch_obj.id)
+            else:
+                query = query.join(models.StudentProfile, models.StudentProfile.userId == models.User.id)\
+                             .filter(models.StudentProfile.primaryBatchId == sched.assignedBatch)
+        all_eligible_ids = [row[0] for row in query.all()]
+        target_student_ids = [s_id for s_id in all_eligible_ids if s_id not in submitted_ids]
+
+    # Mode 1: Dedicated makeup session for target students
+    if create_makeup_session and target_student_ids:
+        new_sched_id = models.generate_uuid("sch-")
+        new_sched = models.Schedule(
+            id=new_sched_id,
+            testId=sched.testId,
+            startTime=models.get_utc_now(),
+            endTime=target_end_iso,
+            durationMinutes=sched.durationMinutes,
+            attemptsAllowed=attempts_allowed or sched.attemptsAllowed or 1
+        )
+        db.add(new_sched)
+        
+        for st_id in target_student_ids:
+            db.add(models.ScheduleAssignment(
+                id=models.generate_uuid("sa-"),
+                scheduleId=new_sched_id,
+                assigneeType="student",
+                assigneeId=st_id
+            ))
+
+        if reset_incomplete_attempts:
+            for st_id in target_student_ids:
+                incomplete_atts = db.query(models.Attempt).filter(
+                    models.Attempt.studentId == st_id,
+                    models.Attempt.scheduleId.in_([schedule_id, new_sched_id]),
+                    models.Attempt.status.notin_(["submitted", "auto_submitted", "completed"])
+                ).all()
+                for ia in incomplete_atts:
+                    db.query(models.Answer).filter(models.Answer.attemptId == ia.id).delete()
+                    db.delete(ia)
+
+        db.commit()
+        db.refresh(new_sched)
+        return {
+            "schedule": new_sched,
+            "isMakeupSession": True,
+            "targetStudentsCount": len(target_student_ids),
+            "message": f"Makeup session created successfully for {len(target_student_ids)} missed student(s) until {target_end_iso[:16].replace('T', ' ')}."
+        }
+
+    # Mode 2: Direct extension of existing schedule
+    sched.endTime = target_end_iso
+    if attempts_allowed:
+        sched.attemptsAllowed = int(attempts_allowed)
+
+    if reset_incomplete_attempts:
+        target_for_reset = target_student_ids if target_student_ids else None
+        reset_query = db.query(models.Attempt).filter(
+            models.Attempt.scheduleId == schedule_id,
+            models.Attempt.status.notin_(["submitted", "auto_submitted", "completed"])
+        )
+        if target_for_reset:
+            reset_query = reset_query.filter(models.Attempt.studentId.in_(target_for_reset))
+        for ia in reset_query.all():
+            db.query(models.Answer).filter(models.Answer.attemptId == ia.id).delete()
+            db.delete(ia)
+
+    db.commit()
+    db.refresh(sched)
+    return {
+        "schedule": sched,
+        "isMakeupSession": False,
+        "targetStudentsCount": len(target_student_ids) if target_student_ids else None,
+        "message": f"Session window extended successfully until {target_end_iso[:16].replace('T', ' ')}."
+    }

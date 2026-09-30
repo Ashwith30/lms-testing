@@ -140,7 +140,7 @@ export const ProctoringOverlay: React.FC<ProctoringOverlayProps> = ({
               </span>
             )}
             {personCount > 1 && (
-              <span className="inline-flex items-center gap-1 bg-purple-600/95 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-lg animate-pulse border border-purple-400">
+              <span className="inline-flex items-center gap-1 bg-sky-600/95 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-lg animate-pulse border border-sky-400">
                 <AlertCircle className="h-3 w-3" /> Multiple People ({personCount})
               </span>
             )}
@@ -176,7 +176,7 @@ export const ProctoringOverlay: React.FC<ProctoringOverlayProps> = ({
               <AlertCircle className="h-3 w-3" /> Missing / Unseen
             </span>
           ) : personCount > 1 ? (
-            <span className="text-purple-400 font-bold flex items-center gap-1">
+            <span className="text-sky-400 font-bold flex items-center gap-1">
               <AlertCircle className="h-3 w-3" /> Multiple ({personCount})
             </span>
           ) : (

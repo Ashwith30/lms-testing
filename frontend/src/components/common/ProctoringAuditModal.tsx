@@ -45,7 +45,7 @@ export const ProctoringAuditModal: React.FC<ProctoringAuditModalProps> = ({
       case 'FACE_MISSING':
         return <EyeOff className="h-4 w-4 text-amber-500" />;
       case 'MULTIPLE_FACES':
-        return <Users className="h-4 w-4 text-purple-500" />;
+        return <Users className="h-4 w-4 text-sky-500" />;
       case 'FULLSCREEN_EXIT':
       case 'TAB_SWITCH':
       case 'WINDOW_BLUR':

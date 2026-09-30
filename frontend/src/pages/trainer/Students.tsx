@@ -190,7 +190,7 @@ export const TrainerStudents = () => {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 sm:p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">Top Score</p>
-                <div className="p-2 bg-purple-50 text-purple-600 rounded-lg shrink-0">
+                <div className="p-2 bg-sky-50 text-sky-600 rounded-lg shrink-0">
                   <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
               </div>
@@ -202,7 +202,7 @@ export const TrainerStudents = () => {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 sm:p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">Active</p>
-                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
                   <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
               </div>
