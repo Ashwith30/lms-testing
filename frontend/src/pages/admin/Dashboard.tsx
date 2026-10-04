@@ -366,7 +366,7 @@ export const AdminDashboard = () => {
               Institutions by Student Count
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center justify-between p-6 h-[250px]">
+          <CardContent className="flex flex-col sm:flex-row items-center justify-around p-4 sm:p-6 min-h-[250px] gap-4 sm:gap-2">
              {/* Chart Area */}
              <div className="relative w-[160px] h-[160px] shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
@@ -427,7 +427,7 @@ export const AdminDashboard = () => {
              </div>
              
              {/* Legend Area */}
-             <div className="flex-1 pl-4 space-y-2 max-w-[200px]">
+             <div className="w-full sm:flex-1 pl-0 sm:pl-4 space-y-2 max-w-full sm:max-w-[200px]">
                 {institutionData.map((item, idx) => {
                    const isHovered = activeInstitutionIndex === idx;
                    return (

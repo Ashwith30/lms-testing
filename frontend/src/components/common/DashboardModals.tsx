@@ -56,34 +56,32 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade overflow-hidden select-none"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade overflow-y-auto select-none"
       onClick={onClose}
       onWheel={(e) => e.stopPropagation()}
-      onTouchMove={(e) => e.stopPropagation()}
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', margin: 0 }}
     >
       <div 
-        className={`relative w-full ${maxWidth} bg-white rounded-2xl sm:rounded-3xl shadow-2xl shadow-slate-950/40 border border-slate-100/80 overflow-hidden flex flex-col animate-in my-auto select-text`}
+        className={`relative w-full ${maxWidth} bg-white rounded-2xl sm:rounded-3xl shadow-2xl shadow-slate-950/40 border border-slate-100/80 overflow-hidden flex flex-col animate-in my-auto select-text max-h-[calc(100dvh-2rem)] sm:max-h-[90vh]`}
         onClick={(e) => e.stopPropagation()}
-        onWheel={(e) => e.stopPropagation()}
       >
         {/* Top Accent Bar */}
         <div className="h-1.5 w-full bg-blue-600 shrink-0"></div>
 
         {/* Modal Header */}
-        <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-b from-slate-50/70 to-white shrink-0">
-          <div className="flex items-center gap-3.5 min-w-0">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-b from-slate-50/70 to-white shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
             {icon && (
-              <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
+              <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
                 {icon}
               </div>
             )}
             <div className="min-w-0">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate leading-snug">
+              <h3 className="text-sm sm:text-lg font-bold text-slate-900 tracking-tight truncate leading-snug">
                 {title}
               </h3>
               {subtitle && (
-                <p className="text-xs text-slate-500 mt-0.5 truncate leading-relaxed">
+                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 truncate leading-relaxed">
                   {subtitle}
                 </p>
               )}
@@ -92,7 +90,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer shrink-0 ml-3"
+            className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer shrink-0 ml-2"
             title="Close (Esc)"
           >
             <X className="h-4 w-4" />
@@ -100,7 +98,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-4 overflow-hidden">
+        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto max-h-[calc(100dvh-9rem)] sm:max-h-[75vh]">
           {children}
         </div>
       </div>

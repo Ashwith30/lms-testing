@@ -224,7 +224,7 @@ export const ExtendTimeModal: React.FC<ExtendTimeModalProps> = ({
                 <h2 className="text-base font-bold text-slate-900 leading-tight">Extend Assessment Time</h2>
                 {isCurrentlyLive && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     Live Now
                   </span>
                 )}
@@ -252,30 +252,30 @@ export const ExtendTimeModal: React.FC<ExtendTimeModalProps> = ({
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
           
           {/* Attendance KPI Cards */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Enrolled</p>
-              <p className="text-lg font-black text-slate-800 mt-0.5">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+            <div className="p-2 sm:p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center">
+              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">Enrolled</p>
+              <p className="text-base sm:text-lg font-black text-slate-800 mt-0.5">
                 {isLoadingAttendance ? '...' : (attendance?.totalEligible ?? '-')}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Eligible Students</p>
+              <p className="text-[9px] sm:text-[10px] text-slate-500 mt-0.5 truncate">Eligible</p>
             </div>
-            <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-center">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Completed</p>
-              <p className="text-lg font-black text-emerald-700 mt-0.5">
+            <div className="p-2 sm:p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-center">
+              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-700 truncate">Completed</p>
+              <p className="text-base sm:text-lg font-black text-emerald-700 mt-0.5">
                 {isLoadingAttendance ? '...' : (attendance?.completedCount ?? '-')}
               </p>
-              <p className="text-[10px] text-emerald-600 mt-0.5">Submitted Test</p>
+              <p className="text-[9px] sm:text-[10px] text-emerald-600 mt-0.5 truncate">Submitted</p>
             </div>
-            <div className="p-3 bg-rose-50/70 border border-rose-200/80 rounded-xl text-center ring-2 ring-rose-200/60">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700 flex items-center justify-center gap-1">
-                <UserX className="h-3 w-3 text-rose-600" />
-                Missed Test
+            <div className="p-2 sm:p-3 bg-rose-50/70 border border-rose-200/80 rounded-xl text-center ring-2 ring-rose-200/60">
+              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-rose-700 flex items-center justify-center gap-0.5 sm:gap-1 truncate">
+                <UserX className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-rose-600 shrink-0" />
+                Missed
               </p>
-              <p className="text-lg font-black text-rose-700 mt-0.5">
+              <p className="text-base sm:text-lg font-black text-rose-700 mt-0.5">
                 {isLoadingAttendance ? '...' : (attendance?.missedCount ?? '-')}
               </p>
-              <p className="text-[10px] text-rose-600 font-medium mt-0.5">Needs Extension</p>
+              <p className="text-[9px] sm:text-[10px] text-rose-600 font-medium mt-0.5 truncate">Need Time</p>
             </div>
           </div>
 

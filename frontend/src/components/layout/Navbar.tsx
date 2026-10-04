@@ -243,7 +243,7 @@ export const Navbar = () => {
 
         {/* Notifications Dropdown Panel */}
         {isOpen && (
-          <div className="absolute right-0 mt-2 top-full w-[calc(100vw-2rem)] sm:w-[360px] max-w-[360px] bg-white rounded-xl border border-slate-200 shadow-xl py-1 origin-top-right animate-in z-50 text-slate-800">
+          <div className="absolute right-0 mt-2 top-full w-[calc(100vw-1.5rem)] sm:w-[360px] max-w-[360px] bg-white rounded-xl border border-slate-200 shadow-xl py-1 origin-top-right animate-in z-50 text-slate-800">
             {/* Header */}
             <div className="px-4 py-2.5 flex items-center justify-between border-b border-slate-100">
               <div className="flex items-center gap-2">

@@ -180,7 +180,7 @@ export const Tests = () => {
                                     title="Click to extend time or manage missed students"
                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shadow-xs group/btn cursor-pointer"
                                   >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                     <span>Live: {activeSchedule.assignedBatch ? `Batch ${activeSchedule.assignedBatch}` : 'All'}</span>
                                     <Clock className="h-3 w-3 ml-0.5 opacity-60 group-hover/btn:opacity-100" />
                                   </button>
@@ -301,7 +301,7 @@ export const Tests = () => {
                     {/* Schedule badges */}
                     <div className="flex flex-wrap gap-1.5">
                       {activeSchedule && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 animate-pulse">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                           Live
                         </span>

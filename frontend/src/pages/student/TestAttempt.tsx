@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Clock, ChevronLeft, ChevronRight, Bookmark, Maximize, Minimize, PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Bookmark, Maximize, Minimize, PanelRightOpen, PanelRightClose, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { testService } from '../../services/testService';
 import { useAuth } from '../../context/AuthContext';
@@ -788,8 +788,19 @@ export const TestAttempt = () => {
         <div className={`${showRightPanel ? 'fixed inset-0 z-30 bg-black/40 lg:static lg:bg-transparent' : 'hidden lg:block'}`}
           onClick={(e) => { if (e.target === e.currentTarget) setShowRightPanel(false); }}
         >
-          <div className={`${showRightPanel ? 'absolute right-0 top-0 bottom-0 w-[300px] sm:w-80' : 'w-80'} bg-slate-50 shrink-0 flex flex-col overflow-y-auto border-l border-slate-200 h-full`}>
-          <div className="p-5 space-y-6">
+          <div className={`${showRightPanel ? 'absolute right-0 top-0 bottom-0 w-[300px] sm:w-80 max-w-[85vw]' : 'w-80'} bg-slate-50 shrink-0 flex flex-col overflow-y-auto border-l border-slate-200 h-full`}>
+            {showRightPanel && (
+              <div className="lg:hidden flex items-center justify-between p-3.5 border-b border-slate-200 bg-white sticky top-0 z-10">
+                <span className="font-semibold text-sm text-slate-800">Proctoring & Palette</span>
+                <button 
+                  onClick={() => setShowRightPanel(false)}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            <div className="p-4 sm:p-5 space-y-6">
             {/* Live Camera & AI Detection Widget */}
             <ProctoringOverlay
               videoRef={videoRef}

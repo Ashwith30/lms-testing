@@ -137,8 +137,8 @@ export const MobileBottomNav = () => {
 
       {/* Overflow menu drawer (slides up from bottom) */}
       {isOverflowOpen && (
-        <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+56px)] left-0 right-0 z-[9999] lg:hidden animate-in">
-          <div className="mx-3 mb-2 bg-white rounded-2xl border border-[#e2e5ea] shadow-2xl overflow-hidden">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+56px)] left-0 right-0 z-[9999] lg:hidden animate-in max-h-[calc(100dvh-70px)] overflow-y-auto">
+          <div className="mx-3 mb-2 bg-white rounded-2xl border border-[#e2e5ea] shadow-2xl overflow-hidden max-h-[calc(100dvh-80px)] flex flex-col">
             {/* Drawer header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-[#eef0f3]">
               <span className="text-[13px] font-semibold text-[#1a1d23]">More</span>

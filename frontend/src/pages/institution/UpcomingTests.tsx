@@ -188,12 +188,12 @@ export const InstitutionUpcomingTests = () => {
             className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
           />
         </div>
-        <div className="flex items-center bg-[#f0f2f5] p-1 rounded-xl self-start sm:self-auto">
+        <div className="flex items-center bg-[#f0f2f5] p-1 rounded-xl self-start sm:self-auto overflow-x-auto max-w-full pb-1 sm:pb-1 flex-nowrap">
           {statusTabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setStatusFilter(tab.key)}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                 statusFilter === tab.key
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -276,10 +276,7 @@ export const InstitutionUpcomingTests = () => {
                     </div>
                     {item.isLive ? (
                       <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[11px] font-semibold">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
+                        <span className="inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         Live
                       </span>
                     ) : item.isUpcoming ? (

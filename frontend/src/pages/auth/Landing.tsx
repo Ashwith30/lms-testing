@@ -84,14 +84,6 @@ export const Landing = () => {
 
       <header className="h-16 flex items-center justify-between px-6 lg:px-10 relative z-30">
         <Logo size="md" />
-        
-        <Button 
-          variant="outline" 
-          className="bg-white/90 border-[#e2e5ea] text-[#5a6170] shadow-sm hover:shadow-md px-4 py-2 text-sm"
-          onClick={() => setIsPortalModalOpen(true)}
-        >
-          <span className="font-medium">Sign in</span>
-        </Button>
       </header>
       
       <main className="flex-1 flex flex-col justify-center items-center text-center px-6 lg:px-10 relative z-10 py-8 max-w-5xl mx-auto w-full">

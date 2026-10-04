@@ -215,39 +215,39 @@ export const TestResult = () => {
     <div className="max-w-3xl mx-auto space-y-6 pt-4 pb-12">
       <Card className="overflow-hidden border-0 shadow-lg relative">
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-blue-600 to-blue-500"></div>
-        <CardContent className="p-8 relative pt-24 text-center">
-          <div className="bg-white rounded-full p-4 inline-block shadow-lg mb-4 ring-4 ring-slate-50">
-            <Trophy className={`h-12 w-12 ${isPassed ? 'text-yellow-500' : 'text-slate-400'}`} />
+        <CardContent className="p-4 sm:p-8 relative pt-20 sm:pt-24 text-center">
+          <div className="bg-white rounded-full p-3 sm:p-4 inline-block shadow-lg mb-3 sm:mb-4 ring-4 ring-slate-50">
+            <Trophy className={`h-10 w-10 sm:h-12 sm:w-12 ${isPassed ? 'text-yellow-500' : 'text-slate-400'}`} />
           </div>
           
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mb-1">
             {isPassed ? 'Assessment Completed!' : 'Assessment Finished'}
           </h1>
-          <p className="text-slate-500 font-medium mb-8">{test.title}</p>
+          <p className="text-slate-500 font-medium mb-6 sm:mb-8 text-sm sm:text-base">{test.title}</p>
           
           {/* Main Score & KPI cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Score</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{score} <span className="text-xs font-normal text-slate-500">/ {test.totalMarks}</span></p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 mb-6">
+            <div className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium uppercase tracking-wider">Score</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{score} <span className="text-xs font-normal text-slate-500">/ {test.totalMarks}</span></p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Percentage</p>
-              <p className={`text-2xl font-bold mt-1 ${(percentage || 0) >= 70 ? 'text-green-600' : (percentage || 0) >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
+            <div className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium uppercase tracking-wider">Percentage</p>
+              <p className={`text-xl sm:text-2xl font-bold mt-1 ${(percentage || 0) >= 70 ? 'text-green-600' : (percentage || 0) >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
                 {percentage?.toFixed(1)}%
               </p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Attempted</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
+            <div className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium uppercase tracking-wider">Attempted</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
                 {Object.values(answers).filter(a => a.selectedOption).length}
                 <span className="text-xs font-normal text-slate-500"> / {test.questionIds?.length ?? 0}</span>
               </p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Time Taken</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1 flex items-center justify-center gap-1">
-                <Clock className="h-5 w-5 text-slate-400" />
+            <div className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium uppercase tracking-wider">Time Taken</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 flex items-center justify-center gap-1">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
                 {formatDuration()}
               </p>
             </div>

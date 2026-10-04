@@ -275,8 +275,8 @@ export const CreateTest = () => {
 
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
               <h4 className="text-sm font-medium text-slate-700">Auto-Select by Difficulty</h4>
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
+                <div>
                   <Input 
                     type="number" 
                     min={0}
@@ -285,7 +285,7 @@ export const CreateTest = () => {
                     onChange={e => setAutoSelectCounts(prev => ({ ...prev, Easy: Math.max(0, parseInt(e.target.value) || 0) }))}
                   />
                 </div>
-                <div className="flex-1">
+                <div>
                   <Input 
                     type="number" 
                     min={0}
@@ -294,7 +294,7 @@ export const CreateTest = () => {
                     onChange={e => setAutoSelectCounts(prev => ({ ...prev, Medium: Math.max(0, parseInt(e.target.value) || 0) }))}
                   />
                 </div>
-                <div className="flex-1">
+                <div>
                   <Input 
                     type="number" 
                     min={0}
@@ -303,7 +303,7 @@ export const CreateTest = () => {
                     onChange={e => setAutoSelectCounts(prev => ({ ...prev, Hard: Math.max(0, parseInt(e.target.value) || 0) }))}
                   />
                 </div>
-                <Button onClick={handleAutoSelect} variant="outline" className="bg-white">Auto Select</Button>
+                <Button onClick={handleAutoSelect} variant="outline" className="bg-white w-full">Auto Select</Button>
               </div>
             </div>
 

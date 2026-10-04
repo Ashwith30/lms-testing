@@ -6,7 +6,8 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
-import { ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles, ShieldCheck, Lock, Mail } from 'lucide-react';
+import phoneticLogoFull from '../../assets/phonetic-logo-full.png';
 
 export const AdminLogin = () => {
   const { login } = useAuth();
@@ -35,7 +36,7 @@ export const AdminLogin = () => {
       const loggedUser = await authService.login(email, password);
       if (loggedUser) {
         if (loggedUser.role !== 'admin') {
-          toast('Authorized administrators only', 'error');
+          toast('Authorized platform administrators only', 'error');
           return;
         }
         login(loggedUser);
@@ -52,47 +53,88 @@ export const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[400px]">
-        <Link to="/" className="inline-flex items-center gap-1.5 text-[13px] text-[#9099a8] hover:text-[#5a6170] mb-8 transition-colors">
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to home
-        </Link>
+    <div className="min-h-screen bg-white flex">
+      {/* Left branding panel */}
+      <div
+        className="hidden lg:flex lg:w-[48%] relative overflow-hidden items-center justify-center"
+        style={{ background: 'linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 35%, #bae6fd 75%, #f0f9ff 100%)' }}
+      >
+        {/* Large decorative curved blobs */}
+        <div
+          className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full"
+          style={{ background: 'rgba(125, 211, 252, 0.4)' }}
+        />
+        <div
+          className="absolute -top-20 -right-20 w-[350px] h-[350px] rounded-full"
+          style={{ background: 'rgba(186, 230, 253, 0.5)' }}
+        />
+        <div
+          className="absolute bottom-20 right-10 w-[200px] h-[200px] rounded-full"
+          style={{ background: 'rgba(147, 197, 253, 0.35)' }}
+        />
 
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-100 rounded-lg">
-              <ShieldCheck className="h-5 w-5 text-slate-600" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-[#1a1d23] tracking-tight">Admin</h1>
-              <p className="text-[12px] text-[#9099a8]">System administration</p>
-            </div>
+        {/* Logo + tagline */}
+        <div className="relative z-10 flex flex-col items-center px-8 w-full max-w-[480px]">
+          <img
+            src={phoneticLogoFull}
+            alt="Phonetic"
+            className="w-[420px] max-w-[92%] xl:w-[460px] object-contain drop-shadow-sm"
+          />
+          <div className="mt-8 flex items-center gap-3 text-[13px] font-bold tracking-[0.22em] text-[#12396d] uppercase">
+            <span>Learn</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1e4e8c]" />
+            <span>Practice</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1e4e8c]" />
+            <span>Grow</span>
           </div>
-          <button
-            type="button"
-            onClick={fillDemo}
-            className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-300/80 px-2.5 py-1 rounded-md transition-colors"
-            title="Auto-fill demo admin credentials"
-          >
-            <Sparkles className="h-3 w-3 text-slate-500" />
-            <span>Fill Demo</span>
-          </button>
         </div>
+      </div>
 
-        <div className="bg-white rounded-xl border border-[#e2e5ea] shadow-soft p-6">
-          {/* Demo credential callout */}
-          <div className="mb-4 p-2.5 bg-slate-50 border border-slate-200/80 rounded-lg flex items-center justify-between text-[11px]">
-            <div>
-              <span className="font-semibold text-slate-700">Demo Login:</span>{' '}
-              <code className="text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">admin@lms.com</code>
+      {/* Right form panel */}
+      <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-20 py-12">
+        <div className="w-full max-w-[420px] mx-auto lg:mx-0">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-[13px] text-slate-400 hover:text-slate-600 mb-8 transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
+
+          <div className="lg:hidden mb-6">
+            <Logo size="md" />
+          </div>
+
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600 border border-blue-100">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <h1 className="text-[28px] font-bold text-slate-900 tracking-tight">Admin Portal</h1>
             </div>
-            <code className="text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">admin123</code>
+            <button
+              type="button"
+              onClick={fillDemo}
+              className="flex items-center gap-1.5 text-[12px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+              title="Auto-fill demo admin credentials"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-blue-500" />
+              <span>Fill Demo</span>
+            </button>
+          </div>
+          <p className="text-[15px] text-slate-400 mb-6 leading-relaxed">
+            Enter platform administrative credentials to access system management.
+          </p>
+
+          {/* Demo credential callout */}
+          <div className="mb-6 p-3 bg-blue-50/70 border border-blue-100 rounded-xl flex items-center justify-between text-xs">
+            <div>
+              <span className="font-semibold text-blue-900">Demo Login:</span>{' '}
+              <code className="text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200">admin@lms.com</code>
+            </div>
+            <code className="text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200">admin123</code>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <Input
-              label="Email"
+              label="Admin Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -104,19 +146,23 @@ export const AdminLogin = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter admin password"
               required
             />
-            <Button type="submit" className="w-full" isLoading={isLoading}>
-              Sign in
+            <Button
+              type="submit"
+              className="w-full !h-12 !rounded-xl !text-[15px] !font-semibold !shadow-lg !shadow-blue-500/20 hover:!shadow-blue-500/30 cursor-pointer"
+              isLoading={isLoading}
+            >
+              Sign in as Administrator
             </Button>
           </form>
-        </div>
 
-        <div className="mt-4 text-center">
-          <Link to="/" className="text-[13px] text-[#9099a8] hover:text-[#5a6170] transition-colors">
-            Not an admin? Go back
-          </Link>
+          <div className="mt-8 text-center text-[14px]">
+            <Link to="/" className="text-slate-400 hover:text-slate-600 transition-colors">
+              Not an admin? Go back to role selector
+            </Link>
+          </div>
         </div>
       </div>
     </div>

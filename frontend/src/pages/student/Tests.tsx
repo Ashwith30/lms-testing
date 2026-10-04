@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, Calendar, Clock, Play, CheckCircle2,
-  FileText, ArrowRight
+  FileText, ArrowRight, Sparkles, XCircle, AlertCircle
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { testService } from '../../services/testService';
@@ -18,7 +18,7 @@ interface TestCardItem {
   durationMinutes: number;
   totalMarks: number;
   deadlineText: string;
-  status: 'available' | 'in_progress' | 'completed';
+  status: 'available' | 'in_progress' | 'completed' | 'missed';
   progress?: number;
   iconBg: string;
   iconColor: string;
@@ -60,10 +60,10 @@ const defaultTests: TestCardItem[] = [
     questionsCount: 20,
     durationMinutes: 25,
     totalMarks: 30,
-    deadlineText: 'Available until Sep 15, 2024',
-    status: 'available',
-    iconBg: 'bg-sky-50',
-    iconColor: 'text-sky-600',
+    deadlineText: 'Missed on Sep 15, 2024',
+    status: 'missed',
+    iconBg: 'bg-rose-50',
+    iconColor: 'text-rose-600',
   },
   {
     id: 'test-tech-1',
@@ -73,8 +73,8 @@ const defaultTests: TestCardItem[] = [
     questionsCount: 30,
     durationMinutes: 45,
     totalMarks: 60,
-    deadlineText: 'Available until Sep 16, 2024',
-    status: 'available',
+    deadlineText: 'Completed on Sep 16, 2024',
+    status: 'completed',
     iconBg: 'bg-amber-50',
     iconColor: 'text-amber-600',
   },
@@ -86,8 +86,8 @@ const defaultTests: TestCardItem[] = [
     questionsCount: 40,
     durationMinutes: 60,
     totalMarks: 80,
-    deadlineText: 'Available until Sep 20, 2024',
-    status: 'available',
+    deadlineText: 'Missed on Sep 20, 2024',
+    status: 'missed',
     iconBg: 'bg-rose-50',
     iconColor: 'text-rose-600',
   },
@@ -124,7 +124,7 @@ export const StudentTests = () => {
   const [tests, setTests] = useState<TestCardItem[]>(defaultTests);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTrack, setSelectedTrack] = useState('all');
-  const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'completed'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'completed' | 'missed'>('all');
 
   useEffect(() => {
     const fetchLiveTests = async () => {
@@ -132,7 +132,16 @@ export const StudentTests = () => {
         try {
           const upcoming = await testService.getStudentUpcomingTests(user.id);
           if (upcoming && upcoming.length > 0) {
-            const dynamicList: TestCardItem[] = upcoming.map((item) => {
+            // Deduplicate upcoming tests by test.id so identical tests are not duplicated
+            const uniqueUpcomingMap = new Map<string, typeof upcoming[0]>();
+            upcoming.forEach((item) => {
+              if (item.test?.id && !uniqueUpcomingMap.has(item.test.id)) {
+                uniqueUpcomingMap.set(item.test.id, item);
+              }
+            });
+            const uniqueUpcoming = Array.from(uniqueUpcomingMap.values());
+
+            const dynamicList: TestCardItem[] = uniqueUpcoming.map((item) => {
               const isCompleted = item.attempt?.status === 'submitted' || item.attempt?.status === 'auto_submitted';
               const isInProgress = item.attempt?.status === 'in_progress';
               return {
@@ -150,7 +159,7 @@ export const StudentTests = () => {
                 iconColor: 'text-blue-600',
               };
             });
-            // Merge dynamic tests with default tests to ensure a rich list
+            // Merge dynamic tests (placed first = newest on top) with default mock tests
             setTests([...dynamicList, ...defaultTests.filter(dt => !dynamicList.some(dl => dl.id === dt.id))]);
           }
         } catch (error) {
@@ -163,15 +172,16 @@ export const StudentTests = () => {
 
   // KPI Calculations
   const totalCount = tests.length;
-  const availableCount = tests.filter(t => t.status === 'available').length;
-  const inProgressCount = tests.filter(t => t.status === 'in_progress').length;
+  const availableCount = tests.filter(t => t.status === 'available' || t.status === 'in_progress').length;
   const completedCount = tests.filter(t => t.status === 'completed').length;
+  const missedCount = tests.filter(t => t.status === 'missed').length;
 
   // Filtering
   const filteredTests = tests.filter((t) => {
     // Tab filter
-    if (activeTab === 'upcoming' && t.status === 'completed') return false;
+
     if (activeTab === 'completed' && t.status !== 'completed') return false;
+    if (activeTab === 'missed' && t.status !== 'missed') return false;
 
     // Search query
     if (searchQuery.trim() && !t.title.toLowerCase().includes(searchQuery.toLowerCase()) && !t.subject.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -185,6 +195,9 @@ export const StudentTests = () => {
 
     return true;
   });
+
+  const latestTest = filteredTests.length > 0 ? filteredTests[0] : null;
+  const otherTests = filteredTests.length > 1 ? filteredTests.slice(1) : [];
 
   return (
     <div className="space-y-6 animate-in pb-10 font-sans text-slate-800">
@@ -226,21 +239,7 @@ export const StudentTests = () => {
           </div>
         </div>
 
-        {/* Card 3: In Progress */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">In Progress</span>
-            <div className="h-8 w-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-              <Clock className="h-4 w-4" />
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{inProgressCount}</div>
-            <p className="text-xs text-amber-600 mt-1 font-semibold">Resume pending</p>
-          </div>
-        </div>
-
-        {/* Card 4: Completed */}
+        {/* Card 3: Completed */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-blue-300 hover:shadow-sm transition-all">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed</span>
@@ -251,6 +250,20 @@ export const StudentTests = () => {
           <div>
             <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{completedCount}</div>
             <p className="text-xs text-slate-500 mt-1 font-medium">Evaluated mock tests</p>
+          </div>
+        </div>
+
+        {/* Card 4: Missed */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-rose-300 hover:shadow-sm transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Missed</span>
+            <div className="h-8 w-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+              <XCircle className="h-4 w-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{missedCount}</div>
+            <p className="text-xs text-rose-600 mt-1 font-semibold">Expired deadlines</p>
           </div>
         </div>
       </div>
@@ -288,7 +301,7 @@ export const StudentTests = () => {
 
         {/* Status Tabs */}
         <div className="flex items-center bg-[#f0f2f5] p-1 rounded-lg self-start md:self-auto">
-          {(['all', 'upcoming', 'completed'] as const).map((tab) => (
+          {(['all', 'completed', 'missed'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -298,85 +311,118 @@ export const StudentTests = () => {
                   : 'text-[#5a6170] hover:text-[#1a1d23]'
               }`}
             >
-              {tab === 'all' ? 'All' : tab === 'upcoming' ? 'Upcoming' : 'Completed'}
+              {tab === 'all' ? 'All' : tab === 'completed' ? 'Completed' : 'Missed'}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Tests Grid (2 Columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filteredTests.map((test) => (
-          <div
-            key={test.id}
-            className="bg-white rounded-xl border border-[#e2e5ea] p-5 shadow-xs hover:shadow-sm hover:border-blue-200 transition-all flex flex-col justify-between"
-          >
-            <div>
-              {/* Header: Icon, Title & Track Tag */}
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-start gap-3">
-                  <div className={`h-10 w-10 rounded-lg ${test.iconBg} ${test.iconColor} flex items-center justify-center flex-shrink-0 font-bold`}>
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#1a1d23] text-sm leading-snug">{test.title}</h3>
-                    <p className="text-xs text-[#9099a8] mt-0.5">
-                      {test.questionsCount} Questions • {test.durationMinutes} mins • {test.totalMarks} Marks
-                    </p>
-                  </div>
+      {/* Tests List - One Below the Other */}
+      <div className="flex flex-col gap-4">
+        {filteredTests.map((test, index) => {
+          const isLatest = index === 0;
+          return (
+            <div
+              key={test.id}
+              className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:border-blue-200 hover:shadow-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              {/* Left Details */}
+              <div className="flex items-start gap-4 flex-1">
+                <div className={`h-11 w-11 rounded-xl ${test.iconBg} ${test.iconColor} flex items-center justify-center flex-shrink-0 font-bold mt-0.5`}>
+                  <FileText className="h-5 w-5" />
                 </div>
 
-                <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100">
-                  {test.subject}
-                </span>
-              </div>
-
-              {/* Date / Status Information */}
-              <div className="flex items-center gap-1.5 text-xs text-[#9099a8] my-3">
-                <Calendar className="h-3.5 w-3.5 text-[#9099a8]" />
-                <span>{test.deadlineText}</span>
-              </div>
-
-              {/* Progress bar for in-progress tests */}
-              {test.status === 'in_progress' && (
-                <div className="space-y-1 mb-4 pt-1">
-                  <div className="flex justify-between text-[11px] font-semibold">
-                    <span className="text-slate-500">Progress</span>
-                    <span className="text-blue-600">{test.progress}%</span>
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {isLatest && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-600 text-white shadow-xs">
+                        <Sparkles className="h-3 w-3" /> Latest
+                      </span>
+                    )}
+                    <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100">
+                      {test.subject}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                      test.difficulty === 'EASY' ? 'bg-emerald-50 text-emerald-700' :
+                      test.difficulty === 'HARD' ? 'bg-rose-50 text-rose-700' :
+                      'bg-amber-50 text-amber-700'
+                    }`}>
+                      {test.difficulty}
+                    </span>
                   </div>
-                  <div className="w-full h-1.5 bg-[#f0f2f5] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-600 rounded-full"
-                      style={{ width: `${test.progress}%` }}
-                    ></div>
+
+                  <h3 className="font-bold text-slate-900 text-base leading-snug">{test.title}</h3>
+
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 font-medium">
+                    <span>{test.questionsCount} Questions</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      {test.durationMinutes} mins
+                    </span>
+                    <span>•</span>
+                    <span>{test.totalMarks} Marks</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1 text-slate-600">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                      {test.deadlineText}
+                    </span>
                   </div>
+
+                  {/* Progress bar for in-progress tests */}
+                  {test.status === 'in_progress' && (
+                    <div className="space-y-1 max-w-sm pt-1">
+                      <div className="flex justify-between text-[11px] font-semibold">
+                        <span className="text-slate-500">Progress</span>
+                        <span className="text-blue-600">{test.progress}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-600 rounded-full"
+                          style={{ width: `${test.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Bottom Actions */}
-            <div className="pt-3 border-t border-[#f0f2f5] flex items-center justify-end">
-              {test.status === 'completed' ? (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Completed
-                </span>
-              ) : test.status === 'in_progress' ? (
-                <Link to={`/student/tests/${test.id}`}>
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer">
-                    Continue Test <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-              ) : (
-                <Link to={`/student/tests/${test.id}`}>
-                  <Button size="sm" variant="outline" className="text-xs px-4 py-1.5 rounded-lg text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer">
-                    Start Test
-                  </Button>
-                </Link>
-              )}
+              {/* Right Action Button */}
+              <div className="flex items-center justify-end md:justify-center flex-shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                {test.status === 'completed' ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200">
+                    <CheckCircle2 className="h-4 w-4" /> Completed
+                  </span>
+                ) : test.status === 'missed' ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50 px-4 py-2 rounded-xl border border-rose-200">
+                    <XCircle className="h-4 w-4" /> Missed
+                  </span>
+                ) : test.status === 'in_progress' ? (
+                  <Link to={`/student/tests/${test.id}`}>
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer">
+                      Continue Test <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to={`/student/tests/${test.id}`}>
+                    <Button size="sm" variant="outline" className="text-xs font-semibold px-5 py-2 rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 cursor-pointer">
+                      Start Test
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {filteredTests.length === 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center">
+          <FileText className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-slate-800">No tests found</h3>
+          <p className="text-xs text-slate-500 mt-1">Try adjusting your filters or search query.</p>
+        </div>
+      )}
     </div>
   );
 };

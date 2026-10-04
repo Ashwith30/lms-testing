@@ -549,7 +549,7 @@ export const AdminAnalytics = () => {
         {statCards.map((stat, i) => (
           <Card key={i} className="border border-slate-200 hover:shadow-md transition-shadow">
             <CardContent className="p-5 flex flex-col justify-between h-full relative overflow-hidden">
-              <div className="flex items-start justify-between mb-2">
+              <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
@@ -559,22 +559,6 @@ export const AdminAnalytics = () => {
                   </div>
                   <h3 className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</h3>
                   <p className="text-xs text-slate-400 font-medium mt-0.5">{stat.subtitle}</p>
-                </div>
-              </div>
-              <div className="flex items-end justify-between mt-4 pt-3 border-t border-slate-100">
-                <div className="text-[11px] font-medium text-slate-400">
-                  <span className={`inline-flex items-center gap-0.5 ${stat.trendUp ? 'text-emerald-500 font-semibold' : 'text-slate-400'}`}>
-                    {stat.trendUp ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                    {stat.trend}
-                  </span>
-                  <span className="ml-1 text-slate-400">vs last period</span>
-                </div>
-                <div className="h-8 w-20">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={stat.sparkData}>
-                      <Line type="monotone" dataKey="value" stroke={stat.sparkColor} strokeWidth={2} dot={false} isAnimationActive={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
                 </div>
               </div>
             </CardContent>

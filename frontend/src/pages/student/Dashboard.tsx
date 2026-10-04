@@ -27,6 +27,11 @@ import {
 } from '../../components/common/DashboardModals';
 import { useToast } from '../../context/ToastContext';
 
+// Import thumbnail assets
+import thumbDbms from '../../assets/thumbnails/thumb_dbms.jpg';
+import thumbAptitude from '../../assets/thumbnails/thumb_aptitude.jpg';
+import thumbDsa from '../../assets/thumbnails/thumb_dsa.jpg';
+
 interface DashboardData {
   upcoming_tests: {
     schedule: Schedule;
@@ -166,8 +171,8 @@ export const StudentDashboard = () => {
       {/* Top Banner / Welcome Row */}
       <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-700 p-5 sm:p-6 rounded-2xl border border-blue-600/30 shadow-md text-white">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-            Hey, {user?.name ? user.name.split(' ')[0] : 'Ashwith'} <span>👋</span>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            Hey, {user?.name ? user.name.split(' ')[0] : 'Ashwith'}
           </h1>
           <p className="text-blue-100/90 text-sm mt-1 font-medium">
             Welcome back! Here's your personalized learning summary & performance matrix.
@@ -669,65 +674,85 @@ export const StudentDashboard = () => {
               id: 'vid-1',
               title: 'DBMS & SQL Query Optimization: Deep Dive',
               track: 'Technical Core',
+              category: 'technical',
               instructor: 'Kiran Mehta',
               duration: '45:30',
               level: 'Intermediate',
               rating: 4.9,
               progress: 70,
-              gradient: 'from-blue-600 to-blue-800',
+              thumbnail: thumbDbms,
+              fallbackThumbnail: '/thumbnails/thumb_dbms.jpg',
             },
             {
               id: 'vid-2',
               title: 'Quantitative Aptitude: Time, Speed & Distance Hacks',
               track: 'Quantitative Aptitude',
+              category: 'aptitude',
               instructor: 'Rahul Kumar',
               duration: '38:15',
               level: 'Beginner',
               rating: 4.8,
               progress: 100,
-              gradient: 'from-sky-600 to-blue-700',
+              thumbnail: thumbAptitude,
+              fallbackThumbnail: '/thumbnails/thumb_aptitude.jpg',
             },
             {
               id: 'vid-4',
               title: 'Dynamic Programming & Recursion Masterclass',
               track: 'DSA & Algorithms',
+              category: 'dsa',
               instructor: 'Rahul Kumar',
               duration: '1:15:20',
               level: 'Advanced',
               rating: 5.0,
               progress: 15,
-              gradient: 'from-amber-600 to-orange-800',
+              thumbnail: thumbDsa,
+              fallbackThumbnail: '/thumbnails/thumb_dsa.jpg',
             },
           ].map((vid) => (
             <Link
               key={vid.id}
               to="/student/videos"
-              className="group p-3 rounded-xl border border-slate-200/80 hover:border-blue-300 hover:shadow-md transition-all flex flex-col justify-between bg-slate-50/50 hover:bg-white"
+              className="group p-3 rounded-2xl border border-slate-200/80 hover:border-slate-400 hover:shadow-md transition-all flex flex-col justify-between bg-white"
             >
               <div className="space-y-3">
-                <div className={`relative h-28 rounded-lg bg-gradient-to-br ${vid.gradient} p-2.5 flex flex-col justify-between text-white overflow-hidden shadow-xs`}>
-                  <div className="flex items-center justify-between text-[10px] font-bold">
-                    <span className="bg-black/40 px-2 py-0.5 rounded backdrop-blur-xs">{vid.track}</span>
-                    <span className="bg-white/20 px-2 py-0.5 rounded">{vid.level}</span>
+                <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-900">
+                  <img
+                    src={vid.thumbnail}
+                    alt={vid.title}
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (vid.fallbackThumbnail && target.src !== vid.fallbackThumbnail) {
+                        target.src = vid.fallbackThumbnail;
+                      }
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none"></div>
+
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className="text-[10px] font-bold text-white bg-black/50 backdrop-blur-md px-2 py-0.5 rounded border border-white/20">{vid.track}</span>
                   </div>
 
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all shadow-md">
-                      <Play className="h-4 w-4 fill-white ml-0.5" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div className="h-10 w-10 rounded-full bg-white text-slate-900 shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Play className="h-4 w-4 fill-slate-900 ml-0.5" />
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] font-semibold">
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px] font-semibold text-white z-10">
                     <span className="bg-black/60 px-1.5 py-0.5 rounded">{vid.duration}</span>
-                    <span className="flex items-center gap-1 text-amber-300">
+                    <span className="flex items-center gap-1 text-amber-300 bg-black/60 px-1.5 py-0.5 rounded">
                       <Star className="h-3 w-3 fill-amber-300" /> {vid.rating}
                     </span>
                   </div>
 
                   {vid.progress > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40 z-20">
                       <div
-                        className={`h-full ${vid.progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                        className={`h-full ${vid.progress === 100 ? 'bg-emerald-500' : 'bg-white'}`}
                         style={{ width: `${vid.progress}%` }}
                       ></div>
                     </div>
@@ -735,7 +760,7 @@ export const StudentDashboard = () => {
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-xs text-slate-900 leading-snug group-hover:text-blue-600 transition-colors line-clamp-1">
+                  <h4 className="font-bold text-xs text-slate-900 leading-snug group-hover:text-slate-700 transition-colors line-clamp-1">
                     {vid.title}
                   </h4>
                   <p className="text-[11px] text-slate-500 mt-1">Instructor: {vid.instructor}</p>
@@ -743,10 +768,10 @@ export const StudentDashboard = () => {
               </div>
 
               <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-400 font-medium">
+                <span className="text-slate-500 font-medium">
                   {vid.progress === 100 ? '✓ Completed' : vid.progress > 0 ? `${vid.progress}% Watched` : 'Not started'}
                 </span>
-                <span className="font-bold text-blue-600 group-hover:translate-x-0.5 transition-transform">
+                <span className="font-bold text-slate-900 group-hover:translate-x-0.5 transition-transform">
                   Watch Now →
                 </span>
               </div>

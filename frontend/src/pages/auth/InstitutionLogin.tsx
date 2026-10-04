@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
 import { ArrowLeft, Sparkles } from 'lucide-react';
-import phoneticLogoFull from '../../assets/phonetic-logo-full.jpg';
+import phoneticLogoFull from '../../assets/phonetic-logo-full.png';
 
 export const InstitutionLogin = () => {
   const { login } = useAuth();
@@ -57,35 +57,34 @@ export const InstitutionLogin = () => {
       {/* Left branding panel */}
       <div
         className="hidden lg:flex lg:w-[48%] relative overflow-hidden items-center justify-center"
-        style={{ background: 'linear-gradient(160deg, #eef4ff 0%, #e4edff 40%, #dde7ff 70%, #eef3ff 100%)' }}
+        style={{ background: 'linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 35%, #bae6fd 75%, #f0f9ff 100%)' }}
       >
-        {/* Large decorative curved blobs like the reference */}
+        {/* Large decorative curved blobs */}
         <div
           className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full"
-          style={{ background: 'rgba(186, 210, 255, 0.45)' }}
+          style={{ background: 'rgba(125, 211, 252, 0.4)' }}
         />
         <div
           className="absolute -top-20 -right-20 w-[350px] h-[350px] rounded-full"
-          style={{ background: 'rgba(196, 216, 255, 0.35)' }}
+          style={{ background: 'rgba(186, 230, 253, 0.5)' }}
         />
         <div
           className="absolute bottom-20 right-10 w-[200px] h-[200px] rounded-full"
-          style={{ background: 'rgba(176, 204, 255, 0.25)' }}
+          style={{ background: 'rgba(147, 197, 253, 0.35)' }}
         />
 
         {/* Logo + tagline */}
-        <div className="relative z-10 flex flex-col items-center px-10">
+        <div className="relative z-10 flex flex-col items-center px-8 w-full max-w-[480px]">
           <img
             src={phoneticLogoFull}
             alt="Phonetic"
-            className="w-[340px] max-w-[85%] object-contain"
-            style={{ mixBlendMode: 'multiply' }}
+            className="w-[420px] max-w-[92%] xl:w-[460px] object-contain drop-shadow-sm"
           />
-          <div className="mt-8 flex items-center gap-3 text-[13px] font-semibold tracking-[0.2em] text-blue-400/80 uppercase">
+          <div className="mt-8 flex items-center gap-3 text-[13px] font-bold tracking-[0.22em] text-[#12396d] uppercase">
             <span>Learn</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-300/60" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1e4e8c]" />
             <span>Practice</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-300/60" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1e4e8c]" />
             <span>Grow</span>
           </div>
         </div>

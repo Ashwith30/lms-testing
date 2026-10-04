@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   TrendingUp, Award, CheckCircle2, ShieldCheck, Flame, ChevronDown,
@@ -12,14 +12,25 @@ import { Card, CardContent } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { testService } from '../../services/testService';
 
-const scoreProgressionData = [
-  { test: 'Test 1', score: 65 },
-  { test: 'Test 2', score: 72 },
-  { test: 'Test 3', score: 76 },
-  { test: 'Test 4', score: 81 },
-  { test: 'Test 5', score: 86 },
-  { test: 'Test 6', score: 92 },
-];
+const scoreProgressionByPeriod: Record<string, { test: string; score: number }[]> = {
+  week: [
+    { test: 'Mon', score: 68 },
+    { test: 'Tue', score: 74 },
+    { test: 'Wed', score: 71 },
+    { test: 'Thu', score: 80 },
+    { test: 'Fri', score: 85 },
+    { test: 'Sat', score: 88 },
+    { test: 'Sun', score: 92 },
+  ],
+  month: [
+    { test: 'Test 1', score: 65 },
+    { test: 'Test 2', score: 72 },
+    { test: 'Test 3', score: 76 },
+    { test: 'Test 4', score: 81 },
+    { test: 'Test 5', score: 86 },
+    { test: 'Test 6', score: 92 },
+  ],
+};
 
 const difficultyData = [
   { name: 'Easy', value: 92, color: '#10b981' },
@@ -39,6 +50,20 @@ export const StudentAnalytics = () => {
   const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [scorePeriod, setScorePeriod] = useState<'week' | 'month'>('week');
+  const [periodDropdownOpen, setPeriodDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setPeriodDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -140,17 +165,42 @@ export const StudentAnalytics = () => {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-bold text-[#1a1d23] text-sm">Score Progression</h3>
-              <p className="text-[11px] text-[#9099a8]">Score over recent tests</p>
+              <p className="text-[11px] text-[#9099a8]">
+                {scorePeriod === 'week' ? 'Score over this week' : 'Score over recent tests'}
+              </p>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-[#5a6170] bg-[#f7f8fa] border border-[#e2e5ea] px-2 py-0.5 rounded-md font-medium cursor-pointer">
-              <span>This Month</span>
-              <ChevronDown className="h-3 w-3 text-[#9099a8]" />
+            {/* Period dropdown */}
+            <div ref={dropdownRef} className="relative">
+              <button
+                onClick={() => setPeriodDropdownOpen((o) => !o)}
+                className="flex items-center gap-1 text-[11px] text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-md font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
+              >
+                <span>{scorePeriod === 'week' ? 'This Week' : 'This Month'}</span>
+                <ChevronDown className={`h-3 w-3 transition-transform ${periodDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {periodDropdownOpen && (
+                <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-[#e2e5ea] rounded-lg shadow-md overflow-hidden min-w-[110px]">
+                  {(['week', 'month'] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => { setScorePeriod(p); setPeriodDropdownOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
+                        scorePeriod === p
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-[#5a6170] hover:bg-[#f7f8fa]'
+                      }`}
+                    >
+                      {p === 'week' ? 'This Week' : 'This Month'}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="h-44 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={scoreProgressionData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+              <AreaChart data={scoreProgressionByPeriod[scorePeriod]} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id="progressionGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />

@@ -224,8 +224,8 @@ export const QuestionBankUpload = () => {
                 </div>
 
                 <div className="border border-slate-200 rounded-lg overflow-hidden">
-                  <div className="max-h-[400px] overflow-y-auto">
-                    <table className="w-full text-sm text-left text-slate-500">
+                  <div className="max-h-[400px] overflow-x-auto overflow-y-auto">
+                    <table className="w-full text-sm text-left text-slate-500 min-w-[500px]">
                       <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 shadow-sm">
                         <tr>
                           <th className="px-4 py-3">#</th>

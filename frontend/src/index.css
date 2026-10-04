@@ -29,6 +29,11 @@
 }
 
 @layer base {
+  html {
+    overflow-x: hidden;
+    height: 100%;
+  }
+
   body {
     background: var(--color-canvas);
     color: var(--color-ink);
@@ -37,13 +42,10 @@
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv11", "ss01";
     letter-spacing: -0.011em;
-    /* Prevent iOS overscroll bounce */
-    overscroll-behavior: none;
-  }
-
-  /* Safe area insets for modern iPhones */
-  html {
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overflow-x: hidden;
+    min-height: 100%;
+    /* Smooth mobile scrolling */
+    -webkit-overflow-scrolling: touch;
   }
 
   ::selection {
@@ -54,6 +56,7 @@
   /* Prevent tap highlight on mobile */
   * {
     -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
   }
 }
 
