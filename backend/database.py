@@ -20,9 +20,10 @@ if DATABASE_URL.startswith("sqlite"):
     db_type = "SQLite"
 else:
     connect_args = {}
-    # Ensure SSL is enabled for remote cloud Postgres (Neon, Supabase, AWS, etc.)
-    is_remote = not any(h in DATABASE_URL for h in ("localhost", "127.0.0.1", "0.0.0.0"))
-    if is_remote and "sslmode" not in DATABASE_URL:
+    # Ensure SSL is enabled for external remote cloud Postgres (Neon, Supabase, etc.)
+    # Note: Render internal PostgreSQL hosts (dpg-*) connect over internal private network
+    is_internal = any(h in DATABASE_URL for h in ("localhost", "127.0.0.1", "0.0.0.0", "dpg-", ".render.internal", ".internal"))
+    if not is_internal and "sslmode" not in DATABASE_URL and ("neon.tech" in DATABASE_URL or "supabase" in DATABASE_URL or "aws" in DATABASE_URL):
         connect_args["sslmode"] = "require"
 
     engine = create_engine(
