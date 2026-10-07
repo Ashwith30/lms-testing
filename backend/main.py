@@ -1,12 +1,15 @@
 import os
+import secrets
 import sys
-from fastapi import FastAPI
+from typing import Optional
+from fastapi import FastAPI, Depends, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import models
-from database import engine
+from database import engine, get_db
 
 from routers import (
     auth_router,
@@ -58,3 +61,19 @@ app.include_router(notifications_router.router)
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "timestamp": models.get_utc_now()}
+
+@app.get("/api/admin-count-check")
+def admin_count_check(
+    x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Check-Secret"),
+    db: Session = Depends(get_db)
+):
+    expected_secret = os.getenv("ADMIN_CHECK_SECRET")
+    if not expected_secret or not x_admin_secret or not secrets.compare_digest(x_admin_secret, expected_secret):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Invalid or unconfigured diagnostic secret"
+        )
+    
+    admin_count = db.query(models.User).filter(models.User.role == "admin").count()
+    return {"admin_count": admin_count}
+
