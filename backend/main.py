@@ -68,6 +68,16 @@ def admin_count_check(
     db: Session = Depends(get_db)
 ):
     expected_secret = os.getenv("ADMIN_CHECK_SECRET")
+    env_present = expected_secret is not None
+    env_len = len(expected_secret) if expected_secret is not None else 0
+    hdr_present = x_admin_secret is not None
+    hdr_len = len(x_admin_secret) if x_admin_secret is not None else 0
+
+    print(
+        f"[DIAGNOSTIC] ADMIN_CHECK_SECRET configured: {env_present} (length: {env_len}), "
+        f"X-Admin-Check-Secret header present: {hdr_present} (length: {hdr_len})"
+    )
+
     if not expected_secret or not x_admin_secret or not secrets.compare_digest(x_admin_secret, expected_secret):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
