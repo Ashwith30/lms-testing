@@ -135,8 +135,10 @@ export interface Question {
   
   // Backward compatibility
   question: string;
-  correctAnswer: string;
+  correctAnswer?: string;
   category: string;
+  isCorrect?: boolean | null;
+  userSelectedOption?: string | null;
 }
 
 export interface ProctoringProfile {
@@ -259,6 +261,7 @@ export interface AnswerRecord {
   questionId: string;
   selectedOption: 'A' | 'B' | 'C' | 'D' | null;
   status: 'not_visited' | 'visited' | 'answered' | 'marked';
+  isCorrect?: boolean | null;
 }
 
 export interface ViolationLog {

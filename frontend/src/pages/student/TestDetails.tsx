@@ -83,8 +83,9 @@ export const TestDetails = () => {
     
     setIsStarting(true);
     try {
-      await testService.startAttempt(user.id, test.id, queryScheduleId);
-      navigate(`/student/tests/${test.id}/attempt${queryScheduleId ? `?scheduleId=${queryScheduleId}` : ''}`);
+      const targetScheduleId = schedule?.id || queryScheduleId;
+      await testService.startAttempt(user.id, test.id, targetScheduleId);
+      navigate(`/student/tests/${test.id}/attempt${targetScheduleId ? `?scheduleId=${targetScheduleId}` : ''}`);
     } catch (e: any) {
       toast(e.message || 'Failed to start test', 'error');
     } finally {

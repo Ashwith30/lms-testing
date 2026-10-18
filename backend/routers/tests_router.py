@@ -6,7 +6,12 @@ from typing import List, Dict, Any, Optional, Union
 import models
 import schemas
 from database import get_db
-from auth import get_current_user, require_roles
+from auth import (
+    get_current_user,
+    require_roles,
+    check_trainer_test_access,
+    get_authorized_test_ids_for_trainer
+)
 
 router = APIRouter(prefix="/api", tags=["tests"])
 
@@ -93,6 +98,13 @@ def update_test(
     if not db_test:
         raise HTTPException(status_code=404, detail="Test not found")
         
+    if current_user.role == "trainer":
+        if not check_trainer_test_access(current_user, db_test, db):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to update this assessment."
+            )
+
     # Standard column fields
     columns_to_update = ["title", "description", "courseId", "topicId", "passingPercentage", "totalMarks", "status", "proctoringProfileId"]
     for col in columns_to_update:
@@ -122,6 +134,23 @@ def delete_test(
     if not db_test:
         raise HTTPException(status_code=404, detail="Test not found")
         
+    if current_user.role == "trainer":
+        if not check_trainer_test_access(current_user, db_test, db):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to delete this assessment."
+            )
+
+    # Reject deletion if any student attempts exist for this test (preserves assessment history)
+    existing_attempts = db.query(models.Attempt).join(
+        models.Schedule, models.Attempt.scheduleId == models.Schedule.id
+    ).filter(models.Schedule.testId == test_id).first()
+    if existing_attempts:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete assessment with existing student attempts. Assessment history and student submissions must be preserved."
+        )
+
     db.query(models.TestQuestion).filter(models.TestQuestion.testId == test_id).delete()
     db.delete(db_test)
     db.commit()
@@ -289,10 +318,22 @@ def create_schedule(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
 ):
+    test_id = sched.get("testId")
+    test = db.query(models.Test).filter(models.Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Test not found")
+        
+    if current_user.role == "trainer":
+        if not check_trainer_test_access(current_user, test, db):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to schedule this assessment."
+            )
+
     s_id = sched.get("id") or models.generate_uuid("sch-")
     db_sched = models.Schedule(
         id=s_id,
-        testId=sched.get("testId"),
+        testId=test_id,
         startTime=sched.get("startTime"),
         endTime=sched.get("endTime"),
         durationMinutes=sched.get("durationMinutes"),
@@ -337,6 +378,13 @@ def update_schedule(
     if not db_sched:
         raise HTTPException(status_code=404, detail="Schedule not found")
         
+    if current_user.role == "trainer":
+        if not check_trainer_test_access(current_user, db_sched.test, db, schedule=db_sched):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to update this schedule."
+            )
+
     for k in ["testId", "startTime", "endTime", "durationMinutes", "attemptsAllowed"]:
         if k in payload:
             setattr(db_sched, k, payload[k])
@@ -377,22 +425,20 @@ def delete_schedule(
     if not db_sched:
         raise HTTPException(status_code=404, detail="Schedule not found")
         
-    # Check for active in-progress attempts
-    in_progress = db.query(models.Attempt).filter(
-        models.Attempt.scheduleId == schedule_id,
-        models.Attempt.status == "in_progress"
-    ).first()
-    if in_progress:
+    if current_user.role == "trainer":
+        if not check_trainer_test_access(current_user, db_sched.test, db, schedule=db_sched):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to delete schedules for this assessment."
+            )
+
+    # Reject schedule deletion if ANY student attempts exist (protects exam history and audit integrity)
+    existing_attempts = db.query(models.Attempt).filter(models.Attempt.scheduleId == schedule_id).first()
+    if existing_attempts:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, 
-            detail="Cannot delete schedule while a student test attempt is currently in progress."
+            detail="Cannot delete schedule with existing student attempts. Completed and submitted attempts are permanent assessment records."
         )
-
-    # Clean up associated attempts and their answers
-    attempts = db.query(models.Attempt).filter(models.Attempt.scheduleId == schedule_id).all()
-    for att in attempts:
-        db.query(models.Answer).filter(models.Answer.attemptId == att.id).delete()
-        db.delete(att)
 
     db.delete(db_sched)
     db.commit()
@@ -407,6 +453,13 @@ def get_schedule_attendance(
     sched = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
     if not sched:
         raise HTTPException(status_code=404, detail="Schedule not found")
+
+    if current_user.role == "trainer":
+        if not check_trainer_test_access(current_user, sched.test, db, schedule=sched):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to view attendance for this schedule."
+            )
 
     assigned_batch = sched.assignedBatch
     assigned_students = sched.assignedStudents
@@ -508,6 +561,10 @@ def extend_schedule(
     if not sched:
         raise HTTPException(status_code=404, detail="Schedule not found")
 
+    if current_user.role == "trainer":
+        if not check_trainer_test_access(current_user, sched.test, db, schedule=sched):
+            raise HTTPException(status_code=403, detail="You do not have permission to manage this schedule")
+
     extension_minutes = payload.get("extensionMinutes")
     new_end_time = payload.get("newEndTime")
     mode = payload.get("mode", "all")  # 'all', 'missed_only', 'selected_students'
@@ -584,6 +641,7 @@ def extend_schedule(
                     models.Attempt.status.notin_(["submitted", "auto_submitted", "completed"])
                 ).all()
                 for ia in incomplete_atts:
+                    db.query(models.ProctoringLog).filter(models.ProctoringLog.attemptId == ia.id).delete()
                     db.query(models.Answer).filter(models.Answer.attemptId == ia.id).delete()
                     db.delete(ia)
 
@@ -610,6 +668,7 @@ def extend_schedule(
         if target_for_reset:
             reset_query = reset_query.filter(models.Attempt.studentId.in_(target_for_reset))
         for ia in reset_query.all():
+            db.query(models.ProctoringLog).filter(models.ProctoringLog.attemptId == ia.id).delete()
             db.query(models.Answer).filter(models.Answer.attemptId == ia.id).delete()
             db.delete(ia)
 

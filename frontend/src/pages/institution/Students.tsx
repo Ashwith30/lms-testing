@@ -61,7 +61,7 @@ export const InstitutionStudents = () => {
   const [regStudentId, setRegStudentId] = useState('');
   const [regDept, setRegDept] = useState('');
   const [regBatch, setRegBatch] = useState('2026');
-  const [regPassword, setRegPassword] = useState('student123');
+  const [regPassword, setRegPassword] = useState('');
   const [isSubmittingReg, setIsSubmittingReg] = useState(false);
 
   const loadData = async () => {

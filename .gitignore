@@ -44,8 +44,10 @@ __pycache__/
 backend/.env
 frontend/.env
 
-# Temporary scratch directories
+# Temporary scratch & archive directories
 scratch/
+archive/
+backend/backup/
 
 # Development artifacts
 implementation_plan.md

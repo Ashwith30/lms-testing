@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import List, Optional, Dict, Literal, Any, Generic, TypeVar, Union
 import datetime
 
@@ -21,13 +21,71 @@ class UserBase(BaseModel):
     updatedAt: Optional[str] = None
 
 class UserCreate(BaseModel):
-    id: Optional[str] = None
+    model_config = ConfigDict(extra="forbid")
     email: str
     password: str
     role: str
 
+    @field_validator("password")
+    @classmethod
+    def validate_password_non_empty(cls, v: str) -> str:
+        if not v or not isinstance(v, str) or not v.strip():
+            raise ValueError("Password is required and cannot be empty.")
+        return v
+
+class StudentRegisterRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    email: str
+    password: str
+    name: Optional[str] = "Student"
+    studentId: Optional[str] = None
+    department: Optional[str] = None
+    batch: Optional[str] = None
+    id: Optional[str] = None
+    userId: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_non_empty(cls, v: str) -> str:
+        if not v or not isinstance(v, str) or not v.strip():
+            raise ValueError("Password is required and cannot be empty.")
+        return v
+
+class TrainerRegisterRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    email: str
+    password: str
+    name: Optional[str] = "Trainer"
+    department: Optional[str] = None
+    id: Optional[str] = None
+    userId: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_non_empty(cls, v: str) -> str:
+        if not v or not isinstance(v, str) or not v.strip():
+            raise ValueError("Password is required and cannot be empty.")
+        return v
+
+class UserUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: Optional[str] = None
+    phoneNumber: Optional[str] = None
+    email: Optional[str] = None
+    status: Optional[str] = None
+    role: Optional[str] = None
+    department: Optional[str] = None
+    batch: Optional[str] = None
+    studentId: Optional[str] = None
+    studentNumber: Optional[str] = None
+    specialization: Optional[str] = None
+    employeeId: Optional[str] = None
+    contactPersonName: Optional[str] = None
+    supportEmail: Optional[str] = None
+
 class User(UserBase):
     name: str = "User"
+    phoneNumber: Optional[str] = None
     studentId: Optional[str] = None
     department: Optional[str] = None
     batch: Optional[str] = None
@@ -198,6 +256,45 @@ class Question(QuestionBase):
     class Config:
         from_attributes = True
 
+class ExamQuestionOption(BaseModel):
+    id: Optional[str] = None
+    optionText: str
+    orderIndex: Optional[int] = 0
+    class Config:
+        from_attributes = True
+
+class ExamQuestion(BaseModel):
+    id: str
+    type: str = "MCQ"
+    text: str
+    question: Optional[str] = None
+    mediaUrl: Optional[str] = None
+    difficulty: Optional[str] = "Medium"
+    marks: float = 1.0
+    category: Optional[str] = None
+    options: Optional[Any] = None
+    class Config:
+        from_attributes = True
+
+class ReviewQuestion(BaseModel):
+    id: str
+    type: str = "MCQ"
+    text: str
+    question: Optional[str] = None
+    mediaUrl: Optional[str] = None
+    difficulty: Optional[str] = "Medium"
+    marks: float = 1.0
+    category: Optional[str] = None
+    options: Optional[Any] = None
+    userSelectedOption: Optional[str] = None
+    isCorrect: Optional[bool] = None
+    correctAnswer: Optional[str] = None
+    explanation: Optional[str] = None
+    class Config:
+        from_attributes = True
+
+
+
 class QuestionCreate(BaseModel):
     type: Optional[str] = "MCQ"
     text: Optional[str] = None
@@ -292,6 +389,59 @@ class Attempt(AttemptBase):
     class Config:
         from_attributes = True
 
+class AttemptCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    testId: str
+    scheduleId: Optional[str] = None
+    studentId: Optional[str] = None
+    answers: Optional[Dict[str, Any]] = None
+    startedAt: Optional[str] = None
+    # Client-controlled forbidden fields declared for explicit 400 rejection
+    id: Optional[str] = None
+    status: Optional[str] = None
+    score: Optional[float] = None
+    percentage: Optional[float] = None
+    violations: Optional[int] = None
+    violationLogs: Optional[List[Any]] = None
+    proctoringSummary: Optional[Dict[str, Any]] = None
+
+class AttemptUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    answers: Optional[Dict[str, Any]] = None
+    deviceInfo: Optional[str] = None
+    ipAddress: Optional[str] = None
+    # Staff / trainer override fields (forbidden for students)
+    score: Optional[float] = None
+    percentage: Optional[float] = None
+    violations: Optional[int] = None
+    violationLogs: Optional[List[Any]] = None
+    proctoringSummary: Optional[Dict[str, Any]] = None
+    status: Optional[str] = None
+    # Immutable fields (forbidden for all roles)
+    id: Optional[str] = None
+    studentId: Optional[str] = None
+    scheduleId: Optional[str] = None
+    startedAt: Optional[str] = None
+    submittedAt: Optional[str] = None
+
+class SyncAnswerRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    questionId: Optional[str] = None
+    selectedOption: Optional[Any] = None
+    status: Optional[str] = None
+    violations: Optional[int] = None
+    violationLogs: Optional[List[Any]] = None
+    proctoringSummary: Optional[Dict[str, Any]] = None
+
+class AttemptSubmitRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    isAutoSubmit: Optional[bool] = False
+    answers: Optional[Dict[str, Any]] = None
+    currentAnswers: Optional[Dict[str, Any]] = None
+    violations: Optional[int] = None
+    violationLogs: Optional[List[Any]] = None
+    proctoringSummary: Optional[Dict[str, Any]] = None
+
 class ProctoringLogBase(BaseModel):
     id: str
     attemptId: str
@@ -334,6 +484,7 @@ class MaterialBase(BaseModel):
     uploadedBy: Optional[str] = None
     url: Optional[str] = None
     content: Optional[str] = None
+    assignedBatch: Optional[str] = None
 
 class Material(MaterialBase):
     class Config:

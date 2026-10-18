@@ -5,7 +5,12 @@ from typing import List, Optional, Any, Union
 import models
 import schemas
 from database import get_db
-from auth import get_current_user, require_roles
+from auth import (
+    get_current_user,
+    require_roles,
+    check_trainer_question_bank_access,
+    check_trainer_question_access
+)
 
 router = APIRouter(prefix="/api", tags=["questions"])
 
@@ -35,7 +40,11 @@ def create_question_bank(
     current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
 ):
     bank_id = bank.get("id") or models.generate_uuid("qb-")
-    owner_id = bank.get("uploadedBy") or bank.get("ownerId") or current_user.id
+    # Prevent trainer identity spoofing: trainers always own their created question banks
+    if current_user.role == "trainer":
+        owner_id = current_user.id
+    else:
+        owner_id = bank.get("uploadedBy") or bank.get("ownerId") or current_user.id
     now = models.get_utc_now()
     
     db_bank = models.QuestionBank(
@@ -64,6 +73,30 @@ def delete_question_bank(
     if not db_bank:
         raise HTTPException(status_code=404, detail="Question bank not found")
         
+    if current_user.role == "trainer":
+        if not check_trainer_question_bank_access(current_user, db_bank, db, for_deletion=True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to delete this question bank."
+            )
+
+    # Integrity check: do not cascade delete if any questions are assigned to tests or have student answers
+    q_ids = [row[0] for row in db.query(models.Question.id).filter(models.Question.questionBankId == bank_id).all()]
+    if q_ids:
+        existing_tq = db.query(models.TestQuestion).filter(models.TestQuestion.questionId.in_(q_ids)).first()
+        if existing_tq:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot delete question bank containing questions currently assigned to one or more assessments."
+            )
+
+        existing_ans = db.query(models.Answer).filter(models.Answer.questionId.in_(q_ids)).first()
+        if existing_ans:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot delete question bank containing questions with existing assessment attempts. Completed attempts are permanent assessment records."
+            )
+
     db.delete(db_bank)
     db.commit()
     return {"message": "Deleted"}
@@ -75,7 +108,7 @@ def get_questions(
     page: Optional[int] = None,
     limit: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
 ):
     query = db.query(models.Question)
     target_bank = bankId or questionBankId
@@ -88,6 +121,137 @@ def get_questions(
         items = query.offset((p - 1) * l).limit(l).all()
         return {"data": items, "total": total, "page": p, "limit": l}
     return query.all()
+
+@router.get("/tests/{test_id}/attempt-questions", response_model=List[schemas.ExamQuestion])
+@router.get("/tests/{test_id}/questions", response_model=List[schemas.ExamQuestion])
+@router.get("/questions/attempt/{test_id}", response_model=List[schemas.ExamQuestion])
+def get_exam_attempt_questions(
+    test_id: str,
+    scheduleId: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Dedicated exam-attempt endpoint for students taking a test.
+    Returns only sanitized questions and permitted options (letters and text).
+    Never exposes correctAnswer, explanation, or isCorrect flags.
+    Enforces test publishing status, student batch/student assignment, and schedule time window.
+    """
+    test = db.query(models.Test).filter(models.Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    # If student, enforce authorization, assignment, and schedule window
+    if current_user.role == "student":
+        if (test.status or "").lower() != "published":
+            raise HTTPException(status_code=403, detail="Test is not published.")
+
+        sched_query = db.query(models.Schedule).filter(models.Schedule.testId == test_id)
+        if scheduleId:
+            sched_query = sched_query.filter(models.Schedule.id == scheduleId)
+        
+        all_schedules = sched_query.all()
+        if not all_schedules:
+            raise HTTPException(status_code=403, detail="This test is not currently scheduled.")
+
+        # Filter schedules assigned to this student
+        assigned_schedules = []
+        for s in all_schedules:
+            assigned_batch = s.assignedBatch
+            assigned_students = s.assignedStudents
+            
+            is_assigned = True
+            if assigned_batch and str(assigned_batch).strip().lower() != "all":
+                if not current_user.batch or current_user.batch.strip().lower() != str(assigned_batch).strip().lower():
+                    is_assigned = False
+            
+            if assigned_students and len(assigned_students) > 0 and "all" not in assigned_students:
+                if current_user.id not in assigned_students:
+                    is_assigned = False
+
+            if is_assigned:
+                assigned_schedules.append(s)
+
+        if not assigned_schedules:
+            raise HTTPException(status_code=403, detail="Student is not assigned to this scheduled test session.")
+
+        # Check time window and attempts on assigned schedules
+        now = models.get_utc_now()
+        active_sched = None
+        has_future_schedule = False
+        has_expired_schedule = False
+
+        for s in assigned_schedules:
+            # Check if student has an existing in-progress attempt for this test/schedule
+            in_prog = db.query(models.Attempt).filter(
+                models.Attempt.studentId == current_user.id,
+                models.Attempt.scheduleId == s.id,
+                models.Attempt.status == "in_progress"
+            ).first()
+
+            # Check attempt limit
+            submitted_count = db.query(models.Attempt).filter(
+                models.Attempt.studentId == current_user.id,
+                models.Attempt.scheduleId == s.id,
+                models.Attempt.status.in_(["submitted", "auto_submitted"])
+            ).count()
+
+            if submitted_count >= (s.attemptsAllowed or 1) and not in_prog:
+                continue
+
+            if in_prog:
+                active_sched = s
+                break
+
+            if now < s.startTime:
+                has_future_schedule = True
+            elif now > s.endTime:
+                has_expired_schedule = True
+            else:
+                active_sched = s
+                break
+
+        if not active_sched:
+            if has_future_schedule:
+                raise HTTPException(status_code=403, detail="Scheduled test has not started yet.")
+            elif has_expired_schedule:
+                raise HTTPException(status_code=403, detail="Scheduled test session has expired.")
+            else:
+                raise HTTPException(status_code=403, detail="Maximum allowed attempts reached for this test.")
+
+    test_questions = db.query(models.TestQuestion).filter(
+        models.TestQuestion.testId == test_id
+    ).order_by(models.TestQuestion.orderIndex).all()
+
+    sanitized_questions = []
+    for tq in test_questions:
+        q = db.query(models.Question).filter(models.Question.id == tq.questionId).first()
+        if not q:
+            continue
+
+        # Extract only permitted option mappings (e.g. {"A": "Text", "B": "Text"}), never isCorrect
+        safe_options = {}
+        if q.question_options:
+            letters = ["A", "B", "C", "D", "E", "F", "G", "H"]
+            for idx, opt in enumerate(q.question_options):
+                if idx < len(letters):
+                    safe_options[letters[idx]] = opt.optionText
+        elif isinstance(q.options, dict):
+            safe_options = q.options
+
+        sanitized_questions.append({
+            "id": q.id,
+            "type": q.type or "MCQ",
+            "text": q.text,
+            "question": q.question or q.text,
+            "mediaUrl": q.mediaUrl,
+            "difficulty": q.difficulty or "Medium",
+            "marks": float(q.marks or 1.0),
+            "category": q.category,
+            "options": safe_options
+        })
+
+    return sanitized_questions
 
 def _create_single_question(db: Session, q_data: dict, default_bank_id: Optional[str] = None) -> models.Question:
     target_bank_id = q_data.get("questionBankId") or default_bank_id
@@ -179,22 +343,38 @@ async def create_questions(
     current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
 ):
     body = await request.json()
-    if isinstance(body, list):
-        created_list = []
-        for item in body:
-            q = _create_single_question(db, item, default_bank_id=bankId)
-            created_list.append(q)
-        db.commit()
-        for q in created_list:
-            db.refresh(q)
-        return created_list
-    elif isinstance(body, dict):
-        q = _create_single_question(db, body, default_bank_id=bankId)
-        db.commit()
-        db.refresh(q)
-        return q
-    else:
+    items = body if isinstance(body, list) else [body] if isinstance(body, dict) else None
+    if items is None:
         raise HTTPException(status_code=400, detail="Invalid request payload format")
+
+    # Validate bank existence and trainer ownership/authorization for all items before insertion
+    validated_banks = {}
+    for item in items:
+        target_bank_id = item.get("questionBankId") or bankId
+        if not target_bank_id:
+            raise HTTPException(status_code=400, detail="questionBankId or bankId required for question creation")
+        
+        if target_bank_id not in validated_banks:
+            bank = db.query(models.QuestionBank).filter(models.QuestionBank.id == target_bank_id).first()
+            if not bank:
+                raise HTTPException(status_code=404, detail=f"Question bank '{target_bank_id}' not found")
+
+            if current_user.role == "trainer":
+                if not check_trainer_question_bank_access(current_user, bank, db, for_deletion=False):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Access denied: You are not authorized to add questions to this question bank."
+                    )
+            validated_banks[target_bank_id] = bank
+
+    created_list = []
+    for item in items:
+        q = _create_single_question(db, item, default_bank_id=bankId)
+        created_list.append(q)
+    db.commit()
+    for q in created_list:
+        db.refresh(q)
+    return created_list if isinstance(body, list) else created_list[0]
 
 @router.delete("/questions/{question_id}")
 def delete_question(
@@ -206,6 +386,34 @@ def delete_question(
     if not db_q:
         raise HTTPException(status_code=404, detail="Question not found")
         
+    bank = db_q.bank
+    if not bank and db_q.questionBankId:
+        bank = db.query(models.QuestionBank).filter(models.QuestionBank.id == db_q.questionBankId).first()
+
+    if current_user.role == "trainer":
+        if not check_trainer_question_bank_access(current_user, bank, db, for_deletion=True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to delete questions from this question bank."
+            )
+
+    # Check if question is currently assigned to any tests/assessments
+    existing_tq = db.query(models.TestQuestion).filter(models.TestQuestion.questionId == question_id).first()
+    if existing_tq:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete question that is currently assigned to one or more assessments."
+        )
+
+    # Check if question has student answers in attempts
+    existing_ans = db.query(models.Answer).filter(models.Answer.questionId == question_id).first()
+    if existing_ans:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete question with existing assessment attempts. Completed attempts are permanent assessment records."
+        )
+
     db.delete(db_q)
     db.commit()
     return {"message": "Deleted"}
+

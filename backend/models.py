@@ -1,7 +1,7 @@
 import datetime
 import json
 import uuid
-from sqlalchemy import Column, String, Integer, Boolean, Float, ForeignKey, Text, DateTime
+from sqlalchemy import Column, String, Integer, Boolean, Float, ForeignKey, Text, DateTime, Index
 from sqlalchemy.orm import relationship, object_session
 try:
     from .database import Base
@@ -55,6 +55,14 @@ class User(Base):
         if self.student_profile and self.student_profile.primaryBatch:
             return self.student_profile.primaryBatch.name
         return self.student_profile.primaryBatchId if self.student_profile else None
+
+    @property
+    def phoneNumber(self):
+        if self.role == 'student' and self.student_profile:
+            return self.student_profile.phoneNumber
+        elif self.role == 'trainer' and self.trainer_profile:
+            return self.trainer_profile.phoneNumber
+        return None
 
 
 class InstitutionProfile(Base):
@@ -237,7 +245,7 @@ class Question(Base):
             for i, opt in enumerate(self.question_options):
                 if opt.isCorrect and i < len(letters):
                     return letters[i]
-        return "A"
+        return None
 
 
 class QuestionOption(Base):
@@ -386,6 +394,7 @@ class Attempt(Base):
     schedule = relationship("Schedule", back_populates="attempts")
     student = relationship("User", foreign_keys=[studentId])
     answers_records = relationship("Answer", back_populates="attempt", cascade="all, delete-orphan")
+    proctoring_logs = relationship("ProctoringLog", back_populates="attempt")
     
     @property
     def testId(self):
@@ -423,11 +432,14 @@ class Attempt(Base):
                             selected_opt = parsed
                     except Exception:
                         selected_opt = ans.selectedOptionIds
-                result[ans.questionId] = {
+                item = {
                     "questionId": ans.questionId,
                     "selectedOption": selected_opt,
                     "status": "answered" if selected_opt else "not_visited"
                 }
+                if self.status in ("submitted", "auto_submitted"):
+                    item["isCorrect"] = ans.isCorrect
+                result[ans.questionId] = item
         return result
 
     @property
@@ -469,6 +481,8 @@ class ProctoringLog(Base):
     violationType = Column(String(100), nullable=False)
     screenshotUrl = Column(Text, nullable=True)
     severity = Column(String(50), nullable=True)
+
+    attempt = relationship("Attempt", back_populates="proctoring_logs")
 
 
 class Answer(Base):
@@ -515,6 +529,15 @@ class Material(Base):
     def content(self):
         return self.description
 
+    @property
+    def assignedBatch(self):
+        if not self.assignments:
+            return "all"
+        for a in self.assignments:
+            if (a.assigneeType or "").strip().lower() == "batch":
+                return a.assigneeId
+        return "all"
+
 
 class MaterialAssignment(Base):
     __tablename__ = "material_assignments"
@@ -559,3 +582,16 @@ class NotificationRead(Base):
 
     notification = relationship("Notification", back_populates="reads")
     user = relationship("User")
+
+
+class RateLimitEvent(Base):
+    __tablename__ = "rate_limit_events"
+    id = Column(String(64), primary_key=True, index=True)
+    key = Column(String(255), nullable=False, index=True)
+    scope = Column(String(50), nullable=False, index=True)
+    timestamp = Column(Float, nullable=False, index=True)
+    createdAt = Column(String(64), default=get_utc_now)
+
+    __table_args__ = (
+        Index("ix_rate_limit_events_scope_key_ts", "scope", "key", "timestamp"),
+    )

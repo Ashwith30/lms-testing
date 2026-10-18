@@ -56,6 +56,7 @@ function App() {
             <Routes>
               {/* Public Auth Routes */}
               <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Navigate to="/student/login" replace />} />
               <Route path="/trainer/login" element={<TrainerLogin />} />
               <Route path="/student/login" element={<StudentLogin />} />
               <Route path="/student/register" element={<StudentRegister />} />

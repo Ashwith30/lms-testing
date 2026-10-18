@@ -16,7 +16,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // initDB(); // Removed since we have a real backend
+    // Listen for unauthorized events dispatched by api 401 interceptor
+    const handleUnauthorized = () => {
+      setUser(null);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('auth:unauthorized', handleUnauthorized);
+    }
     
     const fetchUser = async () => {
       const currentUser = await authService.getCurrentUser();
@@ -27,6 +34,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     
     fetchUser();
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('auth:unauthorized', handleUnauthorized);
+      }
+    };
   }, []);
 
   const login = (newUser: User) => {

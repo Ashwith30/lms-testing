@@ -8,6 +8,13 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./lms.db")
 
+# Canonicalize relative SQLite database URLs to the backend directory to prevent duplicate root databases
+if DATABASE_URL.startswith("sqlite:///") and not DATABASE_URL.startswith("sqlite:////"):
+    db_relative_path = DATABASE_URL.replace("sqlite:///", "", 1)
+    if not os.path.isabs(db_relative_path):
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        DATABASE_URL = f"sqlite:///{os.path.normpath(os.path.join(backend_dir, db_relative_path))}"
+
 # Neon & Supabase often provide URLs starting with postgres:// instead of postgresql://
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)

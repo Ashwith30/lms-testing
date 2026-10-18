@@ -54,7 +54,7 @@ export const authService = {
     }
   },
 
-  registerTrainer: async (trainerData: { name: string; email: string; password?: string; department?: string }): Promise<User> => {
+  registerTrainer: async (trainerData: { name: string; email: string; password: string; department?: string }): Promise<User> => {
     try {
       const response = await api.post('/auth/register/trainer', trainerData);
       return response.data;

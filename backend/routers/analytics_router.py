@@ -2,7 +2,7 @@ import json
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 from typing import List, Dict, Any, Optional
 import models
 import schemas
@@ -232,11 +232,10 @@ def get_analytics_summary(
         d = q.difficulty or "Medium"
         diff_counts[d] = diff_counts.get(d, 0) + 1
 
-    submitted_attempts = db.query(models.Attempt).filter(
+    avg_score_val = db.query(func.avg(models.Attempt.percentage)).filter(
         models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])
-    ).all()
-    scores = [a.percentage or 0.0 for a in submitted_attempts]
-    calculated_avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+    ).scalar()
+    calculated_avg_score = round(float(avg_score_val), 1) if avg_score_val is not None else 0.0
 
     return {
         "kpis": {
@@ -260,98 +259,153 @@ def get_trainer_analytics(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
 ):
-    tests = db.query(models.Test).all()
-    questions = db.query(models.Question).all()
-    attempts = db.query(models.Attempt).filter(
-        models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])
-    ).all()
-    all_answers = db.query(models.Answer).all()
+    total_tests = db.query(func.count(models.Test.id)).scalar() or 0
+    total_questions = db.query(func.count(models.Question.id)).scalar() or 0
 
-    total_submissions = len(attempts)
-    scores = [a.percentage or 0.0 for a in attempts]
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
-    pass_count = sum(1 for s in scores if s >= 60.0)
-    pass_rate = round((pass_count / len(scores)) * 100, 1) if scores else 0.0
-    highest_score = round(max(scores, default=0.0), 1)
-    lowest_score = round(min(scores, default=0.0), 1) if scores else 0.0
-    sorted_scores = sorted(scores)
-    median_score = sorted_scores[len(sorted_scores) // 2] if sorted_scores else 0.0
-    total_violations = sum(a.violations or 0 for a in attempts)
+    # Attempt KPIs via database-side aggregation (replaces full attempt table load)
+    attempt_kpis = db.query(
+        func.count(models.Attempt.id).label("total"),
+        func.avg(models.Attempt.percentage).label("avg"),
+        func.max(models.Attempt.percentage).label("max"),
+        func.min(models.Attempt.percentage).label("min"),
+        func.sum(func.coalesce(models.Attempt.violations, 0)).label("violations"),
+        func.sum(case((models.Attempt.percentage >= 60.0, 1), else_=0)).label("passed"),
+        func.sum(case((models.Attempt.percentage >= 80.0, 1), else_=0)).label("b_80_100"),
+        func.sum(case(((models.Attempt.percentage >= 60.0) & (models.Attempt.percentage < 80.0), 1), else_=0)).label("b_60_79"),
+        func.sum(case(((models.Attempt.percentage >= 40.0) & (models.Attempt.percentage < 60.0), 1), else_=0)).label("b_40_59"),
+        func.sum(case((models.Attempt.percentage < 40.0, 1), else_=0)).label("b_0_39"),
+    ).filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])).first()
+
+    total_submissions = int(attempt_kpis[0] or 0) if attempt_kpis else 0
+    avg_score = round(float(attempt_kpis[1]), 1) if attempt_kpis and attempt_kpis[1] is not None else 0.0
+    highest_score = round(float(attempt_kpis[2]), 1) if attempt_kpis and attempt_kpis[2] is not None else 0.0
+    lowest_score = round(float(attempt_kpis[3]), 1) if attempt_kpis and attempt_kpis[3] is not None else 0.0
+    total_violations = int(attempt_kpis[4] or 0) if attempt_kpis else 0
+    pass_count = int(attempt_kpis[5] or 0) if attempt_kpis else 0
+    pass_rate = round((pass_count / total_submissions) * 100, 1) if total_submissions else 0.0
 
     score_brackets = {
-        "80-100": sum(1 for s in scores if s >= 80),
-        "60-79": sum(1 for s in scores if 60 <= s < 80),
-        "40-59": sum(1 for s in scores if 40 <= s < 60),
-        "0-39": sum(1 for s in scores if s < 40)
+        "80-100": int(attempt_kpis[6] or 0) if attempt_kpis else 0,
+        "60-79": int(attempt_kpis[7] or 0) if attempt_kpis else 0,
+        "40-59": int(attempt_kpis[8] or 0) if attempt_kpis else 0,
+        "0-39": int(attempt_kpis[9] or 0) if attempt_kpis else 0
     }
 
+    # Median score: query sorted percentage scalars only (not full attempt rows)
+    if total_submissions > 0:
+        score_rows = db.query(models.Attempt.percentage).filter(
+            models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]),
+            models.Attempt.percentage.isnot(None)
+        ).order_by(models.Attempt.percentage).all()
+        sorted_scores = [float(r[0]) for r in score_rows]
+        median_score = sorted_scores[len(sorted_scores) // 2] if sorted_scores else 0.0
+    else:
+        median_score = 0.0
+
+    # Attempt status breakdown via single GROUP BY query
+    status_rows = db.query(
+        models.Attempt.status, func.count(models.Attempt.id)
+    ).group_by(models.Attempt.status).all()
+    status_map = {row[0]: row[1] for row in status_rows}
     attempt_status_breakdown = {
-        "submitted": sum(1 for a in attempts if a.status == "submitted"),
-        "autoSubmitted": sum(1 for a in attempts if a.status == "auto_submitted"),
-        "inProgress": db.query(models.Attempt).filter(models.Attempt.status == "in_progress").count()
+        "submitted": status_map.get("submitted", 0),
+        "autoSubmitted": status_map.get("auto_submitted", 0),
+        "inProgress": status_map.get("in_progress", 0)
     }
 
+    # Test summaries: Aggregate attempts by test in SQL
+    attempt_stats_by_test = db.query(
+        models.Schedule.testId.label("test_id"),
+        func.count(models.Attempt.id).label("sub_count"),
+        func.avg(models.Attempt.percentage).label("avg_pct"),
+        func.sum(case((models.Attempt.percentage >= 60.0, 1), else_=0)).label("pass_count"),
+        func.sum(func.coalesce(models.Attempt.violations, 0)).label("total_viols")
+    ).join(
+        models.Schedule, models.Attempt.scheduleId == models.Schedule.id
+    ).filter(
+        models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])
+    ).group_by(
+        models.Schedule.testId
+    ).all()
+
+    test_stat_map = {}
+    for row in attempt_stats_by_test:
+        test_id = row[0]
+        if test_id:
+            test_stat_map[test_id] = {
+                "submissions": int(row[1] or 0),
+                "avgScore": round(float(row[2]), 1) if row[2] is not None else 0.0,
+                "passCount": int(row[3] or 0),
+                "violations": int(row[4] or 0)
+            }
+
+    # Query only id and title for tests
+    tests_summary_list = db.query(models.Test.id, models.Test.title).all()
     test_summaries = []
-    for t in tests:
-        t_attempts = [a for a in attempts if a.testId == t.id or (a.schedule and a.schedule.testId == t.id)]
-        t_scores = [a.percentage or 0.0 for a in t_attempts]
+    for t_id, t_title in tests_summary_list:
+        stat = test_stat_map.get(t_id, {"submissions": 0, "avgScore": 0.0, "passCount": 0, "violations": 0})
+        s_count = stat["submissions"]
+        t_pass_rate = round((stat["passCount"] / s_count) * 100, 1) if s_count > 0 else 0.0
         test_summaries.append({
-            "id": t.id,
-            "testId": t.id,
-            "title": t.title,
-            "submissions": len(t_attempts),
-            "submissionsCount": len(t_attempts),
-            "avgScore": round(sum(t_scores) / len(t_scores), 1) if t_scores else 0.0,
-            "passRate": round((sum(1 for s in t_scores if s >= 60) / len(t_scores)) * 100, 1) if t_scores else 0.0,
+            "id": t_id,
+            "testId": t_id,
+            "title": t_title,
+            "submissions": s_count,
+            "submissionsCount": s_count,
+            "avgScore": stat["avgScore"],
+            "passRate": t_pass_rate,
             "avgDuration": 45,
-            "violations": sum(a.violations or 0 for a in t_attempts)
+            "violations": stat["violations"]
         })
 
-    # Group answers by question ID
-    answers_by_q = {}
-    for ans in all_answers:
-        if ans.questionId not in answers_by_q:
-            answers_by_q[ans.questionId] = []
-        answers_by_q[ans.questionId].append(ans)
+    # Question Analysis via database-side aggregation of Answer table
+    # Eliminates all_answers = db.query(models.Answer).all()
+    ans_stats_rows = db.query(
+        models.Answer.questionId,
+        func.count(models.Answer.id).label("total"),
+        func.sum(case((models.Answer.isCorrect == True, 1), else_=0)).label("correct"),
+        func.sum(case((
+            (models.Answer.selectedOptionIds.is_(None)) | 
+            (models.Answer.selectedOptionIds.in_(["", "[]", "null", '""'])), 
+            1
+        ), else_=0)).label("skipped"),
+        func.sum(case((models.Answer.selectedOptionIds.ilike('%"A"%' ) | (models.Answer.selectedOptionIds == 'A'), 1), else_=0)).label("count_a"),
+        func.sum(case((models.Answer.selectedOptionIds.ilike('%"B"%' ) | (models.Answer.selectedOptionIds == 'B'), 1), else_=0)).label("count_b"),
+        func.sum(case((models.Answer.selectedOptionIds.ilike('%"C"%' ) | (models.Answer.selectedOptionIds == 'C'), 1), else_=0)).label("count_c"),
+        func.sum(case((models.Answer.selectedOptionIds.ilike('%"D"%' ) | (models.Answer.selectedOptionIds == 'D'), 1), else_=0)).label("count_d"),
+    ).group_by(models.Answer.questionId).all()
+
+    q_stat_map = {}
+    for r in ans_stats_rows:
+        q_id = r[0]
+        if q_id:
+            q_stat_map[q_id] = {
+                "total": int(r[1] or 0),
+                "correct": int(r[2] or 0),
+                "skipped": int(r[3] or 0),
+                "opt_distribution": {
+                    "A": int(r[4] or 0),
+                    "B": int(r[5] or 0),
+                    "C": int(r[6] or 0),
+                    "D": int(r[7] or 0)
+                }
+            }
+
+    questions = db.query(models.Question).all()
 
     question_analysis = []
     category_map = {}
 
     for q in questions:
-        q_ans = answers_by_q.get(q.id, [])
-        total_ans = len(q_ans)
-        
-        opt_distribution = {"A": 0, "B": 0, "C": 0, "D": 0}
-        correct_count = 0
-        wrong_count = 0
-        skip_count = 0
+        q_stat = q_stat_map.get(q.id, {"total": 0, "correct": 0, "skipped": 0, "opt_distribution": {"A": 0, "B": 0, "C": 0, "D": 0}})
+        total_ans = q_stat["total"]
+        correct_ans_count = q_stat["correct"]
+        skipped_ans_count = q_stat["skipped"]
+        wrong_ans_count = max(0, total_ans - correct_ans_count - skipped_ans_count)
 
-        for a in q_ans:
-            sel = None
-            if a.selectedOptionIds:
-                try:
-                    parsed = json.loads(a.selectedOptionIds)
-                    if isinstance(parsed, list) and parsed:
-                        sel = parsed[0]
-                    elif isinstance(parsed, str):
-                        sel = parsed
-                except Exception:
-                    sel = a.selectedOptionIds
-
-            if not sel or sel in ("[]", "null", ""):
-                skip_count += 1
-            else:
-                letter = str(sel).strip().upper()
-                if letter in opt_distribution:
-                    opt_distribution[letter] += 1
-                if a.isCorrect:
-                    correct_count += 1
-                else:
-                    wrong_count += 1
-
-        correct_rate = round((correct_count / total_ans) * 100, 1) if total_ans > 0 else 75.0
-        wrong_rate = round((wrong_count / total_ans) * 100, 1) if total_ans > 0 else 20.0
-        skip_rate = round((skip_count / total_ans) * 100, 1) if total_ans > 0 else 5.0
+        correct_rate = round((correct_ans_count / total_ans) * 100, 1) if total_ans > 0 else 75.0
+        wrong_rate = round((wrong_ans_count / total_ans) * 100, 1) if total_ans > 0 else 20.0
+        skip_rate = round((skipped_ans_count / total_ans) * 100, 1) if total_ans > 0 else 5.0
 
         cat = q.category or "General"
         if cat not in category_map:
@@ -368,7 +422,7 @@ def get_trainer_analytics(
             "wrongRate": wrong_rate,
             "skipRate": skip_rate,
             "correctAnswer": q.correctAnswer,
-            "optionDistribution": opt_distribution
+            "optionDistribution": q_stat["opt_distribution"]
         })
 
     category_performance = []
@@ -380,25 +434,45 @@ def get_trainer_analytics(
             "totalQuestions": info["count"]
         })
 
-    answered_count = sum(1 for a in all_answers if a.selectedOptionIds and a.selectedOptionIds not in ("[]", '""', "null"))
-    skipped_count = len(all_answers) - answered_count
+    # Answer status breakdown via database-side counts
+    answer_overall = db.query(
+        func.count(models.Answer.id).label("total_answers"),
+        func.sum(case((
+            (models.Answer.selectedOptionIds.isnot(None)) & 
+            (~models.Answer.selectedOptionIds.in_(["", "[]", "null", '""'])),
+            1
+        ), else_=0)).label("answered")
+    ).first()
+
+    total_answers = int(answer_overall[0] or 0) if answer_overall else 0
+    answered_count = int(answer_overall[1] or 0) if answer_overall else 0
+    skipped_count = max(0, total_answers - answered_count)
+
     answer_status_breakdown = {
         "answered": answered_count,
-        "marked": max(1, int(answered_count * 0.08)),
+        "marked": max(1, int(answered_count * 0.08)) if answered_count > 0 else 0,
         "visited": skipped_count,
-        "notVisited": max(0, (len(questions) * len(attempts)) - len(all_answers))
+        "notVisited": max(0, (total_questions * total_submissions) - total_answers)
     }
 
+    # Time distribution via database-side aggregation
+    time_dist_row = db.query(
+        func.sum(case(((models.Attempt.percentage.isnot(None)) & (models.Attempt.percentage >= 85), 1), else_=0)),
+        func.sum(case(((models.Attempt.percentage.isnot(None)) & (models.Attempt.percentage >= 70) & (models.Attempt.percentage < 85), 1), else_=0)),
+        func.sum(case(((models.Attempt.percentage.isnot(None)) & (models.Attempt.percentage >= 55) & (models.Attempt.percentage < 70), 1), else_=0)),
+        func.sum(case(((models.Attempt.percentage.isnot(None)) & (models.Attempt.percentage < 55), 1), else_=0)),
+    ).filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])).first()
+
     time_distribution = [
-        {"minutes": "15-25", "count": sum(1 for a in attempts if a.percentage and a.percentage >= 85)},
-        {"minutes": "25-35", "count": sum(1 for a in attempts if a.percentage and 70 <= a.percentage < 85)},
-        {"minutes": "35-45", "count": sum(1 for a in attempts if a.percentage and 55 <= a.percentage < 70)},
-        {"minutes": "45-60", "count": sum(1 for a in attempts if a.percentage and a.percentage < 55)}
+        {"minutes": "15-25", "count": int(time_dist_row[0] or 0) if time_dist_row else 0},
+        {"minutes": "25-35", "count": int(time_dist_row[1] or 0) if time_dist_row else 0},
+        {"minutes": "35-45", "count": int(time_dist_row[2] or 0) if time_dist_row else 0},
+        {"minutes": "45-60", "count": int(time_dist_row[3] or 0) if time_dist_row else 0}
     ]
 
     return {
         "kpis": {
-            "totalTests": len(tests),
+            "totalTests": total_tests,
             "totalSubmissions": total_submissions,
             "avgScore": avg_score,
             "passRate": pass_rate,
@@ -406,7 +480,7 @@ def get_trainer_analytics(
             "lowestScore": lowest_score,
             "medianScore": median_score,
             "avgDuration": 38,
-            "questionsCreated": len(questions),
+            "questionsCreated": total_questions,
             "totalViolations": total_violations
         },
         "testSummaries": test_summaries,
@@ -425,43 +499,70 @@ def get_admin_analytics(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_roles("admin", "institution"))
 ):
-    users = db.query(models.User).all()
-    tests = db.query(models.Test).all()
-    questions = db.query(models.Question).all()
-    attempts = db.query(models.Attempt).all()
-    submitted = [a for a in attempts if a.status in ("submitted", "auto_submitted", "completed")]
+    # Database-side user aggregations (replaces users = db.query(models.User).all())
+    user_counts = dict(db.query(models.User.role, func.count(models.User.id)).group_by(models.User.role).all())
+    total_users = sum(user_counts.values())
+    total_students = user_counts.get("student", 0)
+    total_trainers = user_counts.get("trainer", 0)
 
-    scores = [a.percentage or 0.0 for a in submitted]
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
-    completion_rate = round((len(submitted) / len(attempts)) * 100, 1) if attempts else 0.0
+    total_tests = db.query(func.count(models.Test.id)).scalar() or 0
+    total_questions = db.query(func.count(models.Question.id)).scalar() or 0
+    total_attempts = db.query(func.count(models.Attempt.id)).scalar() or 0
 
-    dept_counts = {}
-    for d in db.query(models.Department).all():
-        dept_counts[d.name] = db.query(models.StudentProfile).filter(models.StudentProfile.departmentId == d.id).count()
+    # Attempt statistics via SQL aggregation (replaces attempts = db.query(models.Attempt).all())
+    attempt_stats = db.query(
+        func.count(models.Attempt.id).label("submitted_count"),
+        func.avg(models.Attempt.percentage).label("avg_score"),
+        func.sum(case((models.Attempt.percentage >= 80.0, 1), else_=0)).label("b_80_100"),
+        func.sum(case(((models.Attempt.percentage >= 60.0) & (models.Attempt.percentage < 80.0), 1), else_=0)).label("b_60_79"),
+        func.sum(case(((models.Attempt.percentage >= 40.0) & (models.Attempt.percentage < 60.0), 1), else_=0)).label("b_40_59"),
+        func.sum(case((models.Attempt.percentage < 40.0, 1), else_=0)).label("b_0_39"),
+    ).filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])).first()
 
-    batch_counts = {}
-    for b in db.query(models.Batch).all():
-        batch_counts[b.name] = db.query(models.StudentProfile).filter(models.StudentProfile.primaryBatchId == b.id).count()
+    submitted_count = int(attempt_stats[0] or 0) if attempt_stats else 0
+    avg_score = round(float(attempt_stats[1]), 1) if attempt_stats and attempt_stats[1] is not None else 0.0
+    completion_rate = round((submitted_count / total_attempts) * 100, 1) if total_attempts else 0.0
 
     score_brackets = {
-        "80-100": sum(1 for s in scores if s >= 80),
-        "60-79": sum(1 for s in scores if 60 <= s < 80),
-        "40-59": sum(1 for s in scores if 40 <= s < 60),
-        "0-39": sum(1 for s in scores if s < 40)
+        "80-100": int(attempt_stats[2] or 0) if attempt_stats else 0,
+        "60-79": int(attempt_stats[3] or 0) if attempt_stats else 0,
+        "40-59": int(attempt_stats[4] or 0) if attempt_stats else 0,
+        "0-39": int(attempt_stats[5] or 0) if attempt_stats else 0
     }
 
+    # Department student counts via JOIN query
+    dept_counts = {d.name: 0 for d in db.query(models.Department).all()}
+    for d_name, cnt in db.query(
+        models.Department.name, func.count(models.StudentProfile.userId)
+    ).join(
+        models.StudentProfile, models.StudentProfile.departmentId == models.Department.id
+    ).group_by(models.Department.name).all():
+        dept_counts[d_name] = cnt
+
+    # Batch student counts via JOIN query
+    batch_counts = {b.name: 0 for b in db.query(models.Batch).all()}
+    for b_name, cnt in db.query(
+        models.Batch.name, func.count(models.StudentProfile.userId)
+    ).join(
+        models.StudentProfile, models.StudentProfile.primaryBatchId == models.Batch.id
+    ).group_by(models.Batch.name).all():
+        batch_counts[b_name] = cnt
+
+    # Difficulty counts via GROUP BY
     diff_counts = {"Easy": 0, "Medium": 0, "Hard": 0}
-    for q in questions:
-        d = q.difficulty or "Medium"
-        diff_counts[d] = diff_counts.get(d, 0) + 1
+    for diff_name, count in db.query(
+        models.Question.difficulty, func.count(models.Question.id)
+    ).group_by(models.Question.difficulty).all():
+        d = diff_name or "Medium"
+        diff_counts[d] = diff_counts.get(d, 0) + count
 
     return {
         "kpis": {
-            "totalUsers": len(users),
-            "totalStudents": sum(1 for u in users if u.role == "student"),
-            "totalTrainers": sum(1 for u in users if u.role == "trainer"),
-            "totalTests": len(tests),
-            "totalQuestions": len(questions),
+            "totalUsers": total_users,
+            "totalStudents": total_students,
+            "totalTrainers": total_trainers,
+            "totalTests": total_tests,
+            "totalQuestions": total_questions,
             "avgScore": avg_score,
             "completionRate": completion_rate
         },

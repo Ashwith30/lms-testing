@@ -12,7 +12,8 @@ import {
   Award,
   Lock,
   BadgeCheck,
-  Building
+  Building,
+  Phone
 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -27,10 +28,7 @@ export const StudentProfile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
-  const [department, setDepartment] = useState(user?.department || '');
-  const [batch, setBatch] = useState(user?.batch || '');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(user?.student_profile?.phoneNumber || '');
   const [isSaving, setIsSaving] = useState(false);
 
   if (!user) {
@@ -48,20 +46,15 @@ export const StudentProfile = () => {
     try {
       const updates: any = {
         name: name.trim(),
-        department: department.trim(),
-        batch: batch.trim(),
       };
-      if (newPassword.trim()) {
-        updates.password = newPassword.trim();
-        updates.currentPassword = currentPassword;
+      if (phoneNumber.trim()) {
+        updates.phoneNumber = phoneNumber.trim();
       }
 
       const res = await api.put(`/users/${user.id}`, updates);
       login(res.data);
       toast('Profile updated successfully!', 'success');
       setIsEditing(false);
-      setCurrentPassword('');
-      setNewPassword('');
     } catch (e: any) {
       toast(e.response?.data?.detail || e.message || 'Failed to update profile', 'error');
     } finally {
@@ -72,8 +65,9 @@ export const StudentProfile = () => {
   const academicDetails = [
     { label: 'Full Name', value: user.name, icon: User, desc: 'Registered primary name in portal' },
     { label: 'Email Address', value: user.email, icon: Mail, desc: 'Official student email address' },
-    { label: 'Department / Major', value: user.department || 'Computer Science and Engineering', icon: Building, desc: 'Academic engineering discipline' },
-    { label: 'Graduation Year', value: user.batch ? `Class of ${user.batch}` : 'Class of 2026', icon: GraduationCap, desc: 'Expected placement cycle batch' },
+    { label: 'Phone Number', value: user.student_profile?.phoneNumber || 'Not specified', icon: Phone, desc: 'Registered contact phone number' },
+    { label: 'Department / Major', value: user.department || 'Computer Science and Engineering', icon: Building, desc: 'Academic engineering discipline (Managed by Institution)' },
+    { label: 'Graduation Year', value: user.batch ? `Class of ${user.batch}` : 'Class of 2026', icon: GraduationCap, desc: 'Expected placement cycle batch (Managed by Institution)' },
   ];
 
   const systemDetails = [
@@ -103,10 +97,7 @@ export const StudentProfile = () => {
           onClick={() => {
             setIsEditing(!isEditing);
             setName(user.name);
-            setDepartment(user.department || '');
-            setBatch(user.batch || '');
-            setCurrentPassword('');
-            setNewPassword('');
+            setPhoneNumber(user.student_profile?.phoneNumber || '');
           }}
           className={isEditing ? "bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs" : "border-slate-300 text-slate-700 hover:bg-slate-50 text-xs shadow-xs"}
         >
@@ -172,16 +163,22 @@ export const StudentProfile = () => {
                     required
                   />
                   <Input
-                    label="Department / Branch"
-                    value={department}
-                    placeholder="e.g. Computer Science & Engineering"
-                    onChange={e => setDepartment(e.target.value)}
+                    label="Phone Number"
+                    value={phoneNumber}
+                    placeholder="e.g. +1 234 567 8900"
+                    onChange={e => setPhoneNumber(e.target.value)}
                   />
                   <Input
-                    label="Graduation Batch"
-                    value={batch}
-                    placeholder="e.g. 2026"
-                    onChange={e => setBatch(e.target.value)}
+                    label="Department / Major (Managed by Institution)"
+                    value={user.department || 'Computer Science and Engineering'}
+                    disabled
+                    className="bg-slate-50 text-slate-500 cursor-not-allowed"
+                  />
+                  <Input
+                    label="Graduation Batch (Managed by Institution)"
+                    value={user.batch ? `Class of ${user.batch}` : 'Class of 2026'}
+                    disabled
+                    className="bg-slate-50 text-slate-500 cursor-not-allowed"
                   />
                   <Input
                     label="Registered Email"
@@ -189,28 +186,11 @@ export const StudentProfile = () => {
                     disabled
                     className="bg-slate-50 text-slate-500 cursor-not-allowed"
                   />
-                </div>
-              </div>
-
-              <div className="pt-5 border-t border-slate-100 space-y-4">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <KeyRound className="h-4 w-4 text-blue-600" />
-                  Change Security Password (Optional)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Current Password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={currentPassword}
-                    onChange={e => setCurrentPassword(e.target.value)}
-                  />
-                  <Input
-                    label="New Password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
+                    label="Student Portal ID"
+                    value={user.studentId || 'LMS001'}
+                    disabled
+                    className="bg-slate-50 text-slate-500 cursor-not-allowed"
                   />
                 </div>
               </div>

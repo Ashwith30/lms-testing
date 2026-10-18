@@ -32,18 +32,51 @@ def debug_check():
     return {"message": "Updated main.py is running"}
 
 # CORS Origin Configuration
-cors_origins_env = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://localhost:8000")
-if cors_origins_env.strip() == "*":
-    origins = ["*"]
-else:
-    origins = [orig.strip() for orig in cors_origins_env.split(",") if orig.strip()]
+DEFAULT_CORS_ORIGINS = (
+    "https://lms-frontend.onrender.com,"
+    "http://localhost:5173,"
+    "http://localhost:3000,"
+    "http://127.0.0.1:5173,"
+    "http://127.0.0.1:3000,"
+    "http://localhost:8000,"
+    "http://127.0.0.1:8000"
+)
+
+def parse_cors_origins(origins_str: Optional[str] = None) -> list[str]:
+    raw = origins_str if origins_str is not None else os.getenv("CORS_ORIGINS", "")
+    if not raw or not raw.strip():
+        raw = DEFAULT_CORS_ORIGINS
+
+    parsed: list[str] = []
+    for item in raw.split(","):
+        cleaned = item.strip().rstrip("/")
+        if not cleaned:
+            continue
+        # Security requirement: Never allow wildcard '*' when allow_credentials=True
+        if cleaned == "*":
+            continue
+        if cleaned not in parsed:
+            parsed.append(cleaned)
+
+    # Fallback to safe defaults if only '*' or empty entries were provided
+    if not parsed:
+        for item in DEFAULT_CORS_ORIGINS.split(","):
+            cleaned = item.strip().rstrip("/")
+            if cleaned and cleaned not in parsed:
+                parsed.append(cleaned)
+
+    return parsed
+
+origins = parse_cors_origins(os.getenv("CORS_ORIGINS"))
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["Content-Type", "Authorization"],
+    max_age=600,
 )
 
 # Include all modular routers

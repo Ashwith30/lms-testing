@@ -45,8 +45,13 @@ export const TestResult = () => {
             setResult(attempt);
             // Fetch questions for detailed review if showResultImmediately is enabled
             if (attempt.test?.settings?.showResultImmediately) {
-              const testQs = await testService.getQuestionsForTest(id);
-              setQuestions(testQs);
+              try {
+                const reviewQs = await testService.getAttemptReview(attempt.id);
+                setQuestions(reviewQs);
+              } catch {
+                const testQs = await testService.getQuestionsForTest(id);
+                setQuestions(testQs);
+              }
             }
           } else {
             navigate('/student/dashboard');
@@ -176,9 +181,16 @@ export const TestResult = () => {
   if (questions.length > 0) {
     questions.forEach(q => {
       const ans = answers[q.id];
-      if (!ans || !ans.selectedOption) {
+      const selected = ans?.selectedOption || (q as any).userSelectedOption;
+      const isCorrect = (ans?.isCorrect !== undefined && ans?.isCorrect !== null)
+        ? ans.isCorrect
+        : ((q as any).isCorrect !== undefined && (q as any).isCorrect !== null)
+          ? (q as any).isCorrect
+          : (selected && q.correctAnswer && selected === q.correctAnswer);
+
+      if (!selected) {
         unattemptedCount++;
-      } else if (ans.selectedOption === q.correctAnswer) {
+      } else if (isCorrect) {
         correctCount++;
       } else {
         incorrectCount++;
@@ -427,9 +439,16 @@ export const TestResult = () => {
           <h2 className="text-xl font-bold text-slate-900">Question-by-Question Review</h2>
           {questions.map((q, idx) => {
             const ans = answers[q.id];
-            const isAnswered = ans && ans.selectedOption;
-            const isCorrect = isAnswered && ans.selectedOption === q.correctAnswer;
-            const isWrong = isAnswered && ans.selectedOption !== q.correctAnswer;
+            const userChoice = ans?.selectedOption || (q as any).userSelectedOption;
+            const isAnswered = !!userChoice;
+            const isCorrect = isAnswered && (
+              (ans?.isCorrect !== undefined && ans?.isCorrect !== null)
+                ? ans.isCorrect
+                : ((q as any).isCorrect !== undefined && (q as any).isCorrect !== null)
+                  ? (q as any).isCorrect
+                  : (q.correctAnswer && userChoice === q.correctAnswer)
+            );
+            const isWrong = isAnswered && !isCorrect;
 
             return (
               <Card key={q.id} className="border border-slate-200">
@@ -463,7 +482,7 @@ export const TestResult = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {['A', 'B', 'C', 'D'].map(optKey => {
                       const optText = q.options[optKey as keyof typeof q.options];
-                      const isUserChoice = ans?.selectedOption === optKey;
+                      const isUserChoice = userChoice === optKey;
                       const isCorrectChoice = q.correctAnswer === optKey;
 
                       let style = "border-slate-200 bg-white text-slate-700";

@@ -18,6 +18,7 @@ from sqlalchemy.orm import sessionmaker
 import models
 from auth import verify_password, hash_password, create_access_token
 from helpers import get_or_create_department, get_or_create_batch
+from fastapi import HTTPException
 from main import app
 
 def test_migration_and_auth():
@@ -72,8 +73,13 @@ def test_migration_and_auth():
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
     ver = cur.execute("SELECT version_num FROM alembic_version").fetchone()
-    assert ver and ver[0] == "0001_fix_users_password_hash", f"Expected version 0001_fix_users_password_hash, got {ver}"
+    assert ver and ver[0] in ("0002_hash_legacy_plaintext_passwords", "0003_add_rate_limit_events"), f"Expected alembic version, got {ver}"
     print(f"  [PASSED] alembic_version recorded: {ver[0]}")
+    # Verify legacy plaintext password converted to bcrypt
+    migrated_plain = cur.execute("SELECT password_hash FROM users WHERE id='u-legacy-2'").fetchone()[0]
+    assert migrated_plain.startswith(("$2b$", "$2a$", "$2y$")) and len(migrated_plain) == 60, "Password was not converted to bcrypt!"
+    assert migrated_plain != "secret_plain_123", "Password remained plaintext in database!"
+    print("  [PASSED] Legacy plaintext password converted to secure bcrypt hash")
     conn.close()
 
     # -------------------------------------------------------------
@@ -114,9 +120,10 @@ def test_migration_and_auth():
     cols_partial = [c[1] for c in cur2.execute("PRAGMA table_info(users)").fetchall()]
     assert "password_hash" in cols_partial and "status" in cols_partial and "lastLoginAt" in cols_partial
     migrated_row = cur2.execute("SELECT password_hash FROM users WHERE id='u-part-1'").fetchone()
-    assert migrated_row[0] == "trainer_pwd_123"
+    assert migrated_row[0].startswith(("$2b$", "$2a$", "$2y$")) and len(migrated_row[0]) == 60, "Legacy password was not converted to bcrypt!"
+    assert migrated_row[0] != "trainer_pwd_123", "Legacy password remained plaintext!"
     conn2.close()
-    print("  [PASSED] Partial schema upgraded without conflict; legacy password backfilled.")
+    print("  [PASSED] Partial schema upgraded without conflict; legacy password converted to bcrypt.")
 
     # -------------------------------------------------------------
     # SCENARIO 3: Full End-to-End API Registration & Login Testing
@@ -142,10 +149,18 @@ def test_migration_and_auth():
     admin_user = res_admin["user"]
     print("  [PASSED] Standard legacy admin login (bcrypt)")
 
-    # 3. Login with migrated plaintext account (student)
+    # 3. Login with migrated legacy account (student)
     res_student_legacy = login({"identifier": "student@legacy.com", "password": "secret_plain_123"}, db=db)
     assert "token" in res_student_legacy and res_student_legacy["user"].role == "student"
-    print("  [PASSED] Standard legacy student login (plaintext)")
+    print("  [PASSED] Migrated legacy student login via bcrypt verification")
+
+    # 3b. Verify invalid password rejected
+    try:
+        login({"identifier": "student@legacy.com", "password": "wrong_password_xyz"}, db=db)
+        assert False, "Should have rejected wrong password!"
+    except HTTPException as e:
+        assert e.status_code == 401
+    print("  [PASSED] Invalid password on migrated account rejected (401)")
 
     # 4. Register a new student via auth router
     student_payload = {

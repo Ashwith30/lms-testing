@@ -169,13 +169,21 @@ export const testService = {
     return testSchedules[testSchedules.length - 1];
   },
   
-  getQuestionsForTest: async (testId: string): Promise<Question[]> => {
-    const test = await testService.getTestDetails(testId);
-    if (!test) return [];
-    
-    const allQsRes = await api.get('/questions');
-    return allQsRes.data.filter((q: Question) => test.questionIds.includes(q.id));
+  getExamQuestions: async (testId: string): Promise<Question[]> => {
+    const res = await api.get(`/tests/${testId}/attempt-questions`);
+    return res.data;
   },
+
+  getQuestionsForTest: async (testId: string): Promise<Question[]> => {
+    const res = await api.get(`/tests/${testId}/attempt-questions`);
+    return res.data;
+  },
+
+  getAttemptReview: async (attemptId: string): Promise<Question[]> => {
+    const res = await api.get(`/attempts/${attemptId}/review`);
+    return res.data;
+  },
+
 
   startAttempt: async (studentId: string, testId: string, scheduleId?: string): Promise<Attempt> => {
     const test = await testService.getTestDetails(testId);
@@ -204,15 +212,10 @@ export const testService = {
       initialAnswers[id] = { questionId: id, selectedOption: null, status: 'not_visited' };
     });
 
-    const newAttempt = {
-      studentId,
+    const newAttempt: { testId: string; scheduleId?: string; answers?: Record<string, any> } = {
       testId,
-      scheduleId: scheduleId || undefined,
-      startedAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
+      ...(scheduleId ? { scheduleId } : {}),
       answers: initialAnswers,
-      violations: 0,
-      status: 'in_progress'
     };
 
     const res = await api.post('/attempts', newAttempt);

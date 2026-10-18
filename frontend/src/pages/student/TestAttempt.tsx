@@ -236,8 +236,8 @@ export const TestAttempt = () => {
           throw new Error('This test is not currently scheduled.');
         }
         
-        const testQuestions = await testService.getQuestionsForTest(id);
-        const attemptData = await testService.startAttempt(user.id, id, queryScheduleId);
+        const testQuestions = await testService.getExamQuestions(id);
+        const attemptData = await testService.startAttempt(user.id, id, schedule?.id || queryScheduleId);
         
         if (attemptData.status === 'submitted' || attemptData.status === 'auto_submitted') {
           navigate(`/student/results/${id}`);
