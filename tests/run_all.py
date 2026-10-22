@@ -19,6 +19,8 @@ SUITES = [
     ("HIGH-05 Student Materials Server Filtering", "test_high_005_materials_auth.py"),
     ("HIGH-07 Production CORS Hardening", "test_high_007_cors.py"),
     ("MED-03 & MED-06 Registration Security", "test_med_003_006_registration.py"),
+    ("MED-05 Snapshot Offloading & Proctoring Storage", "test_med_005_snapshots.py"),
+    ("INFO-01 Configurable JWT Lifespan & Token Expiry", "test_info_001_jwt_lifespan.py"),
     ("SEC-001 Question Protection & Answer Masking", "test_sec_001_questions.py"),
     ("SEC-002 Password Encryption & Migration", "test_sec_002_passwords.py"),
 ]

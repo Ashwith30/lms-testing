@@ -71,6 +71,34 @@ class AttemptSyncEngine {
   }
 
   /**
+   * Automatically offloads any buffered base64 snapshots to the snapshot storage endpoint,
+   * converting them into lightweight relative URL references before syncing to the database.
+   */
+  private async ensureLogsOffloaded(attemptId: string, logs?: ViolationLog[]): Promise<ViolationLog[] | undefined> {
+    if (!logs || logs.length === 0) return logs;
+    let modified = false;
+    const resolved: ViolationLog[] = [];
+
+    for (const log of logs) {
+      if (log.snapshotUrl && log.snapshotUrl.startsWith('data:')) {
+        try {
+          const res = await api.post(`/attempts/${attemptId}/snapshots`, { image: log.snapshotUrl });
+          if (res.data?.snapshotUrl) {
+            log.snapshotUrl = res.data.snapshotUrl;
+            resolved.push(log);
+            modified = true;
+            continue;
+          }
+        } catch (e) {
+          console.warn('Deferred snapshot upload failed, retaining offline proof:', e);
+        }
+      }
+      resolved.push(log);
+    }
+    return modified ? resolved : logs;
+  }
+
+  /**
    * Directly sync answer to the database
    */
   public async syncAnswerDirect(
@@ -102,12 +130,13 @@ class AttemptSyncEngine {
 
     this.notifyStatus('syncing');
     try {
+      const cleanLogs = await this.ensureLogsOffloaded(attemptId, violationLogs);
       await api.post(`/attempts/${attemptId}/sync-answer`, {
         questionId,
         selectedOption,
         status,
         violations,
-        violationLogs,
+        violationLogs: cleanLogs,
         proctoringSummary
       });
       this.notifyStatus('synced');
@@ -143,9 +172,10 @@ class AttemptSyncEngine {
     }
 
     try {
+      const cleanLogs = await this.ensureLogsOffloaded(attemptId, violationLogs);
       await api.post(`/attempts/${attemptId}/sync-answer`, {
         violations,
-        violationLogs,
+        violationLogs: cleanLogs,
         proctoringSummary
       });
       return true;
@@ -166,12 +196,13 @@ class AttemptSyncEngine {
     try {
       while (this.queue.length > 0) {
         const item = this.queue[0];
+        const cleanLogs = await this.ensureLogsOffloaded(item.attemptId, item.violationLogs);
         await api.post(`/attempts/${item.attemptId}/sync-answer`, {
           questionId: item.questionId,
           selectedOption: item.selectedOption,
           status: item.status,
           violations: item.violations,
-          violationLogs: item.violationLogs,
+          violationLogs: cleanLogs,
           proctoringSummary: item.proctoringSummary
         });
         this.queue.shift();

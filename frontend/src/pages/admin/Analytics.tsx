@@ -6,8 +6,8 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart as RechartsPie, Pie, Cell, Legend
 } from 'recharts';
-import { 
-  Users, GraduationCap, ShieldAlert, FileText, Clock, 
+import {
+  Users, GraduationCap, ShieldAlert, FileText, Clock,
   Activity, Calendar, Download, TrendingUp, TrendingDown,
   BarChart2, BookOpen, Layers, Trophy, Database, ChevronDown, Check
 } from 'lucide-react';
@@ -96,8 +96,8 @@ export const AdminAnalytics = () => {
     return <div className="text-center py-16 text-slate-500">No analytics data available.</div>;
   }
 
-  const { 
-    kpis = {}, departmentCounts = {}, scoreBrackets = {}, questionDifficulty = {}, 
+  const {
+    kpis = {}, departmentCounts = {}, scoreBrackets = {}, questionDifficulty = {},
     autoSubmitRate = {}
   } = data;
 
@@ -486,7 +486,7 @@ export const AdminAnalytics = () => {
   };
 
   const handleExportReport = () => {
-    const csvContent = "data:text/csv;charset=utf-8," + 
+    const csvContent = "data:text/csv;charset=utf-8," +
       "Metric,Value,Trend\n" +
       `Total Users,${kpis.totalUsers ?? 2486},+25%\n` +
       `Total Students,${kpis.totalStudents ?? 2434},+18%\n` +
@@ -494,7 +494,7 @@ export const AdminAnalytics = () => {
       `Total Tests,${kpis.totalTests ?? 142},+12%\n` +
       `Average Score,${kpis.avgScore ?? 84}%,+5%\n` +
       `Violations,${kpis.totalViolations ?? 3},-15%\n`;
-    
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -519,7 +519,7 @@ export const AdminAnalytics = () => {
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <select 
+            <select
               value={globalTimeRange}
               onChange={(e) => handleGlobalRangeChange(e.target.value)}
               className="appearance-none text-sm font-semibold bg-white border border-slate-200 rounded-lg pl-9 pr-9 py-2 text-slate-700 outline-none hover:bg-slate-50 hover:border-slate-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 cursor-pointer shadow-sm transition-all"
@@ -870,12 +870,11 @@ export const AdminAnalytics = () => {
                   {activeTopStudents.map((s, i) => (
                     <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-4 py-3 text-slate-400 font-medium">
-                        <span className={`flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold ${
-                          i === 0 ? 'bg-amber-100 text-amber-600' :
-                          i === 1 ? 'bg-slate-200 text-slate-700' :
-                          i === 2 ? 'bg-amber-50 text-amber-700' :
-                          'bg-slate-100 text-slate-500'
-                        }`}>
+                        <span className={`flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold ${i === 0 ? 'bg-amber-100 text-amber-600' :
+                            i === 1 ? 'bg-slate-200 text-slate-700' :
+                              i === 2 ? 'bg-amber-50 text-amber-700' :
+                                'bg-slate-100 text-slate-500'
+                          }`}>
                           {i + 1}
                         </span>
                       </td>

@@ -2,7 +2,7 @@ import json
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+from sqlalchemy import func, case, desc
 from typing import List, Dict, Any, Optional
 import models
 import schemas
@@ -579,268 +579,335 @@ def get_institution_analytics(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_roles("admin", "institution"))
 ):
-    students = db.query(models.User).filter(models.User.role == "student").all()
-    trainers = db.query(models.User).filter(models.User.role == "trainer").all()
-    tests = db.query(models.Test).all()
-    attempts = db.query(models.Attempt).filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])).all()
-    departments = db.query(models.Department).all()
+    # 1. Total enrolled students and active/published tests
+    total_enrolled = (
+        db.query(func.count(models.User.id))
+        .filter(models.User.role == "student")
+        .scalar()
+        or 0
+    )
+    tests_count = db.query(func.count(models.Test.id)).scalar() or 0
 
-    scores = [a.percentage or 0.0 for a in attempts]
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 72.4
-    pass_rate = round((sum(1 for s in scores if s >= 60) / len(scores)) * 100, 1) if scores else 78.6
-    total_enrolled = len(students) if len(students) > 0 else 815
-    total_submissions = len(attempts) if len(attempts) > 0 else 22540
+    # 2. Overall attempt aggregate statistics via SQL
+    attempt_stats = (
+        db.query(
+            func.count(models.Attempt.id).label("total_submissions"),
+            func.avg(models.Attempt.percentage).label("avg_score"),
+            func.sum(case((models.Attempt.percentage >= 60.0, 1), else_=0)).label("passed_count")
+        )
+        .filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
+        .first()
+    )
 
-    # Default departmental benchmarks matching institutional dataset
-    default_depts = [
-        {"name": "CSM", "avgScore": 82, "passRate": 91, "prevPassRate": 84, "students": 95, "attempts": 2850},
-        {"name": "CSD", "avgScore": 79, "passRate": 87, "prevPassRate": 80, "students": 85, "attempts": 2550},
-        {"name": "CSE", "avgScore": 78, "passRate": 88, "prevPassRate": 82, "students": 240, "attempts": 6840},
-        {"name": "MECH", "avgScore": 58, "passRate": 67, "prevPassRate": 65, "students": 110, "attempts": 2890},
-        {"name": "EEE", "avgScore": 65, "passRate": 74, "prevPassRate": 71, "students": 120, "attempts": 3310},
-        {"name": "ECE", "avgScore": 72, "passRate": 81, "prevPassRate": 76, "students": 165, "attempts": 4100},
-    ]
+    total_submissions = int(attempt_stats[0] or 0) if attempt_stats else 0
+    avg_score = round(float(attempt_stats[1]), 1) if attempt_stats and attempt_stats[1] is not None else 0.0
+    passed_count = int(attempt_stats[2] or 0) if attempt_stats else 0
+    pass_rate = round((passed_count / total_submissions) * 100, 1) if total_submissions > 0 else 0.0
 
-    dept_perf_map = {}
-    for d in default_depts:
-        dept_perf_map[d["name"]] = d
+    # 3. Overall Score Distribution via SQL aggregation
+    score_bucket_query = (
+        db.query(
+            func.sum(case((models.Attempt.percentage < 20.0, 1), else_=0)),
+            func.sum(case(((models.Attempt.percentage >= 20.0) & (models.Attempt.percentage < 40.0), 1), else_=0)),
+            func.sum(case(((models.Attempt.percentage >= 40.0) & (models.Attempt.percentage < 60.0), 1), else_=0)),
+            func.sum(case(((models.Attempt.percentage >= 60.0) & (models.Attempt.percentage < 80.0), 1), else_=0)),
+            func.sum(case((models.Attempt.percentage >= 80.0, 1), else_=0))
+        )
+        .filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
+        .first()
+    )
 
-    # Calculate real department metrics if available
-    for d in departments:
-        dept_students = db.query(models.StudentProfile).filter(models.StudentProfile.departmentId == d.id).all()
-        dept_user_ids = [sp.userId for sp in dept_students]
-        dept_attempts = [a for a in attempts if a.studentId in dept_user_ids]
-        dept_scores = [a.percentage or 0.0 for a in dept_attempts]
-        if dept_scores:
-            d_avg = round(sum(dept_scores) / len(dept_scores), 1)
-            d_pass = round((sum(1 for s in dept_scores if s >= 60) / len(dept_scores)) * 100, 1)
-            dept_perf_map[d.name] = {
-                "name": d.name,
-                "avgScore": d_avg,
-                "passRate": d_pass,
-                "prevPassRate": max(50, round(d_pass * 0.94, 1)),
-                "students": len(dept_students) if len(dept_students) > 0 else 50,
-                "attempts": len(dept_attempts) if len(dept_attempts) > 0 else 1200
-            }
+    b_0_20 = int(score_bucket_query[0] or 0) if score_bucket_query else 0
+    b_20_40 = int(score_bucket_query[1] or 0) if score_bucket_query else 0
+    b_40_60 = int(score_bucket_query[2] or 0) if score_bucket_query else 0
+    b_60_80 = int(score_bucket_query[3] or 0) if score_bucket_query else 0
+    b_80_100 = int(score_bucket_query[4] or 0) if score_bucket_query else 0
+    tot_denom = total_submissions if total_submissions > 0 else 1
 
-    department_performance = list(dept_perf_map.values())
-
-    # Score distribution brackets
     score_distribution = [
-        {"range": "0-20", "count": 32, "percentage": 5.2},
-        {"range": "20-40", "count": 68, "percentage": 11.0},
-        {"range": "40-60", "count": 142, "percentage": 23.0},
-        {"range": "60-80", "count": 198, "percentage": 32.1},
-        {"range": "80-100", "count": 176, "percentage": 28.7}
+        {"range": "0-20", "count": b_0_20, "percentage": round((b_0_20 / tot_denom) * 100, 1) if total_submissions > 0 else 0.0},
+        {"range": "20-40", "count": b_20_40, "percentage": round((b_20_40 / tot_denom) * 100, 1) if total_submissions > 0 else 0.0},
+        {"range": "40-60", "count": b_40_60, "percentage": round((b_40_60 / tot_denom) * 100, 1) if total_submissions > 0 else 0.0},
+        {"range": "60-80", "count": b_60_80, "percentage": round((b_60_80 / tot_denom) * 100, 1) if total_submissions > 0 else 0.0},
+        {"range": "80-100", "count": b_80_100, "percentage": round((b_80_100 / tot_denom) * 100, 1) if total_submissions > 0 else 0.0}
     ]
 
-    if len(scores) >= 10:
-        b_0_20 = sum(1 for s in scores if s < 20)
-        b_20_40 = sum(1 for s in scores if 20 <= s < 40)
-        b_40_60 = sum(1 for s in scores if 40 <= s < 60)
-        b_60_80 = sum(1 for s in scores if 60 <= s < 80)
-        b_80_100 = sum(1 for s in scores if s >= 80)
-        score_distribution = [
-            {"range": "0-20", "count": b_0_20, "percentage": round((b_0_20 / len(scores)) * 100, 1)},
-            {"range": "20-40", "count": b_20_40, "percentage": round((b_20_40 / len(scores)) * 100, 1)},
-            {"range": "40-60", "count": b_40_60, "percentage": round((b_40_60 / len(scores)) * 100, 1)},
-            {"range": "60-80", "count": b_60_80, "percentage": round((b_60_80 / len(scores)) * 100, 1)},
-            {"range": "80-100", "count": b_80_100, "percentage": round((b_80_100 / len(scores)) * 100, 1)}
-        ]
+    # 4. Department Performance via SQL outer joins
+    dept_stats_query = (
+        db.query(
+            models.Department.id,
+            models.Department.name,
+            models.Department.code,
+            func.count(func.distinct(models.StudentProfile.userId)).label("students"),
+            func.count(models.Attempt.id).label("attempts"),
+            func.avg(models.Attempt.percentage).label("avg_score"),
+            func.sum(case((models.Attempt.percentage >= 60.0, 1), else_=0)).label("passed")
+        )
+        .outerjoin(models.StudentProfile, models.StudentProfile.departmentId == models.Department.id)
+        .outerjoin(
+            models.Attempt,
+            (models.Attempt.studentId == models.StudentProfile.userId)
+            & (models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
+        )
+        .group_by(models.Department.id, models.Department.name, models.Department.code)
+        .all()
+    )
 
-    # Department-wise score distributions for filtering
+    department_performance = []
+    pass_rate_comparison = []
+    for r in dept_stats_query:
+        att_cnt = int(r.attempts or 0)
+        avg_s = round(float(r.avg_score), 1) if r.avg_score is not None else 0.0
+        pass_cnt = int(r.passed or 0)
+        p_rate = round((pass_cnt / att_cnt) * 100, 1) if att_cnt > 0 else 0.0
+        stu_cnt = int(r.students or 0)
+        department_performance.append({
+            "name": r.name,
+            "avgScore": avg_s,
+            "passRate": p_rate,
+            "prevPassRate": p_rate,
+            "students": stu_cnt,
+            "attempts": att_cnt
+        })
+        pass_rate_comparison.append({
+            "department": r.code or r.name,
+            "currentCycle": p_rate,
+            "previousCycle": p_rate
+        })
+
+    # 5. Department-wise score distributions for filtering
     dept_score_distributions = {
-        "All Departments": score_distribution,
-        "CSM": [{"range": "0-20", "count": 1}, {"range": "20-40", "count": 4}, {"range": "40-60", "count": 13}, {"range": "60-80", "count": 35}, {"range": "80-100", "count": 42}],
-        "CSD": [{"range": "0-20", "count": 2}, {"range": "20-40", "count": 5}, {"range": "40-60", "count": 16}, {"range": "60-80", "count": 31}, {"range": "80-100", "count": 31}],
-        "CSE": [{"range": "0-20", "count": 4}, {"range": "20-40", "count": 12}, {"range": "40-60", "count": 34}, {"range": "60-80", "count": 82}, {"range": "80-100", "count": 108}],
-        "MECH": [{"range": "0-20", "count": 10}, {"range": "20-40", "count": 22}, {"range": "40-60", "count": 42}, {"range": "60-80", "count": 26}, {"range": "80-100", "count": 10}],
-        "EEE": [{"range": "0-20", "count": 8}, {"range": "20-40", "count": 18}, {"range": "40-60", "count": 35}, {"range": "60-80", "count": 39}, {"range": "80-100", "count": 20}],
-        "ECE": [{"range": "0-20", "count": 6}, {"range": "20-40", "count": 15}, {"range": "40-60", "count": 38}, {"range": "60-80", "count": 64}, {"range": "80-100", "count": 57}],
+        "All Departments": score_distribution
     }
-
-    # Performance Trend across tests (T1 to T30)
-    performance_trend = [
-        {"test": "Test 1", "CSM": 62, "CSD": 60, "CSE": 58, "MECH": 42, "EEE": 48, "ECE": 52},
-        {"test": "Test 5", "CSM": 74, "CSD": 71, "CSE": 68, "MECH": 48, "EEE": 54, "ECE": 60},
-        {"test": "Test 10", "CSM": 78, "CSD": 75, "CSE": 72, "MECH": 50, "EEE": 58, "ECE": 64},
-        {"test": "Test 15", "CSM": 81, "CSD": 78, "CSE": 75, "MECH": 52, "EEE": 60, "ECE": 66},
-        {"test": "Test 20", "CSM": 84, "CSD": 80, "CSE": 76, "MECH": 55, "EEE": 63, "ECE": 68},
-        {"test": "Test 25", "CSM": 88, "CSD": 85, "CSE": 80, "MECH": 57, "EEE": 64, "ECE": 70},
-        {"test": "Test 30", "CSM": 93, "CSD": 90, "CSE": 88, "MECH": 62, "EEE": 70, "ECE": 76},
+    empty_dist = [
+        {"range": "0-20", "count": 0, "percentage": 0.0},
+        {"range": "20-40", "count": 0, "percentage": 0.0},
+        {"range": "40-60", "count": 0, "percentage": 0.0},
+        {"range": "60-80", "count": 0, "percentage": 0.0},
+        {"range": "80-100", "count": 0, "percentage": 0.0}
     ]
+    # Keep standard select keys populated with empty distribution to prevent frontend undefined errors
+    for legacy_code in ["CSM", "CSD", "CSE", "MECH", "EEE", "ECE"]:
+        dept_score_distributions[legacy_code] = empty_dist
 
-    # Department-wise Heatmap Matrix (Rows: Departments, Columns: T1 to T30)
+    dept_buckets_query = (
+        db.query(
+            models.Department.name,
+            models.Department.code,
+            func.sum(case((models.Attempt.percentage < 20.0, 1), else_=0)),
+            func.sum(case(((models.Attempt.percentage >= 20.0) & (models.Attempt.percentage < 40.0), 1), else_=0)),
+            func.sum(case(((models.Attempt.percentage >= 40.0) & (models.Attempt.percentage < 60.0), 1), else_=0)),
+            func.sum(case(((models.Attempt.percentage >= 60.0) & (models.Attempt.percentage < 80.0), 1), else_=0)),
+            func.sum(case((models.Attempt.percentage >= 80.0, 1), else_=0)),
+            func.count(models.Attempt.id)
+        )
+        .join(models.StudentProfile, models.StudentProfile.departmentId == models.Department.id)
+        .join(
+            models.Attempt,
+            (models.Attempt.studentId == models.StudentProfile.userId)
+            & (models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
+        )
+        .group_by(models.Department.id, models.Department.name, models.Department.code)
+        .all()
+    )
+
+    for row in dept_buckets_query:
+        d_name, d_code, c0, c20, c40, c60, c80, total_d = row
+        t_d = total_d or 1
+        dist = [
+            {"range": "0-20", "count": int(c0 or 0), "percentage": round((int(c0 or 0) / t_d) * 100, 1)},
+            {"range": "20-40", "count": int(c20 or 0), "percentage": round((int(c20 or 0) / t_d) * 100, 1)},
+            {"range": "40-60", "count": int(c40 or 0), "percentage": round((int(c40 or 0) / t_d) * 100, 1)},
+            {"range": "60-80", "count": int(c60 or 0), "percentage": round((int(c60 or 0) / t_d) * 100, 1)},
+            {"range": "80-100", "count": int(c80 or 0), "percentage": round((int(c80 or 0) / t_d) * 100, 1)}
+        ]
+        if d_name:
+            dept_score_distributions[d_name] = dist
+        if d_code:
+            dept_score_distributions[d_code] = dist
+
+    # 6. Performance Trend & Heatmap (computed from actual test milestone attempts)
+    test_trends = (
+        db.query(
+            models.Test.id,
+            models.Test.title,
+            models.Department.name.label("dept_name"),
+            models.Department.code.label("dept_code"),
+            func.avg(models.Attempt.percentage).label("avg_score")
+        )
+        .join(models.Schedule, models.Schedule.testId == models.Test.id)
+        .join(
+            models.Attempt,
+            (models.Attempt.scheduleId == models.Schedule.id)
+            & (models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
+        )
+        .join(models.StudentProfile, models.StudentProfile.userId == models.Attempt.studentId)
+        .join(models.Department, models.Department.id == models.StudentProfile.departmentId)
+        .group_by(models.Test.id, models.Test.title, models.Department.id, models.Department.name, models.Department.code)
+        .order_by(models.Test.createdAt)
+        .all()
+    )
+
+    perf_map = {}
+    for r in test_trends:
+        t_name = r.title or "Test"
+        if t_name not in perf_map:
+            perf_map[t_name] = {"test": t_name}
+        score_val = round(float(r.avg_score or 0.0), 1)
+        if r.dept_code:
+            perf_map[t_name][r.dept_code] = score_val
+        if r.dept_name:
+            perf_map[t_name][r.dept_name] = score_val
+
+    performance_trend = list(perf_map.values())
     heatmap_data = {
-        "tests": ["T1", "T5", "T10", "T15", "T20", "T25", "T30"],
+        "tests": list(perf_map.keys()),
         "departments": [
-            {"name": "CSM", "scores": [62, 74, 78, 81, 84, 88, 93]},
-            {"name": "CSD", "scores": [60, 71, 75, 78, 80, 85, 90]},
-            {"name": "CSE", "scores": [58, 68, 72, 75, 76, 80, 88]},
-            {"name": "MECH", "scores": [42, 48, 50, 52, 55, 57, 62]},
-            {"name": "EEE", "scores": [48, 54, 58, 60, 63, 64, 70]},
-            {"name": "ECE", "scores": [52, 60, 64, 66, 68, 70, 76]},
+            {
+                "name": d["name"],
+                "scores": [
+                    perf_map[t].get(d.get("name"), 0.0)
+                    for t in perf_map.keys()
+                ]
+            }
+            for d in department_performance
         ]
     }
 
-    # Top Performers
-    top_performers = [
-        {"rank": 1, "name": "A. Kruthika", "department": "CSE", "score": 96, "avatar": "AK", "badge": "Gold"},
-        {"rank": 2, "name": "R. Sai Charan", "department": "CSM", "score": 94, "avatar": "RS", "badge": "Silver"},
-        {"rank": 3, "name": "T. Ananya", "department": "CSD", "score": 93, "avatar": "TA", "badge": "Bronze"},
-        {"rank": 4, "name": "M. Vaishnavi", "department": "ECE", "score": 92, "avatar": "MV", "badge": "Top 5"},
-        {"rank": 5, "name": "K. Abhinav", "department": "CSE", "score": 91, "avatar": "KA", "badge": "Top 5"},
-    ]
+    # 7. Top Performers via SQL aggregation
+    top_performers_query = (
+        db.query(
+            models.User.id,
+            models.StudentProfile.firstName,
+            models.StudentProfile.lastName,
+            models.Department.name.label("dept_name"),
+            models.Department.code.label("dept_code"),
+            func.avg(models.Attempt.percentage).label("avg_score"),
+            func.count(models.Attempt.id).label("attempt_count")
+        )
+        .join(
+            models.Attempt,
+            (models.Attempt.studentId == models.User.id)
+            & (models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
+        )
+        .outerjoin(models.StudentProfile, models.StudentProfile.userId == models.User.id)
+        .outerjoin(models.Department, models.Department.id == models.StudentProfile.departmentId)
+        .group_by(models.User.id, models.StudentProfile.firstName, models.StudentProfile.lastName, models.Department.name, models.Department.code)
+        .order_by(desc("avg_score"))
+        .limit(5)
+        .all()
+    )
 
-    # Check real student attempts for top performers if present
-    if attempts:
-        user_scores = {}
-        for a in attempts:
-            if a.studentId and a.percentage is not None:
-                if a.studentId not in user_scores:
-                    user_scores[a.studentId] = []
-                user_scores[a.studentId].append(a.percentage)
-        
-        if user_scores:
-            ranked = []
-            for uid, s_list in user_scores.items():
-                u = db.query(models.User).filter(models.User.id == uid).first()
-                if u:
-                    name = u.name
-                    dept = u.department or "CSE"
-                    avg_p = round(sum(s_list) / len(s_list), 1)
-                    ranked.append({"name": name, "department": dept, "score": avg_p, "attempts": len(s_list)})
-            ranked.sort(key=lambda x: x["score"], reverse=True)
-            if len(ranked) >= 3:
-                top_performers = []
-                for i, r in enumerate(ranked[:5]):
-                    initials = "".join([part[0] for part in r["name"].split() if part])[:2].upper() or "ST"
-                    top_performers.append({
-                        "rank": i + 1,
-                        "name": r["name"],
-                        "department": r["department"],
-                        "score": r["score"],
-                        "avatar": initials,
-                        "badge": "Gold" if i == 0 else "Silver" if i == 1 else "Bronze" if i == 2 else "Top 5"
-                    })
+    top_performers = []
+    for idx, row in enumerate(top_performers_query):
+        first_name = row.firstName or ""
+        last_name = row.lastName or ""
+        full_name = f"{first_name} {last_name}".strip() or f"Student {row.id[:8]}"
+        initials = "".join([part[0] for part in full_name.split() if part])[:2].upper() or "ST"
+        dept_label = row.dept_code or row.dept_name or "General"
+        score_val = round(float(row.avg_score or 0.0), 1)
+        badge = "Gold" if idx == 0 else "Silver" if idx == 1 else "Bronze" if idx == 2 else "Top 5"
+        top_performers.append({
+            "rank": idx + 1,
+            "name": full_name,
+            "department": dept_label,
+            "score": score_val,
+            "avatar": initials,
+            "badge": badge
+        })
 
-    # Participation Breakdown
-    participation = {
-        "onTime": 68,
-        "late": 18,
-        "missed": 14,
-        "totalSubmissions": total_submissions
-    }
-
-    # Pass Rate Comparison
-    pass_rate_comparison = [
-        {"department": "CSM", "currentCycle": 91, "previousCycle": 84},
-        {"department": "CSD", "currentCycle": 87, "previousCycle": 80},
-        {"department": "CSE", "currentCycle": 88, "previousCycle": 82},
-        {"department": "MECH", "currentCycle": 67, "previousCycle": 65},
-        {"department": "EEE", "currentCycle": 74, "previousCycle": 71},
-        {"department": "ECE", "currentCycle": 81, "previousCycle": 76},
-    ]
-
-    # Automated Insights & Recommendations
-    insights = [
-        {
-            "id": 1,
-            "type": "positive",
-            "icon": "trending-up",
-            "text": "Pass rate improved by 6.8% compared to the previous cycle.",
-            "highlight": "+6.8% Pass Rate",
-            "action": "View Historical Comparison"
-        },
-        {
-            "id": 2,
-            "type": "info",
-            "icon": "award",
-            "text": "CSM department has the highest average score (82%).",
-            "highlight": "82% Avg Score",
-            "action": "Inspect CSM Curriculum"
-        },
-        {
-            "id": 3,
-            "type": "warning",
-            "icon": "alert-triangle",
-            "text": "MECH department shows lower performance. Consider additional support.",
-            "highlight": "Action Recommended",
-            "action": "Schedule Review Session"
+    # 8. Test Participation Breakdown
+    submission_status_counts = dict(
+        db.query(models.Attempt.status, func.count(models.Attempt.id))
+        .filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
+        .group_by(models.Attempt.status)
+        .all()
+    )
+    if total_submissions > 0:
+        on_time_count = submission_status_counts.get("submitted", 0) + submission_status_counts.get("completed", 0)
+        auto_count = submission_status_counts.get("auto_submitted", 0)
+        on_time_pct = round((on_time_count / total_submissions) * 100, 1)
+        late_pct = round((auto_count / total_submissions) * 100, 1)
+        participation = {
+            "onTime": on_time_pct,
+            "late": late_pct,
+            "missed": 0.0,
+            "totalSubmissions": total_submissions
         }
-    ]
+    else:
+        participation = {
+            "onTime": 0.0,
+            "late": 0.0,
+            "missed": 0.0,
+            "totalSubmissions": 0
+        }
 
-    # Skill & Domain Competency breakdown by department
+    # 9. Dynamic Automated Insights
+    insights = []
+    if department_performance:
+        sorted_depts = sorted(department_performance, key=lambda d: d.get("avgScore", 0.0), reverse=True)
+        best_dept = sorted_depts[0]
+        if best_dept.get("attempts", 0) > 0:
+            insights.append({
+                "id": 1,
+                "type": "positive",
+                "icon": "award",
+                "text": f"{best_dept['name']} has the highest average score ({best_dept['avgScore']}%).",
+                "highlight": f"{best_dept['avgScore']}% Avg Score",
+                "action": "Inspect Department Curriculum"
+            })
+        if len(sorted_depts) > 1 and sorted_depts[-1].get("attempts", 0) > 0:
+            lowest_dept = sorted_depts[-1]
+            insights.append({
+                "id": 2,
+                "type": "warning",
+                "icon": "alert-triangle",
+                "text": f"{lowest_dept['name']} average score is {lowest_dept['avgScore']}%. Consider additional support.",
+                "highlight": "Action Recommended",
+                "action": "Schedule Review Session"
+            })
+    if total_submissions > 0:
+        insights.append({
+            "id": 3,
+            "type": "info",
+            "icon": "trending-up",
+            "text": f"Campus placement readiness pass rate is currently {pass_rate}%.",
+            "highlight": f"{pass_rate}% Pass Rate",
+            "action": "View Detailed Assessment Results"
+        })
+    if not insights:
+        insights.append({
+            "id": 1,
+            "type": "info",
+            "icon": "info",
+            "text": "No completed assessment submissions recorded yet.",
+            "highlight": "Awaiting Data",
+            "action": "Schedule Assessment"
+        })
+
+    # 10. Skill Competency (Neutral empty lists per requirement 5 - no invented skill ratings)
     skill_competency = {
-        "All Departments": [
-            {"skill": "Coding & Logic", "score": 84, "benchmark": 75, "fullMark": 100},
-            {"skill": "Problem Solving", "score": 88, "benchmark": 75, "fullMark": 100},
-            {"skill": "Core Engineering", "score": 76, "benchmark": 75, "fullMark": 100},
-            {"skill": "Database & SQL", "score": 81, "benchmark": 75, "fullMark": 100},
-            {"skill": "System Design", "score": 74, "benchmark": 75, "fullMark": 100},
-            {"skill": "Quantitative Aptitude", "score": 79, "benchmark": 75, "fullMark": 100},
-        ],
-        "CSM": [
-            {"skill": "Coding & Logic", "score": 90, "benchmark": 75, "fullMark": 100},
-            {"skill": "Problem Solving", "score": 92, "benchmark": 75, "fullMark": 100},
-            {"skill": "Core Engineering", "score": 82, "benchmark": 75, "fullMark": 100},
-            {"skill": "Database & SQL", "score": 85, "benchmark": 75, "fullMark": 100},
-            {"skill": "System Design", "score": 80, "benchmark": 75, "fullMark": 100},
-            {"skill": "Quantitative Aptitude", "score": 86, "benchmark": 75, "fullMark": 100},
-        ],
-        "CSD": [
-            {"skill": "Coding & Logic", "score": 87, "benchmark": 75, "fullMark": 100},
-            {"skill": "Problem Solving", "score": 89, "benchmark": 75, "fullMark": 100},
-            {"skill": "Core Engineering", "score": 79, "benchmark": 75, "fullMark": 100},
-            {"skill": "Database & SQL", "score": 92, "benchmark": 75, "fullMark": 100},
-            {"skill": "System Design", "score": 78, "benchmark": 75, "fullMark": 100},
-            {"skill": "Quantitative Aptitude", "score": 84, "benchmark": 75, "fullMark": 100},
-        ],
-        "CSE": [
-            {"skill": "Coding & Logic", "score": 89, "benchmark": 75, "fullMark": 100},
-            {"skill": "Problem Solving", "score": 91, "benchmark": 75, "fullMark": 100},
-            {"skill": "Core Engineering", "score": 85, "benchmark": 75, "fullMark": 100},
-            {"skill": "Database & SQL", "score": 86, "benchmark": 75, "fullMark": 100},
-            {"skill": "System Design", "score": 83, "benchmark": 75, "fullMark": 100},
-            {"skill": "Quantitative Aptitude", "score": 82, "benchmark": 75, "fullMark": 100},
-        ],
-        "MECH": [
-            {"skill": "Coding & Logic", "score": 62, "benchmark": 75, "fullMark": 100},
-            {"skill": "Problem Solving", "score": 70, "benchmark": 75, "fullMark": 100},
-            {"skill": "Core Engineering", "score": 78, "benchmark": 75, "fullMark": 100},
-            {"skill": "Database & SQL", "score": 58, "benchmark": 75, "fullMark": 100},
-            {"skill": "System Design", "score": 66, "benchmark": 75, "fullMark": 100},
-            {"skill": "Quantitative Aptitude", "score": 69, "benchmark": 75, "fullMark": 100},
-        ],
-        "EEE": [
-            {"skill": "Coding & Logic", "score": 71, "benchmark": 75, "fullMark": 100},
-            {"skill": "Problem Solving", "score": 76, "benchmark": 75, "fullMark": 100},
-            {"skill": "Core Engineering", "score": 81, "benchmark": 75, "fullMark": 100},
-            {"skill": "Database & SQL", "score": 68, "benchmark": 75, "fullMark": 100},
-            {"skill": "System Design", "score": 73, "benchmark": 75, "fullMark": 100},
-            {"skill": "Quantitative Aptitude", "score": 74, "benchmark": 75, "fullMark": 100},
-        ],
-        "ECE": [
-            {"skill": "Coding & Logic", "score": 79, "benchmark": 75, "fullMark": 100},
-            {"skill": "Problem Solving", "score": 82, "benchmark": 75, "fullMark": 100},
-            {"skill": "Core Engineering", "score": 84, "benchmark": 75, "fullMark": 100},
-            {"skill": "Database & SQL", "score": 75, "benchmark": 75, "fullMark": 100},
-            {"skill": "System Design", "score": 77, "benchmark": 75, "fullMark": 100},
-            {"skill": "Quantitative Aptitude", "score": 78, "benchmark": 75, "fullMark": 100},
-        ],
+        "All Departments": []
     }
+    for legacy_code in ["CSM", "CSD", "CSE", "MECH", "EEE", "ECE"]:
+        skill_competency[legacy_code] = []
+    for r in dept_stats_query:
+        if r.name:
+            skill_competency[r.name] = []
+        if r.code:
+            skill_competency[r.code] = []
 
     return {
         "kpis": {
             "totalEnrolled": total_enrolled,
-            "totalEnrolledGrowth": "+5.2%",
+            "totalEnrolledGrowth": "",
             "avgScore": avg_score,
-            "avgScoreGrowth": "+3.1%",
+            "avgScoreGrowth": "",
             "passRate": pass_rate,
-            "passRateSubtitle": "Qualified candidates",
+            "passRateSubtitle": "Candidates with score >= 60%",
             "totalSubmissions": total_submissions,
-            "totalSubmissionsGrowth": "+14.2%",
-            "testsCount": len(tests) if len(tests) > 0 else 30
+            "totalSubmissionsGrowth": "",
+            "testsCount": tests_count
         },
         "departmentPerformance": department_performance,
         "scoreDistribution": score_distribution,

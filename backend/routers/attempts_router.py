@@ -1,6 +1,10 @@
+import base64
 import json
 import threading
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi.responses import FileResponse
+from fastapi.security import HTTPAuthorizationCredentials
+import jwt
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional, Union
 import models
@@ -10,9 +14,13 @@ from auth import (
     get_current_user,
     require_roles,
     check_trainer_test_access,
-    get_authorized_test_ids_for_trainer
+    get_authorized_test_ids_for_trainer,
+    security,
+    SECRET_KEY,
+    ALGORITHM
 )
 import rate_limiter
+import storage_service
 
 attempt_creation_lock = threading.Lock()
 
@@ -490,6 +498,208 @@ def sync_answer(
 
     db.commit()
     return {"status": "ok"}
+
+def get_snapshot_auth_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    token: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+) -> models.User:
+    """
+    Authenticates the caller for snapshot retrieval via either standard
+    Bearer header or query token parameter (needed for browser img tags).
+    """
+    raw_token = None
+    if credentials and credentials.credentials:
+        raw_token = credentials.credentials
+    elif token:
+        raw_token = token
+
+    if not raw_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication credentials required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    try:
+        payload = jwt.decode(raw_token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="Missing subject claim"'}
+            )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="The token has expired"'}
+        )
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="Invalid authentication token"'}
+        )
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    if (user.status or "active").strip().lower() != "active":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is not active")
+    return user
+
+
+@router.post("/{attempt_id}/snapshots")
+async def upload_attempt_snapshot(
+    attempt_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Uploads a proctoring webcam snapshot.
+    Requirement 3: Permit uploads only for the authenticated owner of an in-progress attempt.
+    """
+    att = db.query(models.Attempt).filter(models.Attempt.id == attempt_id).first()
+    if not att:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+
+    if current_user.role != "student" or att.studentId != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Only the student actively taking the exam can upload snapshots."
+        )
+
+    if att.status != "in_progress":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot upload snapshots for completed or submitted attempt: Attempt is not in progress."
+        )
+
+    # REV-02: Rate limit snapshot uploads (Max 15 per minute per attempt)
+    rate_limiter.check_snapshot_upload_rate_limit(attempt_id, db)
+
+    # REV-01: Request-size protection (Content-Length check & streaming read)
+    content_type = request.headers.get("content-type", "").lower()
+    is_json = "application/json" in content_type
+    max_allowed_bytes = storage_service.MAX_JSON_BODY_SIZE if is_json else storage_service.MAX_RAW_BODY_SIZE
+
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > max_allowed_bytes:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"Request body exceeds maximum allowed size ({max_allowed_bytes // 1024} KB)."
+                )
+        except ValueError:
+            pass
+
+    # Stream chunks without loading unbounded data into memory
+    chunks = []
+    total_bytes = 0
+    async for chunk in request.stream():
+        total_bytes += len(chunk)
+        if total_bytes > max_allowed_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Request body exceeds maximum allowed size ({max_allowed_bytes // 1024} KB)."
+            )
+        chunks.append(chunk)
+
+    full_body = b"".join(chunks)
+    raw_data: bytes = b""
+
+    if is_json:
+        try:
+            body = json.loads(full_body.decode("utf-8"))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid JSON payload.")
+        raw_b64 = body.get("image") or body.get("snapshot") or body.get("snapshotUrl") or ""
+        if not raw_b64:
+            raise HTTPException(status_code=400, detail="Missing snapshot image data in request.")
+        if "," in raw_b64:
+            raw_b64 = raw_b64.split(",", 1)[1]
+        try:
+            raw_data = base64.b64decode(raw_b64)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid base64 encoding.")
+        if len(raw_data) > storage_service.MAX_SNAPSHOT_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Decoded snapshot image exceeds maximum allowed size ({storage_service.MAX_SNAPSHOT_SIZE // 1024} KB)."
+            )
+    else:
+        raw_data = full_body
+        if len(raw_data) > storage_service.MAX_SNAPSHOT_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Snapshot exceeds maximum allowed size ({storage_service.MAX_SNAPSHOT_SIZE // 1024} KB)."
+            )
+
+    # REV-02: Enforce 20-snapshot cap under concurrency lock
+    with storage_service.snapshot_upload_lock:
+        existing_count = storage_service.get_attempt_snapshot_count(attempt_id)
+        if existing_count >= storage_service.MAX_SNAPSHOTS_PER_ATTEMPT:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Maximum snapshot limit ({storage_service.MAX_SNAPSHOTS_PER_ATTEMPT} snapshots) reached for this assessment attempt."
+            )
+        filename, relative_url = storage_service.save_snapshot(attempt_id, raw_data)
+
+    return {
+        "status": "ok",
+        "snapshotUrl": relative_url,
+        "filename": filename
+    }
+
+
+@router.get("/{attempt_id}/snapshots/{filename}")
+def get_attempt_snapshot(
+    attempt_id: str,
+    filename: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_snapshot_auth_user)
+):
+    """
+    Retrieves a proctoring webcam snapshot.
+    Requirement 4: Restrict image retrieval to the owner and staff authorized to access that attempt.
+    """
+    att = db.query(models.Attempt).filter(models.Attempt.id == attempt_id).first()
+    if not att:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+
+    if current_user.role == "student":
+        if att.studentId != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: You cannot view snapshots belonging to another student."
+            )
+    elif current_user.role == "trainer":
+        test = att.schedule.test if att.schedule else None
+        if not test and att.testId:
+            test = db.query(models.Test).filter(models.Test.id == att.testId).first()
+        if not check_trainer_test_access(current_user, test, db, schedule=att.schedule):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to view proctoring evidence for this assessment."
+            )
+    elif current_user.role in ("admin", "institution"):
+        pass
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    file_path = storage_service.get_snapshot_path(attempt_id, filename)
+    if not file_path:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+
+    return FileResponse(file_path, media_type="image/jpeg")
 
 def evaluate_answer_correctness(question: Optional[models.Question], selected_raw: Any) -> bool:
     """

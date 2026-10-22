@@ -70,6 +70,8 @@ export const detectObjectsInFrame = async (
   }
 };
 
+import { api } from './api';
+
 /**
  * Capture an optimized low-res snapshot thumbnail (320x240 JPEG) for violation proof
  */
@@ -97,6 +99,53 @@ export const captureVideoSnapshot = (video: HTMLVideoElement): string | undefine
   } catch (e) {
     console.warn('Snapshot capture failed:', e);
     return undefined;
+  }
+};
+
+/**
+ * Capture an optimized low-res snapshot as a binary JPEG Blob
+ */
+export const captureVideoSnapshotBlob = (video: HTMLVideoElement): Promise<Blob | null> => {
+  return new Promise((resolve) => {
+    try {
+      if (!video || video.readyState < 2 || video.videoWidth === 0) {
+        return resolve(null);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = 320;
+      canvas.height = 240;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(null);
+
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, canvas.height - 24, canvas.width, 24);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(new Date().toLocaleTimeString(), 8, canvas.height - 8);
+
+      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.6);
+    } catch (e) {
+      console.warn('Snapshot blob capture failed:', e);
+      resolve(null);
+    }
+  });
+};
+
+/**
+ * Uploads a snapshot (Blob or base64 data URI) to the backend snapshot storage endpoint,
+ * returning the lightweight relative URL reference.
+ */
+export const uploadSnapshotFile = async (attemptId: string, snapshot: Blob | string): Promise<string> => {
+  if (typeof snapshot === 'string') {
+    const res = await api.post(`/attempts/${attemptId}/snapshots`, { image: snapshot });
+    return res.data.snapshotUrl;
+  } else {
+    const res = await api.post(`/attempts/${attemptId}/snapshots`, snapshot, {
+      headers: { 'Content-Type': 'image/jpeg' },
+    });
+    return res.data.snapshotUrl;
   }
 };
 

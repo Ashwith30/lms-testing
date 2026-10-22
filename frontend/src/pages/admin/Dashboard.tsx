@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { 
-  Users, Building2, Calendar, 
+import {
+  Users, Building2, Calendar,
   UploadCloud, UserPlus, FilePlus, Activity, Zap,
   ChevronRight, ArrowRight
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
 import {
@@ -133,7 +133,7 @@ export const AdminDashboard = () => {
       {/* Interactive KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Students */}
-        <Card 
+        <Card
           onClick={() => setSelectedKPIType('students')}
           className="border border-blue-100 shadow-sm shadow-blue-100/50 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group"
         >
@@ -154,7 +154,7 @@ export const AdminDashboard = () => {
         </Card>
 
         {/* KPI 2: Partner Institutions */}
-        <Card 
+        <Card
           onClick={() => setSelectedKPIType('institutions')}
           className="border border-green-100 shadow-sm shadow-green-100/50 hover:border-green-300 hover:shadow-md transition-all cursor-pointer group"
         >
@@ -175,7 +175,7 @@ export const AdminDashboard = () => {
         </Card>
 
         {/* KPI 3: Trainers */}
-        <Card 
+        <Card
           onClick={() => setSelectedKPIType('trainers')}
           className="border border-sky-100 shadow-sm shadow-sky-100/50 hover:border-sky-300 hover:shadow-md transition-all cursor-pointer group"
         >
@@ -196,7 +196,7 @@ export const AdminDashboard = () => {
         </Card>
 
         {/* KPI 4: Avg Performance */}
-        <Card 
+        <Card
           onClick={() => setSelectedKPIType('performance')}
           className="border border-orange-100 shadow-sm shadow-orange-100/50 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer group"
         >
@@ -229,38 +229,38 @@ export const AdminDashboard = () => {
               <p className="text-xs text-slate-500 mt-1">Number of test attempts and learning activity over the selected period.</p>
             </div>
             <div className="flex items-center gap-3">
-               <div className="flex items-center gap-1.5 text-xs text-slate-500 hidden sm:flex">
-                  <div className="w-3 h-3 rounded-sm bg-[#3b82f6]"></div>
-                  Tests Attempted
-               </div>
-               <div className="flex items-center gap-1.5 text-xs text-slate-500 hidden sm:flex">
-                  <div className="w-3 h-3 rounded-sm bg-[#93c5fd]"></div>
-                  Materials Viewed
-               </div>
-               <select 
-                  value={activityTimeRange}
-                  onChange={(e) => setActivityTimeRange(e.target.value)}
-                  className="text-xs border border-slate-200 rounded-md py-1.5 px-2.5 bg-white font-medium text-slate-700 outline-none ml-2 cursor-pointer hover:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all shadow-sm"
-               >
-                  <option value="7">Last 7 days</option>
-                  <option value="14">Last 14 days</option>
-                  <option value="30">Last 30 days</option>
-                  <option value="90">Last 90 days</option>
-                  <option value="year">This Academic Year</option>
-                  <option value="all">All Time</option>
-               </select>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 hidden sm:flex">
+                <div className="w-3 h-3 rounded-sm bg-[#3b82f6]"></div>
+                Tests Attempted
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 hidden sm:flex">
+                <div className="w-3 h-3 rounded-sm bg-[#93c5fd]"></div>
+                Materials Viewed
+              </div>
+              <select
+                value={activityTimeRange}
+                onChange={(e) => setActivityTimeRange(e.target.value)}
+                className="text-xs border border-slate-200 rounded-md py-1.5 px-2.5 bg-white font-medium text-slate-700 outline-none ml-2 cursor-pointer hover:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all shadow-sm"
+              >
+                <option value="7">Last 7 days</option>
+                <option value="14">Last 14 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="year">This Academic Year</option>
+                <option value="all">All Time</option>
+              </select>
             </div>
           </CardHeader>
           <CardContent className="h-[300px] mt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                data={studentActivityDatasets[activityTimeRange] || studentActivityDatasets['7']} 
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }} 
+              <BarChart
+                data={studentActivityDatasets[activityTimeRange] || studentActivityDatasets['7']}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 barGap={6}
               >
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: '#f8fafc' }}
                   contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
@@ -278,7 +278,7 @@ export const AdminDashboard = () => {
               <Calendar className="h-4 w-4 text-blue-600" />
               Upcoming Schedule
             </CardTitle>
-            <button 
+            <button
               onClick={() => setIsAllScheduleModalOpen(true)}
               className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-full transition-colors cursor-pointer"
             >
@@ -287,8 +287,8 @@ export const AdminDashboard = () => {
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
             {initialScheduleData.map((item, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 onClick={() => setSelectedScheduleSession(item)}
                 className="flex gap-4 p-3 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/20 hover:shadow-sm transition-all bg-white cursor-pointer group"
               >
@@ -327,7 +327,7 @@ export const AdminDashboard = () => {
               </CardTitle>
               <p className="text-xs text-slate-500 mt-1">Average scores across major courses.</p>
             </div>
-            <button 
+            <button
               onClick={() => setIsAllCoursesModalOpen(true)}
               className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-full shrink-0 transition-colors cursor-pointer"
             >
@@ -336,7 +336,7 @@ export const AdminDashboard = () => {
           </CardHeader>
           <CardContent className="pt-4 space-y-5">
             {coursePerformance.map((course, idx) => (
-              <div 
+              <div
                 key={idx}
                 onClick={() => setSelectedCourseName(course.name)}
                 className="p-2.5 -mx-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-all group"
@@ -367,95 +367,94 @@ export const AdminDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row items-center justify-around p-4 sm:p-6 min-h-[250px] gap-4 sm:gap-2">
-             {/* Chart Area */}
-             <div className="relative w-[160px] h-[160px] shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={institutionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={54}
-                      outerRadius={74}
-                      paddingAngle={3}
-                      dataKey="value"
-                      stroke="none"
-                      onMouseEnter={(_, index) => setActiveInstitutionIndex(index)}
-                      onMouseLeave={() => setActiveInstitutionIndex(null)}
-                      onClick={(_, index) => setSelectedInstitutionForDetails(institutionData[index])}
-                    >
-                      {institutionData.map((entry, index) => {
-                        const isHovered = activeInstitutionIndex === index;
-                        return (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.color}
-                            opacity={activeInstitutionIndex === null || isHovered ? 1 : 0.45}
-                            style={{
-                              cursor: 'pointer',
-                              outline: 'none',
-                              transition: 'opacity 0.2s ease, transform 0.2s ease',
-                              filter: isHovered ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' : 'none',
-                            }}
-                          />
-                        );
-                      })}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                {/* Center text for Donut */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200 text-center px-1">
-                   {activeInstitution ? (
-                     <>
-                       <p className="text-lg font-bold text-slate-900 leading-tight">
-                         {Math.round(Number(activeInstitution.value) || 0).toLocaleString()}
-                       </p>
-                       <p className="text-[10px] font-semibold text-blue-600 truncate max-w-[95px] leading-tight mt-0.5">
-                         {activeInstitution.name}
-                       </p>
-                       <p className="text-[9px] text-slate-400 font-medium leading-none mt-0.5">
-                         {activeInstitution.percentage}
-                       </p>
-                     </>
-                   ) : (
-                     <>
-                       <p className="text-xl font-bold text-slate-900 leading-none">2,486</p>
-                       <p className="text-[10px] text-slate-500 font-medium mt-1">Students</p>
-                     </>
-                   )}
-                </div>
-             </div>
-             
-             {/* Legend Area */}
-             <div className="w-full sm:flex-1 pl-0 sm:pl-4 space-y-2 max-w-full sm:max-w-[200px]">
-                {institutionData.map((item, idx) => {
-                   const isHovered = activeInstitutionIndex === idx;
-                   return (
-                     <div 
-                       key={idx} 
-                       className={`flex items-center justify-between gap-2 p-1.5 -mx-1.5 rounded-lg transition-all cursor-pointer ${
-                         isHovered ? 'bg-slate-100/90 ring-1 ring-slate-200' : 'hover:bg-slate-50'
-                       }`}
-                       onMouseEnter={() => setActiveInstitutionIndex(idx)}
-                       onMouseLeave={() => setActiveInstitutionIndex(null)}
-                       onClick={() => setSelectedInstitutionForDetails(item)}
-                     >
-                        <div className="flex items-center gap-2 min-w-0">
-                           <div 
-                             className={`w-2.5 h-2.5 rounded-full shrink-0 transition-transform ${isHovered ? 'scale-125 ring-2 ring-white shadow-sm' : ''}`} 
-                             style={{ backgroundColor: item.color }}
-                           ></div>
-                           <span className={`text-xs truncate transition-colors ${isHovered ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
-                             {item.name}
-                           </span>
-                        </div>
-                        <span className={`text-xs font-semibold shrink-0 transition-colors ${isHovered ? 'text-blue-600' : 'text-slate-900'}`}>
-                          {item.percentage}
-                        </span>
-                     </div>
-                   );
-                })}
-             </div>
+            {/* Chart Area */}
+            <div className="relative w-[160px] h-[160px] shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={institutionData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={54}
+                    outerRadius={74}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                    onMouseEnter={(_, index) => setActiveInstitutionIndex(index)}
+                    onMouseLeave={() => setActiveInstitutionIndex(null)}
+                    onClick={(_, index) => setSelectedInstitutionForDetails(institutionData[index])}
+                  >
+                    {institutionData.map((entry, index) => {
+                      const isHovered = activeInstitutionIndex === index;
+                      return (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          opacity={activeInstitutionIndex === null || isHovered ? 1 : 0.45}
+                          style={{
+                            cursor: 'pointer',
+                            outline: 'none',
+                            transition: 'opacity 0.2s ease, transform 0.2s ease',
+                            filter: isHovered ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' : 'none',
+                          }}
+                        />
+                      );
+                    })}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Center text for Donut */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200 text-center px-1">
+                {activeInstitution ? (
+                  <>
+                    <p className="text-lg font-bold text-slate-900 leading-tight">
+                      {Math.round(Number(activeInstitution.value) || 0).toLocaleString()}
+                    </p>
+                    <p className="text-[10px] font-semibold text-blue-600 truncate max-w-[95px] leading-tight mt-0.5">
+                      {activeInstitution.name}
+                    </p>
+                    <p className="text-[9px] text-slate-400 font-medium leading-none mt-0.5">
+                      {activeInstitution.percentage}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xl font-bold text-slate-900 leading-none">2,486</p>
+                    <p className="text-[10px] text-slate-500 font-medium mt-1">Students</p>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Legend Area */}
+            <div className="w-full sm:flex-1 pl-0 sm:pl-4 space-y-2 max-w-full sm:max-w-[200px]">
+              {institutionData.map((item, idx) => {
+                const isHovered = activeInstitutionIndex === idx;
+                return (
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between gap-2 p-1.5 -mx-1.5 rounded-lg transition-all cursor-pointer ${isHovered ? 'bg-slate-100/90 ring-1 ring-slate-200' : 'hover:bg-slate-50'
+                      }`}
+                    onMouseEnter={() => setActiveInstitutionIndex(idx)}
+                    onMouseLeave={() => setActiveInstitutionIndex(null)}
+                    onClick={() => setSelectedInstitutionForDetails(item)}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full shrink-0 transition-transform ${isHovered ? 'scale-125 ring-2 ring-white shadow-sm' : ''}`}
+                        style={{ backgroundColor: item.color }}
+                      ></div>
+                      <span className={`text-xs truncate transition-colors ${isHovered ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
+                        {item.name}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-semibold shrink-0 transition-colors ${isHovered ? 'text-blue-600' : 'text-slate-900'}`}>
+                      {item.percentage}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 
@@ -469,7 +468,7 @@ export const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3 h-full">
-              <button 
+              <button
                 onClick={() => setIsAddStudentOpen(true)}
                 className="flex flex-col items-center justify-center p-4 bg-white border border-slate-100 rounded-xl shadow-xs hover:border-blue-300 hover:shadow-md hover:text-blue-600 transition-all text-slate-600 group cursor-pointer"
               >
@@ -478,8 +477,8 @@ export const AdminDashboard = () => {
                 </div>
                 <span className="text-xs font-semibold">Add Student</span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => setIsAddTrainerOpen(true)}
                 className="flex flex-col items-center justify-center p-4 bg-white border border-slate-100 rounded-xl shadow-xs hover:border-green-300 hover:shadow-md hover:text-green-600 transition-all text-slate-600 group cursor-pointer"
               >
@@ -489,7 +488,7 @@ export const AdminDashboard = () => {
                 <span className="text-xs font-semibold">Add Trainer</span>
               </button>
 
-              <button 
+              <button
                 onClick={() => navigate('/admin/tests/create')}
                 className="flex flex-col items-center justify-center p-4 bg-white border border-slate-100 rounded-xl shadow-xs hover:border-sky-300 hover:shadow-md hover:text-sky-600 transition-all text-slate-600 group cursor-pointer"
               >
@@ -499,7 +498,7 @@ export const AdminDashboard = () => {
                 <span className="text-xs font-semibold">Create Test</span>
               </button>
 
-              <button 
+              <button
                 onClick={() => setIsUploadMaterialOpen(true)}
                 className="flex flex-col items-center justify-center p-4 bg-white border border-slate-100 rounded-xl shadow-xs hover:border-orange-300 hover:shadow-md hover:text-orange-600 transition-all text-slate-600 group cursor-pointer"
               >

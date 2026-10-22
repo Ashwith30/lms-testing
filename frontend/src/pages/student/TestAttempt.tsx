@@ -13,6 +13,8 @@ import {
   loadCocoModel, 
   detectObjectsInFrame, 
   captureVideoSnapshot, 
+  captureVideoSnapshotBlob,
+  uploadSnapshotFile,
   calculateProctoringSummary 
 } from '../../services/proctoringService';
 import { syncService, SyncStatus } from '../../services/syncService';
@@ -165,7 +167,18 @@ export const TestAttempt = () => {
 
     let snapshotUrl: string | undefined;
     if (videoRef.current) {
-      snapshotUrl = captureVideoSnapshot(videoRef.current);
+      try {
+        const blob = await captureVideoSnapshotBlob(videoRef.current);
+        if (blob && attemptRef.current?.id && navigator.onLine) {
+          snapshotUrl = await uploadSnapshotFile(attemptRef.current.id, blob);
+        } else {
+          // Fallback to local base64 data URL if offline or blob upload unavailable
+          snapshotUrl = captureVideoSnapshot(videoRef.current);
+        }
+      } catch (err) {
+        console.warn('Snapshot upload failed, falling back to local base64:', err);
+        snapshotUrl = captureVideoSnapshot(videoRef.current);
+      }
     }
 
     const newLog: ViolationLog = {

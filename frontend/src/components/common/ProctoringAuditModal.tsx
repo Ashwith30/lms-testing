@@ -1,7 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, Smartphone, EyeOff, Users, Monitor, Terminal, X, ExternalLink, CheckCircle } from 'lucide-react';
 import { ViolationLog, ProctoringSummary, User, Test } from '../../types';
 import { Button } from '../ui/Button';
+import { api } from '../../services/api';
+
+interface SecureSnapshotImageProps {
+  src: string;
+  alt: string;
+  className?: string;
+}
+
+export const SecureSnapshotImage: React.FC<SecureSnapshotImageProps> = ({ src, alt, className }) => {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!src) {
+      setBlobUrl(null);
+      return;
+    }
+    // Legacy base64 snapshot: render directly without network call
+    if (src.startsWith('data:')) {
+      setBlobUrl(src);
+      return;
+    }
+
+    let active = true;
+    let createdUrl: string | null = null;
+    setLoading(true);
+    setError(false);
+
+    // Fetch via authenticated Axios client (attaches Authorization: Bearer without query-string tokens)
+    api.get(src, { responseType: 'blob' })
+      .then((res) => {
+        if (!active) return;
+        createdUrl = URL.createObjectURL(res.data);
+        setBlobUrl(createdUrl);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.warn('Failed to load snapshot blob:', err);
+        setError(true);
+        setLoading(false);
+      });
+
+    return () => {
+      active = false;
+      if (createdUrl) {
+        URL.revokeObjectURL(createdUrl);
+      }
+    };
+  }, [src]);
+
+  if (loading) {
+    return <div className={`flex items-center justify-center bg-slate-100 text-slate-400 text-[10px] animate-pulse ${className}`}>Loading...</div>;
+  }
+  if (error || !blobUrl) {
+    return <div className={`flex items-center justify-center bg-slate-100 text-slate-400 text-[10px] ${className}`}>Proof unavailable</div>;
+  }
+
+  return <img src={blobUrl} alt={alt} className={className} />;
+};
 
 interface ProctoringAuditModalProps {
   isOpen: boolean;
@@ -176,7 +237,7 @@ export const ProctoringAuditModal: React.FC<ProctoringAuditModalProps> = ({
                         className="shrink-0 relative group rounded-lg overflow-hidden border border-slate-300 hover:border-blue-500 transition-all"
                         title="Click to view camera snapshot"
                       >
-                        <img
+                        <SecureSnapshotImage
                           src={log.snapshotUrl}
                           alt="Violation Proof"
                           className="h-12 w-16 object-cover"
@@ -214,7 +275,7 @@ export const ProctoringAuditModal: React.FC<ProctoringAuditModalProps> = ({
             >
               <X className="h-5 w-5" />
             </button>
-            <img
+            <SecureSnapshotImage
               src={selectedSnapshot}
               alt="Expanded Evidence Proof"
               className="w-full h-auto rounded-xl object-contain max-h-[75vh]"

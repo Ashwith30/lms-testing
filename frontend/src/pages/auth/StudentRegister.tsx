@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { authService } from '../../services/authService';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import phoneticLogoFull from '../../assets/phonetic-logo-full.png';
 
 export const StudentRegister = () => {
@@ -14,15 +14,17 @@ export const StudentRegister = () => {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [studentId, setStudentId] = useState('');
+  const [college, setCollege] = useState('');
+  const [rollNo, setRollNo] = useState('');
   const [department, setDepartment] = useState('');
   const [batch, setBatch] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !studentId || !department || !batch || !password) {
+    if (!name || !email || !college || !rollNo || !department || !batch || !password) {
       toast('Please fill all fields', 'error');
       return;
     }
@@ -32,7 +34,9 @@ export const StudentRegister = () => {
       await authService.registerStudent({
         name,
         email,
-        studentId,
+        studentId: rollNo,
+        rollNo,
+        college,
         department,
         batch,
         password,
@@ -118,13 +122,22 @@ export const StudentRegister = () => {
               required
             />
 
+            <Input
+              label="College"
+              type="text"
+              value={college}
+              onChange={(e) => setCollege(e.target.value)}
+              placeholder="e.g. Apex Institute of Technology"
+              required
+            />
+
             <div className="grid grid-cols-2 gap-3">
               <Input
-                label="Student ID"
+                label="Roll No"
                 type="text"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                placeholder="LMS001"
+                value={rollNo}
+                onChange={(e) => setRollNo(e.target.value)}
+                placeholder="e.g. 21CS001"
                 required
               />
               <Input
@@ -148,11 +161,22 @@ export const StudentRegister = () => {
 
             <Input
               label="Password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 6 characters"
               required
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-slate-400 hover:text-slate-600 focus:outline-none p-1 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
             />
 
             <Button

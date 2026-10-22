@@ -46,7 +46,7 @@ def register_student(
         raise HTTPException(status_code=400, detail="Client-supplied user ID is not permitted.")
 
     email = student_data.get("email")
-    student_id = student_data.get("studentId") or student_data.get("studentNumber")
+    student_id = student_data.get("studentId") or student_data.get("studentNumber") or student_data.get("rollNo")
     
     if not email or not isinstance(email, str) or not email.strip():
         raise HTTPException(status_code=400, detail="Email is required.")
@@ -62,7 +62,7 @@ def register_student(
         if student_id:
             existing_id = db.query(models.StudentProfile).filter(models.StudentProfile.studentNumber == student_id).first()
             if existing_id:
-                raise HTTPException(status_code=400, detail="A user with this Student ID already exists.")
+                raise HTTPException(status_code=400, detail="A user with this Roll No / Student ID already exists.")
     else:
         student_id = None
         
@@ -175,3 +175,4 @@ def register_trainer(
     db.commit()
     db.refresh(db_user)
     return db_user
+

@@ -75,199 +75,69 @@ export const InstitutionAnalytics = () => {
       // Fallback data if backend is unreachable
       setData({
         kpis: {
-          totalEnrolled: 815,
-          totalEnrolledGrowth: '+5.2%',
-          avgScore: 72.4,
-          avgScoreGrowth: '+3.1%',
-          passRate: 78.6,
-          passRateSubtitle: 'Qualified candidates',
-          totalSubmissions: 22540,
-          totalSubmissionsGrowth: '+14.2%',
-          testsCount: 30
+          totalEnrolled: 0,
+          totalEnrolledGrowth: '',
+          avgScore: 0.0,
+          avgScoreGrowth: '',
+          passRate: 0.0,
+          passRateSubtitle: 'Candidates with score >= 60%',
+          totalSubmissions: 0,
+          totalSubmissionsGrowth: '',
+          testsCount: 0
         },
-        departmentPerformance: [
-          { name: 'CSM', avgScore: 82, passRate: 91, students: 95, attempts: 2850 },
-          { name: 'CSD', avgScore: 79, passRate: 87, students: 85, attempts: 2550 },
-          { name: 'CSE', avgScore: 78, passRate: 88, students: 240, attempts: 6840 },
-          { name: 'MECH', avgScore: 58, passRate: 67, students: 110, attempts: 2890 },
-          { name: 'EEE', avgScore: 65, passRate: 74, students: 120, attempts: 3310 },
-          { name: 'ECE', avgScore: 72, passRate: 81, students: 165, attempts: 4100 }
-        ],
+        departmentPerformance: [],
         scoreDistribution: [
-          { range: '0-20', count: 32 },
-          { range: '20-40', count: 68 },
-          { range: '40-60', count: 142 },
-          { range: '60-80', count: 198 },
-          { range: '80-100', count: 176 }
+          { range: '0-20', count: 0, percentage: 0 },
+          { range: '20-40', count: 0, percentage: 0 },
+          { range: '40-60', count: 0, percentage: 0 },
+          { range: '60-80', count: 0, percentage: 0 },
+          { range: '80-100', count: 0, percentage: 0 }
         ],
         deptScoreDistributions: {
           'All Departments': [
-            { range: '0-20', count: 32 },
-            { range: '20-40', count: 68 },
-            { range: '40-60', count: 142 },
-            { range: '60-80', count: 198 },
-            { range: '80-100', count: 176 }
+            { range: '0-20', count: 0, percentage: 0 },
+            { range: '20-40', count: 0, percentage: 0 },
+            { range: '40-60', count: 0, percentage: 0 },
+            { range: '60-80', count: 0, percentage: 0 },
+            { range: '80-100', count: 0, percentage: 0 }
           ],
-          'CSM': [
-            { range: '0-20', count: 1 },
-            { range: '20-40', count: 4 },
-            { range: '40-60', count: 13 },
-            { range: '60-80', count: 35 },
-            { range: '80-100', count: 42 }
-          ],
-          'CSD': [
-            { range: '0-20', count: 2 },
-            { range: '20-40', count: 5 },
-            { range: '40-60', count: 16 },
-            { range: '60-80', count: 31 },
-            { range: '80-100', count: 31 }
-          ],
-          'CSE': [
-            { range: '0-20', count: 4 },
-            { range: '20-40', count: 12 },
-            { range: '40-60', count: 34 },
-            { range: '60-80', count: 82 },
-            { range: '80-100', count: 108 }
-          ],
-          'MECH': [
-            { range: '0-20', count: 10 },
-            { range: '20-40', count: 22 },
-            { range: '40-60', count: 42 },
-            { range: '60-80', count: 26 },
-            { range: '80-100', count: 10 }
-          ],
-          'EEE': [
-            { range: '0-20', count: 8 },
-            { range: '20-40', count: 18 },
-            { range: '40-60', count: 35 },
-            { range: '60-80', count: 39 },
-            { range: '80-100', count: 20 }
-          ],
-          'ECE': [
-            { range: '0-20', count: 6 },
-            { range: '20-40', count: 15 },
-            { range: '40-60', count: 38 },
-            { range: '60-80', count: 64 },
-            { range: '80-100', count: 57 }
-          ]
+          'CSM': [],
+          'CSD': [],
+          'CSE': [],
+          'MECH': [],
+          'EEE': [],
+          'ECE': []
         },
-        performanceTrend: [
-          { test: 'Test 1', CSM: 62, CSD: 60, CSE: 58, MECH: 42, EEE: 48, ECE: 52 },
-          { test: 'Test 5', CSM: 74, CSD: 71, CSE: 68, MECH: 48, EEE: 54, ECE: 60 },
-          { test: 'Test 10', CSM: 78, CSD: 75, CSE: 72, MECH: 50, EEE: 58, ECE: 64 },
-          { test: 'Test 15', CSM: 81, CSD: 78, CSE: 75, MECH: 52, EEE: 60, ECE: 66 },
-          { test: 'Test 20', CSM: 84, CSD: 80, CSE: 76, MECH: 55, EEE: 63, ECE: 68 },
-          { test: 'Test 25', CSM: 88, CSD: 85, CSE: 80, MECH: 57, EEE: 64, ECE: 70 },
-          { test: 'Test 30', CSM: 93, CSD: 90, CSE: 88, MECH: 62, EEE: 70, ECE: 76 }
-        ],
+        performanceTrend: [],
         skillCompetency: {
-          'All Departments': [
-            { skill: 'Coding & Logic', score: 84, benchmark: 75, fullMark: 100 },
-            { skill: 'Problem Solving', score: 88, benchmark: 75, fullMark: 100 },
-            { skill: 'Core Eng.', score: 76, benchmark: 75, fullMark: 100 },
-            { skill: 'Database & SQL', score: 81, benchmark: 75, fullMark: 100 },
-            { skill: 'System Design', score: 74, benchmark: 75, fullMark: 100 },
-            { skill: 'Quant Aptitude', score: 79, benchmark: 75, fullMark: 100 },
-          ],
-          'CSM': [
-            { skill: 'Coding & Logic', score: 90, benchmark: 75, fullMark: 100 },
-            { skill: 'Problem Solving', score: 92, benchmark: 75, fullMark: 100 },
-            { skill: 'Core Eng.', score: 82, benchmark: 75, fullMark: 100 },
-            { skill: 'Database & SQL', score: 85, benchmark: 75, fullMark: 100 },
-            { skill: 'System Design', score: 80, benchmark: 75, fullMark: 100 },
-            { skill: 'Quant Aptitude', score: 86, benchmark: 75, fullMark: 100 },
-          ],
-          'CSD': [
-            { skill: 'Coding & Logic', score: 87, benchmark: 75, fullMark: 100 },
-            { skill: 'Problem Solving', score: 89, benchmark: 75, fullMark: 100 },
-            { skill: 'Core Eng.', score: 79, benchmark: 75, fullMark: 100 },
-            { skill: 'Database & SQL', score: 92, benchmark: 75, fullMark: 100 },
-            { skill: 'System Design', score: 78, benchmark: 75, fullMark: 100 },
-            { skill: 'Quant Aptitude', score: 84, benchmark: 75, fullMark: 100 },
-          ],
-          'CSE': [
-            { skill: 'Coding & Logic', score: 89, benchmark: 75, fullMark: 100 },
-            { skill: 'Problem Solving', score: 91, benchmark: 75, fullMark: 100 },
-            { skill: 'Core Eng.', score: 85, benchmark: 75, fullMark: 100 },
-            { skill: 'Database & SQL', score: 86, benchmark: 75, fullMark: 100 },
-            { skill: 'System Design', score: 83, benchmark: 75, fullMark: 100 },
-            { skill: 'Quant Aptitude', score: 82, benchmark: 75, fullMark: 100 },
-          ],
-          'MECH': [
-            { skill: 'Coding & Logic', score: 62, benchmark: 75, fullMark: 100 },
-            { skill: 'Problem Solving', score: 70, benchmark: 75, fullMark: 100 },
-            { skill: 'Core Eng.', score: 78, benchmark: 75, fullMark: 100 },
-            { skill: 'Database & SQL', score: 58, benchmark: 75, fullMark: 100 },
-            { skill: 'System Design', score: 66, benchmark: 75, fullMark: 100 },
-            { skill: 'Quant Aptitude', score: 69, benchmark: 75, fullMark: 100 },
-          ],
-          'EEE': [
-            { skill: 'Coding & Logic', score: 71, benchmark: 75, fullMark: 100 },
-            { skill: 'Problem Solving', score: 76, benchmark: 75, fullMark: 100 },
-            { skill: 'Core Eng.', score: 81, benchmark: 75, fullMark: 100 },
-            { skill: 'Database & SQL', score: 68, benchmark: 75, fullMark: 100 },
-            { skill: 'System Design', score: 73, benchmark: 75, fullMark: 100 },
-            { skill: 'Quant Aptitude', score: 74, benchmark: 75, fullMark: 100 },
-          ],
-          'ECE': [
-            { skill: 'Coding & Logic', score: 79, benchmark: 75, fullMark: 100 },
-            { skill: 'Problem Solving', score: 82, benchmark: 75, fullMark: 100 },
-            { skill: 'Core Eng.', score: 84, benchmark: 75, fullMark: 100 },
-            { skill: 'Database & SQL', score: 75, benchmark: 75, fullMark: 100 },
-            { skill: 'System Design', score: 77, benchmark: 75, fullMark: 100 },
-            { skill: 'Quant Aptitude', score: 78, benchmark: 75, fullMark: 100 },
-          ],
+          'All Departments': [],
+          'CSM': [],
+          'CSD': [],
+          'CSE': [],
+          'MECH': [],
+          'EEE': [],
+          'ECE': []
         },
         heatmapData: {
-          tests: ['T1', 'T5', 'T10', 'T15', 'T20', 'T25', 'T30'],
-          departments: [
-            { name: 'CSM', scores: [62, 74, 78, 81, 84, 88, 93] },
-            { name: 'CSD', scores: [60, 71, 75, 78, 80, 85, 90] },
-            { name: 'CSE', scores: [58, 68, 72, 75, 76, 80, 88] },
-            { name: 'MECH', scores: [42, 48, 50, 52, 55, 57, 62] },
-            { name: 'EEE', scores: [48, 54, 58, 60, 63, 64, 70] },
-            { name: 'ECE', scores: [52, 60, 64, 66, 68, 70, 76] }
-          ]
+          tests: [],
+          departments: []
         },
-        topPerformers: [
-          { rank: 1, name: 'A. Kruthika', department: 'CSE', score: 96, avatar: 'AK' },
-          { rank: 2, name: 'R. Sai Charan', department: 'CSM', score: 94, avatar: 'RS' },
-          { rank: 3, name: 'T. Ananya', department: 'CSD', score: 93, avatar: 'TA' },
-          { rank: 4, name: 'M. Vaishnavi', department: 'ECE', score: 92, avatar: 'MV' },
-          { rank: 5, name: 'K. Abhinav', department: 'CSE', score: 91, avatar: 'KA' }
-        ],
-        passRateComparison: [
-          { department: 'CSM', currentCycle: 91, previousCycle: 84 },
-          { department: 'CSD', currentCycle: 87, previousCycle: 80 },
-          { department: 'CSE', currentCycle: 88, previousCycle: 82 },
-          { department: 'MECH', currentCycle: 67, previousCycle: 65 },
-          { department: 'EEE', currentCycle: 74, previousCycle: 71 },
-          { department: 'ECE', currentCycle: 81, previousCycle: 76 }
-        ],
+        topPerformers: [],
+        passRateComparison: [],
         participation: {
-          onTime: 68,
-          late: 18,
-          missed: 14,
-          totalSubmissions: 22540
+          onTime: 0.0,
+          late: 0.0,
+          missed: 0.0,
+          totalSubmissions: 0
         },
         insights: [
           {
             id: 1,
-            type: 'positive',
-            text: 'Pass rate improved by 6.8% compared to the previous cycle.',
-            highlight: '+6.8% Pass Rate'
-          },
-          {
-            id: 2,
             type: 'info',
-            text: 'CSM department has the highest average score (82%).',
-            highlight: '82% Avg Score'
-          },
-          {
-            id: 3,
-            type: 'warning',
-            text: 'MECH department shows lower performance. Consider additional support.',
-            highlight: 'Action Recommended'
+            icon: 'info',
+            text: 'Unable to connect to live analytics service.',
+            highlight: 'Offline',
+            action: 'Check Server Connection'
           }
         ]
       });
@@ -304,16 +174,16 @@ export const InstitutionAnalytics = () => {
     
     lines.push(`--- EXECUTIVE SUMMARY METRICS ---`);
     lines.push(`Metric,Value,Details`);
-    lines.push(`Total Active Enrolled Students,${reportData?.kpis?.totalEnrolled || 815},${reportData?.kpis?.totalEnrolledGrowth || '+5.2%'}`);
-    lines.push(`Campus Average Score,${reportData?.kpis?.avgScore || 72.4}%,${reportData?.kpis?.avgScoreGrowth || '+3.1%'}`);
-    lines.push(`Placement Readiness Rate,${reportData?.kpis?.passRate || 78.6}%,Qualified Candidates (>=60%)`);
-    lines.push(`Total Test Submissions,${reportData?.kpis?.totalSubmissions || 22540},Across ${reportData?.kpis?.testsCount || 30} Tests`);
+    lines.push(`Total Active Enrolled Students,${reportData?.kpis?.totalEnrolled ?? 0},${reportData?.kpis?.totalEnrolledGrowth ?? ''}`);
+    lines.push(`Campus Average Score,${reportData?.kpis?.avgScore ?? 0}%,${reportData?.kpis?.avgScoreGrowth ?? ''}`);
+    lines.push(`Placement Readiness Rate,${reportData?.kpis?.passRate ?? 0}%,Qualified Candidates (>=60%)`);
+    lines.push(`Total Test Submissions,${reportData?.kpis?.totalSubmissions ?? 0},Across ${reportData?.kpis?.testsCount ?? 0} Tests`);
     lines.push(``);
 
     lines.push(`--- DEPARTMENT BENCHMARKS ---`);
     lines.push(`Department,Average Score (%),Pass Rate (%),Enrolled Students,Total Attempts`);
     (reportData?.departmentPerformance || []).forEach((d: any) => {
-      lines.push(`"${d.name}",${d.avgScore}%,${d.passRate}%,${d.students},${d.attempts}`);
+      lines.push(`"${d.name}",${d.avgScore ?? 0}%,${d.passRate ?? 0}%,${d.students ?? 0},${d.attempts ?? 0}`);
     });
     lines.push(``);
 
@@ -321,22 +191,22 @@ export const InstitutionAnalytics = () => {
     lines.push(`Skill Domain,Cohort Score (%),Benchmark Target (%)`);
     const skills = reportData?.skillCompetency?.['All Departments'] || [];
     skills.forEach((s: any) => {
-      lines.push(`"${s.skill}",${s.score}%,${s.benchmark}%`);
+      lines.push(`"${s.skill}",${s.score ?? 0}%,${s.benchmark ?? 0}%`);
     });
     lines.push(``);
 
     lines.push(`--- TOP PERFORMERS ---`);
     lines.push(`Rank,Student Name,Department,Average Score (%)`);
     (reportData?.topPerformers || []).forEach((p: any) => {
-      lines.push(`${p.rank},"${p.name}","${p.department}",${p.score}%`);
+      lines.push(`${p.rank},"${p.name}","${p.department}",${p.score ?? 0}%`);
     });
     lines.push(``);
 
     lines.push(`--- ASSESSMENT PARTICIPATION ---`);
     lines.push(`Status,Percentage (%)`);
-    lines.push(`On-Time Submissions,${reportData?.participation?.onTime || 68}%`);
-    lines.push(`Late Submissions,${reportData?.participation?.late || 18}%`);
-    lines.push(`Missed Assessments,${reportData?.participation?.missed || 14}%`);
+    lines.push(`On-Time Submissions,${reportData?.participation?.onTime ?? 0}%`);
+    lines.push(`Late Submissions,${reportData?.participation?.late ?? 0}%`);
+    lines.push(`Missed Assessments,${reportData?.participation?.missed ?? 0}%`);
 
     const csvContent = '\uFEFF' + lines.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -577,23 +447,23 @@ export const InstitutionAnalytics = () => {
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-label">Total Enrolled</div>
-      <div class="kpi-value">${kpis.totalEnrolled || 815}</div>
-      <div class="kpi-sub">${kpis.totalEnrolledGrowth || '+5.2%'} active students</div>
+      <div class="kpi-value">${kpis.totalEnrolled ?? 0}</div>
+      <div class="kpi-sub">${kpis.totalEnrolledGrowth ? `${kpis.totalEnrolledGrowth} ` : ''}active students</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Average Campus Score</div>
-      <div class="kpi-value">${kpis.avgScore || 72.4}%</div>
-      <div class="kpi-sub">${kpis.avgScoreGrowth || '+3.1%'} vs prior term</div>
+      <div class="kpi-value">${kpis.avgScore ?? 0}%</div>
+      <div class="kpi-sub">${kpis.avgScoreGrowth ? `${kpis.avgScoreGrowth} ` : ''}vs prior term</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Placement Readiness</div>
-      <div class="kpi-value">${kpis.passRate || 78.6}%</div>
+      <div class="kpi-value">${kpis.passRate ?? 0}%</div>
       <div class="kpi-sub">Qualified candidates (≥60%)</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Total Submissions</div>
-      <div class="kpi-value">${(kpis.totalSubmissions || 22540).toLocaleString()}</div>
-      <div class="kpi-sub">Across ${kpis.testsCount || 30} assessments</div>
+      <div class="kpi-value">${(kpis.totalSubmissions ?? 0).toLocaleString()}</div>
+      <div class="kpi-sub">Across ${kpis.testsCount ?? 0} assessments</div>
     </div>
   </div>
 
@@ -610,16 +480,18 @@ export const InstitutionAnalytics = () => {
       </tr>
     </thead>
     <tbody>
-      ${depts.map((d: any) => `
+      ${depts.length > 0 ? depts.map((d: any) => `
         <tr>
           <td><strong>${d.name}</strong></td>
-          <td>${d.avgScore}%</td>
-          <td><span style="font-weight:700; color:${d.passRate >= 80 ? '#16a34a' : d.passRate >= 70 ? '#d97706' : '#dc2626'}">${d.passRate}%</span></td>
-          <td>${d.students}</td>
-          <td>${d.attempts}</td>
-          <td><strong>${d.passRate >= 85 ? 'High' : d.passRate >= 75 ? 'Moderate' : 'Needs Focus'}</strong></td>
+          <td>${d.avgScore ?? 0}%</td>
+          <td><span style="font-weight:700; color:${(d.passRate ?? 0) >= 80 ? '#16a34a' : (d.passRate ?? 0) >= 70 ? '#d97706' : '#dc2626'}">${d.passRate ?? 0}%</span></td>
+          <td>${d.students ?? 0}</td>
+          <td>${d.attempts ?? 0}</td>
+          <td><strong>${(d.passRate ?? 0) >= 85 ? 'High' : (d.passRate ?? 0) >= 75 ? 'Moderate' : 'Needs Focus'}</strong></td>
         </tr>
-      `).join('')}
+      `).join('') : `
+        <tr><td colspan="6" style="text-align:center; color:#64748b; padding:16px;">No department benchmark data available</td></tr>
+      `}
     </tbody>
   </table>
 
@@ -636,14 +508,16 @@ export const InstitutionAnalytics = () => {
           </tr>
         </thead>
         <tbody>
-          ${skills.map((s: any) => `
+          ${skills.length > 0 ? skills.map((s: any) => `
             <tr>
               <td><strong>${s.skill}</strong></td>
-              <td>${s.score}%</td>
-              <td>${s.benchmark}%</td>
-              <td><span style="font-weight:700; color:${s.score >= s.benchmark ? '#16a34a' : '#ea580c'}">${s.score >= s.benchmark ? 'Achieved' : 'Below Target'}</span></td>
+              <td>${s.score ?? 0}%</td>
+              <td>${s.benchmark ?? 0}%</td>
+              <td><span style="font-weight:700; color:${(s.score ?? 0) >= (s.benchmark ?? 0) ? '#16a34a' : '#ea580c'}">${(s.score ?? 0) >= (s.benchmark ?? 0) ? 'Achieved' : 'Below Target'}</span></td>
             </tr>
-          `).join('')}
+          `).join('') : `
+            <tr><td colspan="4" style="text-align:center; color:#64748b; padding:16px;">No skill competency data recorded</td></tr>
+          `}
         </tbody>
       </table>
     </div>
@@ -660,14 +534,16 @@ export const InstitutionAnalytics = () => {
           </tr>
         </thead>
         <tbody>
-          ${topPerformers.map((p: any) => `
+          ${topPerformers.length > 0 ? topPerformers.map((p: any) => `
             <tr>
               <td><span class="badge" style="padding:1px 6px;">#${p.rank}</span></td>
               <td><strong>${p.name}</strong></td>
               <td>${p.department}</td>
-              <td style="font-weight:800; color:#1d4ed8;">${p.score}%</td>
+              <td style="font-weight:800; color:#1d4ed8;">${p.score ?? 0}%</td>
             </tr>
-          `).join('')}
+          `).join('') : `
+            <tr><td colspan="4" style="text-align:center; color:#64748b; padding:16px;">No candidate submissions available</td></tr>
+          `}
         </tbody>
       </table>
     </div>
@@ -675,7 +551,7 @@ export const InstitutionAnalytics = () => {
 
   <div class="banner-insight">
     <h4>Key Academic Observation & AI Recommendation</h4>
-    <p>Departments in Software Engineering (CSM, CSD, CSE) demonstrate over 88% placement readiness. Applied engineering cohorts (MECH, EEE) have shown 7.4% quarter-over-quarter improvement in quantitative problem solving. Recommended focus on practical system architecture labs for upcoming cycle.</p>
+    <p>${reportData?.insights && reportData.insights.length > 0 ? reportData.insights.map((i: any) => i.text).join(' ') : 'No institutional observations or recommendations recorded for this cycle.'}</p>
   </div>
 
   <div class="footer">
@@ -830,9 +706,9 @@ export const InstitutionAnalytics = () => {
   const { kpis, departmentPerformance, performanceTrend, heatmapData, topPerformers, passRateComparison, participation, insights } = data;
 
   const participationData = [
-    { name: 'On Time', value: participation?.onTime || 68, color: '#22c55e' },
-    { name: 'Late', value: participation?.late || 18, color: '#f59e0b' },
-    { name: 'Missed', value: participation?.missed || 14, color: '#ef4444' },
+    { name: 'On Time', value: participation?.onTime ?? 0, color: '#22c55e' },
+    { name: 'Late', value: participation?.late ?? 0, color: '#f59e0b' },
+    { name: 'Missed', value: participation?.missed ?? 0, color: '#ef4444' },
   ];
 
   return (
@@ -899,7 +775,7 @@ export const InstitutionAnalytics = () => {
               <div>
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TOTAL ENROLLED</p>
                 <h3 className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                  {kpis?.totalEnrolled?.toLocaleString() || 815}
+                  {(kpis?.totalEnrolled ?? 0).toLocaleString()}
                 </h3>
               </div>
             </div>
@@ -916,7 +792,7 @@ export const InstitutionAnalytics = () => {
               <div>
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">AVERAGE SCORE</p>
                 <h3 className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                  {kpis?.avgScore || 72.4}%
+                  {kpis?.avgScore ?? 0}%
                 </h3>
               </div>
             </div>
@@ -933,7 +809,7 @@ export const InstitutionAnalytics = () => {
               <div>
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">OVERALL PASS RATE</p>
                 <h3 className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                  {kpis?.passRate || 78.6}%
+                  {kpis?.passRate ?? 0}%
                 </h3>
               </div>
             </div>
@@ -950,7 +826,7 @@ export const InstitutionAnalytics = () => {
               <div>
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TOTAL SUBMISSIONS</p>
                 <h3 className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                  {kpis?.totalSubmissions?.toLocaleString() || '22,540'}
+                  {(kpis?.totalSubmissions ?? 0).toLocaleString()}
                 </h3>
               </div>
             </div>
@@ -1383,27 +1259,33 @@ export const InstitutionAnalytics = () => {
 
           <CardContent className="p-4 pt-3 flex-1 flex flex-col justify-around">
             <div className="space-y-2.5">
-              {passRateComparison?.map((item: any) => (
-                <div key={item.department} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-slate-700">{item.department}</span>
-                    <span className="text-slate-900 font-bold">{item.currentCycle}%</span>
+              {passRateComparison && passRateComparison.length > 0 ? (
+                passRateComparison.map((item: any) => (
+                  <div key={item.department} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-slate-700">{item.department}</span>
+                      <span className="text-slate-900 font-bold">{item.currentCycle ?? 0}%</span>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden relative">
+                      {/* Previous cycle ghost bar */}
+                      <div
+                        className="h-full bg-slate-200 rounded-full absolute left-0 top-0"
+                        style={{ width: `${item.previousCycle ?? 0}%` }}
+                      />
+                      {/* Current cycle bar */}
+                      <div
+                        className="h-full bg-blue-600 rounded-full relative z-10 transition-all duration-500"
+                        style={{ width: `${item.currentCycle ?? 0}%` }}
+                      />
+                    </div>
                   </div>
-                  {/* Progress bar */}
-                  <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden relative">
-                    {/* Previous cycle ghost bar */}
-                    <div
-                      className="h-full bg-slate-200 rounded-full absolute left-0 top-0"
-                      style={{ width: `${item.previousCycle || 75}%` }}
-                    />
-                    {/* Current cycle bar */}
-                    <div
-                      className="h-full bg-blue-600 rounded-full relative z-10 transition-all duration-500"
-                      style={{ width: `${item.currentCycle}%` }}
-                    />
-                  </div>
+                ))
+              ) : (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  No historical cycle comparison available
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1472,7 +1354,7 @@ export const InstitutionAnalytics = () => {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-sm font-extrabold text-slate-900 leading-none">
-                  {participation?.totalSubmissions?.toLocaleString() || '22,540'}
+                  {(participation?.totalSubmissions ?? 0).toLocaleString()}
                 </span>
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">
                   Submissions
@@ -1487,7 +1369,7 @@ export const InstitutionAnalytics = () => {
                   <span className="w-2.5 h-2.5 rounded-full bg-[#22c55e]" />
                   <span>On Time</span>
                 </div>
-                <span className="font-extrabold text-slate-900">{participation?.onTime || 68}%</span>
+                <span className="font-extrabold text-slate-900">{participation?.onTime ?? 0}%</span>
               </div>
 
               <div className="flex items-center justify-between gap-6 text-xs">
@@ -1495,7 +1377,7 @@ export const InstitutionAnalytics = () => {
                   <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]" />
                   <span>Late</span>
                 </div>
-                <span className="font-extrabold text-slate-900">{participation?.late || 18}%</span>
+                <span className="font-extrabold text-slate-900">{participation?.late ?? 0}%</span>
               </div>
 
               <div className="flex items-center justify-between gap-6 text-xs">
@@ -1503,7 +1385,7 @@ export const InstitutionAnalytics = () => {
                   <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444]" />
                   <span>Missed</span>
                 </div>
-                <span className="font-extrabold text-slate-900">{participation?.missed || 14}%</span>
+                <span className="font-extrabold text-slate-900">{participation?.missed ?? 0}%</span>
               </div>
             </div>
           </CardContent>
@@ -1530,45 +1412,51 @@ export const InstitutionAnalytics = () => {
           </div>
 
           <CardContent className="p-3.5 space-y-2.5">
-            {/* Banner 0: Purple Engagement Insight */}
-            <div className="p-3 rounded-xl bg-violet-50/90 border border-violet-200/70 flex items-start gap-2.5 transition-all hover:shadow-xs">
-              <div className="p-1.5 rounded-lg bg-violet-600 text-white shrink-0 mt-0.5">
-                <Target className="w-3.5 h-3.5" />
+            {insights && insights.length > 0 ? (
+              insights.slice(0, 4).map((item: any) => (
+                <div
+                  key={item.id}
+                  className={`p-3 rounded-xl border flex items-start gap-2.5 transition-all hover:shadow-xs ${
+                    item.type === 'positive'
+                      ? 'bg-emerald-50/90 border-emerald-200/70 text-emerald-950'
+                      : item.type === 'warning'
+                      ? 'bg-amber-50/90 border-amber-200/70 text-amber-950'
+                      : item.type === 'engagement' || item.type === 'purple'
+                      ? 'bg-violet-50/90 border-violet-200/70 text-violet-950'
+                      : 'bg-blue-50/90 border-blue-200/70 text-blue-950'
+                  }`}
+                >
+                  <div
+                    className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
+                      item.type === 'positive'
+                        ? 'bg-emerald-600 text-white'
+                        : item.type === 'warning'
+                        ? 'bg-amber-500 text-white'
+                        : item.type === 'engagement' || item.type === 'purple'
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-blue-600 text-white'
+                    }`}
+                  >
+                    {item.type === 'positive' ? (
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    ) : item.type === 'warning' ? (
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                    ) : item.type === 'engagement' ? (
+                      <Target className="w-3.5 h-3.5" />
+                    ) : (
+                      <Award className="w-3.5 h-3.5" />
+                    )}
+                  </div>
+                  <p className="text-xs font-semibold leading-snug">
+                    {item.text}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="py-6 text-center text-xs text-slate-400">
+                No institutional observations or recommendations recorded.
               </div>
-              <p className="text-xs font-semibold text-violet-950 leading-snug">
-                68% of students submit assessments on time — up 4.2% from last cycle.
-              </p>
-            </div>
-
-            {/* Banner 1: Green Improvement */}
-            <div className="p-3 rounded-xl bg-emerald-50/90 border border-emerald-200/70 flex items-start gap-2.5 transition-all hover:shadow-xs">
-              <div className="p-1.5 rounded-lg bg-emerald-600 text-white shrink-0 mt-0.5">
-                <TrendingUp className="w-3.5 h-3.5" />
-              </div>
-              <p className="text-xs font-semibold text-emerald-950 leading-snug">
-                Pass rate improved by 6.8% compared to the previous cycle.
-              </p>
-            </div>
-
-            {/* Banner 2: Blue Top Performer */}
-            <div className="p-3 rounded-xl bg-blue-50/90 border border-blue-200/70 flex items-start gap-2.5 transition-all hover:shadow-xs">
-              <div className="p-1.5 rounded-lg bg-blue-600 text-white shrink-0 mt-0.5">
-                <Award className="w-3.5 h-3.5" />
-              </div>
-              <p className="text-xs font-semibold text-blue-950 leading-snug">
-                CSM department has the highest average score (82%).
-              </p>
-            </div>
-
-            {/* Banner 3: Amber Action Recommendation */}
-            <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-200/70 flex items-start gap-2.5 transition-all hover:shadow-xs">
-              <div className="p-1.5 rounded-lg bg-amber-500 text-white shrink-0 mt-0.5">
-                <AlertTriangle className="w-3.5 h-3.5" />
-              </div>
-              <p className="text-xs font-semibold text-amber-950 leading-snug">
-                MECH department shows lower performance. Consider additional support.
-              </p>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1596,55 +1484,48 @@ export const InstitutionAnalytics = () => {
             </div>
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-              {insights?.map((item: any) => (
-                <div
-                  key={item.id}
-                  className={`p-4 rounded-xl border flex items-start gap-3.5 ${
-                    item.type === 'positive'
-                      ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
-                      : item.type === 'warning'
-                      ? 'bg-amber-50/80 border-amber-200 text-amber-950'
-                      : 'bg-blue-50/80 border-blue-200 text-blue-950'
-                  }`}
-                >
+              {insights && insights.length > 0 ? (
+                insights.map((item: any) => (
                   <div
-                    className={`p-2 rounded-lg shrink-0 ${
+                    key={item.id}
+                    className={`p-4 rounded-xl border flex items-start gap-3.5 ${
                       item.type === 'positive'
-                        ? 'bg-emerald-600 text-white'
+                        ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
                         : item.type === 'warning'
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-blue-600 text-white'
+                        ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                        : 'bg-blue-50/80 border-blue-200 text-blue-950'
                     }`}
                   >
-                    {item.type === 'positive' ? (
-                      <TrendingUp className="w-4 h-4" />
-                    ) : item.type === 'warning' ? (
-                      <AlertTriangle className="w-4 h-4" />
-                    ) : (
-                      <Award className="w-4 h-4" />
-                    )}
+                    <div
+                      className={`p-2 rounded-lg shrink-0 ${
+                        item.type === 'positive'
+                          ? 'bg-emerald-600 text-white'
+                          : item.type === 'warning'
+                          ? 'bg-amber-500 text-white'
+                          : 'bg-blue-600 text-white'
+                      }`}
+                    >
+                      {item.type === 'positive' ? (
+                        <TrendingUp className="w-4 h-4" />
+                      ) : item.type === 'warning' ? (
+                        <AlertTriangle className="w-4 h-4" />
+                      ) : (
+                        <Award className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold">{item.text}</p>
+                      <p className="text-xs text-slate-600">
+                        Recommendation: {item.action || 'Continue positive reinforcement and track metric stability.'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold">{item.text}</p>
-                    <p className="text-xs text-slate-600">
-                      Recommendation: {item.action || 'Continue positive reinforcement and track metric stability.'}
-                    </p>
-                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-xs text-slate-400">
+                  No institutional insights recorded for this cycle.
                 </div>
-              ))}
-
-              {/* Additional AI Guidance */}
-              <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/80 text-indigo-950 flex items-start gap-3.5">
-                <div className="p-2 rounded-lg bg-indigo-600 text-white shrink-0">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-bold">Curriculum Alignment Opportunity</p>
-                  <p className="text-xs text-slate-600">
-                    Students in EEE and MECH show high accuracy in theoretical MCQs but lower scores in applied design problem-solving. Consider introducing hands-on lab tests.
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
@@ -1694,16 +1575,16 @@ export const InstitutionAnalytics = () => {
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
               <div className="flex justify-between text-slate-600">
-                <span>Assessment Completion:</span>
-                <span className="font-bold text-slate-900">100% (30 / 30 Tests)</span>
+                <span>Cohort Position:</span>
+                <span className="font-bold text-slate-900">{selectedStudent.badge || 'Top Performer'}</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>Integrity Score:</span>
-                <span className="font-bold text-emerald-600">100% (0 Flags)</span>
+                <span>Campus Standing:</span>
+                <span className="font-bold text-emerald-600">Rank #{selectedStudent.rank ?? '-'}</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>Status:</span>
-                <span className="font-bold text-blue-600">Top 1% Campus Cohort</span>
+                <span>Academic Record:</span>
+                <span className="font-bold text-blue-600">{selectedStudent.score ?? 0}% Average</span>
               </div>
             </div>
 

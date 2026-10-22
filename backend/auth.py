@@ -21,7 +21,50 @@ if SECRET_KEY in (DEFAULT_DEV_SECRET, "lms-production-secure-jwt-secret-key-supe
     print("[WARNING] Using default/dev JWT_SECRET_KEY. Please set JWT_SECRET_KEY in production.", file=sys.stderr)
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+
+DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours (1440 minutes)
+MIN_ACCESS_TOKEN_EXPIRE_MINUTES = 5            # 5 minutes
+MAX_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30 # 30 days (43,200 minutes)
+
+
+def get_access_token_expire_minutes() -> int:
+    """
+    Returns the configured access token expiration lifespan in minutes.
+    Reads JWT_ACCESS_TOKEN_EXPIRE_MINUTES from the environment.
+    Defaults to 24 hours (1440 minutes) when the variable is absent.
+    Validates that configured values are integers within [5, 43200].
+    Logs a warning if an invalid value is supplied and falls back safely to default.
+    """
+    raw = os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
+    if raw is None or not raw.strip():
+        return DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES
+
+    raw_clean = raw.strip()
+    try:
+        val = int(raw_clean)
+    except ValueError:
+        import sys
+        print(
+            f"[WARNING] Invalid JWT_ACCESS_TOKEN_EXPIRE_MINUTES='{raw_clean}'. "
+            f"Must be an integer. Falling back to default {DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES} minutes.",
+            file=sys.stderr
+        )
+        return DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES
+
+    if val < MIN_ACCESS_TOKEN_EXPIRE_MINUTES or val > MAX_ACCESS_TOKEN_EXPIRE_MINUTES:
+        import sys
+        print(
+            f"[WARNING] Out-of-range JWT_ACCESS_TOKEN_EXPIRE_MINUTES={val}. "
+            f"Must be between {MIN_ACCESS_TOKEN_EXPIRE_MINUTES} and {MAX_ACCESS_TOKEN_EXPIRE_MINUTES} minutes. "
+            f"Falling back to default {DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES} minutes.",
+            file=sys.stderr
+        )
+        return DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES
+
+    return val
+
+
+ACCESS_TOKEN_EXPIRE_MINUTES = get_access_token_expire_minutes()
 
 security = HTTPBearer(auto_error=False)
 
@@ -53,13 +96,20 @@ def verify_password(plain_password: str, stored_password: Optional[str]) -> bool
 
 
 def create_access_token(data: dict, expires_delta: Optional[datetime.timedelta] = None) -> str:
-    """Creates a signed JWT access token."""
+    """Creates a signed JWT access token with exp, iat, and nbf claims."""
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.datetime.now(datetime.timezone.utc) + expires_delta
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if expires_delta is not None:
+        expire = now + expires_delta
     else:
-        expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+        expire_minutes = get_access_token_expire_minutes()
+        expire = now + datetime.timedelta(minutes=expire_minutes)
+
+    if "iat" not in to_encode:
+        to_encode["iat"] = now
+    if "nbf" not in to_encode:
+        to_encode["nbf"] = now
+    to_encode["exp"] = expire
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -74,17 +124,31 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    if not credentials:
+    if not credentials or not credentials.credentials:
         raise credentials_exception
 
     token = credentials.credentials
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="Missing subject claim"'},
+            )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="The token has expired"'},
+        )
     except jwt.PyJWTError:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="Invalid authentication token"'},
+        )
 
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user is None:

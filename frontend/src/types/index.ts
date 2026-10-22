@@ -46,6 +46,8 @@ export interface User {
   // Backward compatibility properties added by backend
   name: string;
   studentId?: string;
+  rollNo?: string;
+  college?: string;
   department?: string;
   batch?: string;
   password?: string;

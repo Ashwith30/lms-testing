@@ -12,6 +12,7 @@ from auth import (
     check_trainer_test_access,
     get_authorized_test_ids_for_trainer
 )
+import storage_service
 
 router = APIRouter(prefix="/api", tags=["tests"])
 
@@ -643,6 +644,7 @@ def extend_schedule(
                 for ia in incomplete_atts:
                     db.query(models.ProctoringLog).filter(models.ProctoringLog.attemptId == ia.id).delete()
                     db.query(models.Answer).filter(models.Answer.attemptId == ia.id).delete()
+                    storage_service.delete_attempt_snapshots(ia.id)
                     db.delete(ia)
 
         db.commit()
@@ -670,6 +672,7 @@ def extend_schedule(
         for ia in reset_query.all():
             db.query(models.ProctoringLog).filter(models.ProctoringLog.attemptId == ia.id).delete()
             db.query(models.Answer).filter(models.Answer.attemptId == ia.id).delete()
+            storage_service.delete_attempt_snapshots(ia.id)
             db.delete(ia)
 
     db.commit()

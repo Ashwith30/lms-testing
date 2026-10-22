@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  X, Calendar, Clock, User, Building2, BookOpen, FileText, CheckCircle2, 
-  ExternalLink, Download, Play, BarChart3, TrendingUp, Award, Users, 
+import {
+  X, Calendar, Clock, User, Building2, BookOpen, FileText, CheckCircle2,
+  ExternalLink, Download, Play, BarChart3, TrendingUp, Award, Users,
   Sparkles, Layers, ShieldCheck, Sliders, Bell, Settings, Plus, Search,
   Filter, Check, AlertCircle, Eye, Trash2, Edit3, ChevronRight, Video,
   HelpCircle, Star, Phone, Mail, MapPin, Share2, ChevronDown, Hash,
@@ -55,13 +55,13 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div 
+    <div
       className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade overflow-y-auto select-none"
       onClick={onClose}
       onWheel={(e) => e.stopPropagation()}
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', margin: 0 }}
     >
-      <div 
+      <div
         className={`relative w-full ${maxWidth} bg-white rounded-2xl sm:rounded-3xl shadow-2xl shadow-slate-950/40 border border-slate-100/80 overflow-hidden flex flex-col animate-in my-auto select-text max-h-[calc(100dvh-2rem)] sm:max-h-[90vh]`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -940,7 +940,7 @@ export const AllScheduleModal: React.FC<AllScheduleModalProps> = ({
   const [selectedDay, setSelectedDay] = useState<'today' | 'tomorrow' | 'week'>('today');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filtered = allUpcomingSchedules.filter(item => 
+  const filtered = allUpcomingSchedules.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.trainer.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.institution.toLowerCase().includes(searchTerm.toLowerCase())
@@ -963,9 +963,8 @@ export const AllScheduleModal: React.FC<AllScheduleModalProps> = ({
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer ${
-                  selectedDay === day ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer ${selectedDay === day ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 {day === 'today' ? 'Today (Sep 17)' : day === 'tomorrow' ? 'Tomorrow' : 'This Week'}
               </button>
@@ -1161,10 +1160,9 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
                   </span>
                 </div>
                 <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full ${
-                      mod.score >= 75 ? 'bg-emerald-500' : mod.score >= 65 ? 'bg-amber-500' : 'bg-red-500'
-                    }`} 
+                  <div
+                    className={`h-full rounded-full ${mod.score >= 75 ? 'bg-emerald-500' : mod.score >= 65 ? 'bg-amber-500' : 'bg-red-500'
+                      }`}
                     style={{ width: `${mod.score}%` }}
                   ></div>
                 </div>
@@ -1644,11 +1642,10 @@ export const SystemSettingsModal: React.FC<SystemSettingsModalProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`pb-2.5 flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === tab.id
+              className={`pb-2.5 flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === tab.id
                   ? 'border-blue-600 text-blue-600 font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
+                }`}
             >
               <tab.icon className="h-4 w-4" />
               {tab.label}
@@ -1875,7 +1872,7 @@ export const SendBatchNotificationModal: React.FC<SendBatchNotificationModalProp
         if (initialBatch && !unique.includes(initialBatch)) {
           setSelectedBatch(initialBatch);
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [isOpen, initialBatch]);
 
@@ -2029,11 +2026,10 @@ export const SendBatchNotificationModal: React.FC<SendBatchNotificationModalProp
                   key={item.id}
                   type="button"
                   onClick={() => setType(item.id as any)}
-                  className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold text-center border transition-all cursor-pointer ${
-                    type === item.id 
-                      ? `${item.color} ring-2 ring-blue-500/40 font-bold shadow-xs` 
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold text-center border transition-all cursor-pointer ${type === item.id
+                      ? `${item.color} ring-2 ring-blue-500/40 font-bold shadow-xs`
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
+                    }`}
                 >
                   {item.label}
                 </button>
@@ -2053,11 +2049,10 @@ export const SendBatchNotificationModal: React.FC<SendBatchNotificationModalProp
                   key={item.id}
                   type="button"
                   onClick={() => setPriority(item.id as any)}
-                  className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold text-center border transition-all cursor-pointer ${
-                    priority === item.id 
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold text-center border transition-all cursor-pointer ${priority === item.id
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
+                    }`}
                 >
                   {item.label}
                 </button>
@@ -2131,11 +2126,10 @@ export const SendBatchNotificationModal: React.FC<SendBatchNotificationModalProp
             <Eye className="h-3.5 w-3.5 text-blue-600" /> Live Student Bell Preview
           </label>
           <div className="p-3 bg-gradient-to-r from-blue-50/50 via-white to-sky-50/40 border border-blue-100 rounded-xl flex items-start gap-3">
-            <div className={`p-2 rounded-lg ${
-              type === 'alert' ? 'bg-amber-100 text-amber-700' :
-              type === 'success' ? 'bg-green-100 text-green-700' :
-              type === 'announcement' ? 'bg-sky-100 text-sky-700' : 'bg-blue-100 text-blue-700'
-            }`}>
+            <div className={`p-2 rounded-lg ${type === 'alert' ? 'bg-amber-100 text-amber-700' :
+                type === 'success' ? 'bg-green-100 text-green-700' :
+                  type === 'announcement' ? 'bg-sky-100 text-sky-700' : 'bg-blue-100 text-blue-700'
+              }`}>
               <Bell className="h-4 w-4" />
             </div>
             <div className="flex-1 min-w-0">

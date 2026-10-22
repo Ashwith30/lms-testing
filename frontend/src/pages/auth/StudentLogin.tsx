@@ -13,7 +13,7 @@ export const StudentLogin = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
@@ -39,7 +39,7 @@ export const StudentLogin = () => {
   return (
     <div className="min-h-screen bg-white flex">
       {/* Left branding panel */}
-      <div 
+      <div
         className="hidden lg:flex lg:w-[48%] relative overflow-hidden items-center justify-center"
         style={{ background: 'linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 35%, #bae6fd 75%, #f0f9ff 100%)' }}
       >
@@ -93,14 +93,14 @@ export const StudentLogin = () => {
             Student sign in
           </h1>
           <p className="text-[15px] text-slate-400 mb-8 leading-relaxed">
-            Enter your student ID or email and password to continue.
+            Enter your roll no or email and password to continue.
           </p>
 
           <form className="space-y-5" onSubmit={handleLogin}>
-            {/* Student ID / Email field */}
+            {/* Roll No / Email field */}
             <div>
               <label className="block text-[13px] font-semibold text-slate-600 mb-2">
-                Student ID or Email
+                Roll No or Email
               </label>
               <div className="relative">
                 <div className="absolute left-0 top-0 bottom-0 w-11 flex items-center justify-center pointer-events-none">
@@ -111,7 +111,7 @@ export const StudentLogin = () => {
                   required
                   value={studentId}
                   onChange={e => setStudentId(e.target.value)}
-                  placeholder="e.g. LMS001 or ashwith@example.com"
+                  placeholder="e.g. 21CS001 or ashwith@example.com"
                   className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
                 />
               </div>
@@ -169,3 +169,4 @@ export const StudentLogin = () => {
     </div>
   );
 };
+

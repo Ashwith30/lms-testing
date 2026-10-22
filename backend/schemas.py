@@ -39,6 +39,8 @@ class StudentRegisterRequest(BaseModel):
     password: str
     name: Optional[str] = "Student"
     studentId: Optional[str] = None
+    rollNo: Optional[str] = None
+    college: Optional[str] = None
     department: Optional[str] = None
     batch: Optional[str] = None
     id: Optional[str] = None

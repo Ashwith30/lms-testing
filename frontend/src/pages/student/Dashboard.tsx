@@ -185,7 +185,7 @@ export const StudentDashboard = () => {
 
         {/* COLUMN 1: Hero Metrics & Spotlight Focus Cards */}
         <div className="lg:col-span-3 space-y-5">
-          
+
           {/* 1. Overall Grade Index */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-blue-300 hover:shadow-md transition-all">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Overall Grade Index</p>
@@ -334,7 +334,7 @@ export const StudentDashboard = () => {
             </div>
 
             {/* Peer Avatars Stack */}
-            <div 
+            <div
               onClick={() => setIsStudyCircleOpen(true)}
               className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
             >
@@ -359,7 +359,7 @@ export const StudentDashboard = () => {
 
         {/* COLUMN 2: Deep Analytics & Progression Charts */}
         <div className="lg:col-span-6 space-y-5">
-          
+
           {/* Score Trajectory Performance Chart */}
           <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xs relative overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
@@ -382,11 +382,10 @@ export const StudentDashboard = () => {
                       key={tab}
                       type="button"
                       onClick={() => setPerformanceTab(tab)}
-                      className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
-                        isActive
+                      className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${isActive
                           ? 'bg-blue-600 text-white shadow-xs font-semibold'
                           : 'text-slate-600 hover:text-slate-900'
-                      }`}
+                        }`}
                     >
                       {labels[tab]}
                     </button>
@@ -479,19 +478,19 @@ export const StudentDashboard = () => {
 
         {/* COLUMN 3: Right Sidebar KPIs & Community Widgets */}
         <div className="lg:col-span-3 space-y-5">
-          
+
           {/* 1. Statistics Mini-Bars */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-slate-900 text-sm">Statistics</h3>
-              <MoreHorizontal 
+              <MoreHorizontal
                 onClick={() => setIsStatsModalOpen(true)}
-                className="h-4 w-4 text-slate-400 cursor-pointer hover:text-slate-600 transition-colors" 
+                className="h-4 w-4 text-slate-400 cursor-pointer hover:text-slate-600 transition-colors"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div 
+              <div
                 onClick={() => setIsStatsModalOpen(true)}
                 className="bg-blue-50/60 rounded-xl p-3 border border-blue-100 hover:border-blue-300 cursor-pointer transition-colors"
               >
@@ -507,7 +506,7 @@ export const StudentDashboard = () => {
                 <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider mt-0.5">Tests Done</p>
               </div>
 
-              <div 
+              <div
                 onClick={() => setIsStatsModalOpen(true)}
                 className="bg-slate-50 rounded-xl p-3 border border-slate-200/80 hover:border-slate-300 cursor-pointer transition-colors"
               >
@@ -536,7 +535,7 @@ export const StudentDashboard = () => {
 
             <div className="space-y-3.5">
               {/* Category 1 */}
-              <div 
+              <div
                 onClick={() => setSelectedCourseDetails('Aptitude')}
                 className="flex items-center justify-between p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
               >
@@ -553,7 +552,7 @@ export const StudentDashboard = () => {
               </div>
 
               {/* Category 2 */}
-              <div 
+              <div
                 onClick={() => setSelectedCourseDetails('Reasoning')}
                 className="flex items-center justify-between p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
               >
@@ -570,7 +569,7 @@ export const StudentDashboard = () => {
               </div>
 
               {/* Category 3 */}
-              <div 
+              <div
                 onClick={() => setSelectedCourseDetails('Verbal')}
                 className="flex items-center justify-between p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
               >
@@ -587,7 +586,7 @@ export const StudentDashboard = () => {
               </div>
 
               {/* Category 4 */}
-              <div 
+              <div
                 onClick={() => setSelectedCourseDetails('Technical')}
                 className="flex items-center justify-between p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
               >
@@ -609,7 +608,7 @@ export const StudentDashboard = () => {
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
             <div className="flex items-center justify-between mb-3.5">
               <h3 className="font-bold text-slate-900 text-sm">Study Circle (28 Peers)</h3>
-              <span 
+              <span
                 onClick={() => setIsStudyCircleOpen(true)}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 tracking-wider cursor-pointer"
               >
@@ -620,15 +619,15 @@ export const StudentDashboard = () => {
             {/* Avatars */}
             <div className="grid grid-cols-5 gap-2.5">
               {studyCircleMembers.map((member, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   onClick={() => setIsStudyCircleOpen(true)}
                   className="group relative flex flex-col items-center"
                 >
                   <div className={`h-8 w-8 rounded-full bg-gradient-to-tr ${member.color} text-white font-bold text-[10px] flex items-center justify-center shadow-xs cursor-pointer group-hover:scale-110 transition-transform`}>
                     {member.initial}
                   </div>
-                  
+
                   <div className="absolute bottom-full mb-1 hidden group-hover:flex flex-col items-center z-20 pointer-events-none">
                     <div className="bg-slate-900 text-white text-[10px] font-semibold py-1 px-2 rounded-md whitespace-nowrap shadow-lg">
                       {member.name} ({member.score})

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FileText, Play, Users, CheckCircle, ChevronRight, Plus, 
-  Calendar, Clock, TrendingUp, Award, ShieldAlert, Database, 
+import {
+  FileText, Play, Users, CheckCircle, ChevronRight, Plus,
+  Calendar, Clock, TrendingUp, Award, ShieldAlert, Database,
   UploadCloud, BarChart3, ArrowUpRight, Activity, Sparkles, BookOpen
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
@@ -41,14 +41,14 @@ export const TrainerDashboard = () => {
 
         const students = usersRes.data.filter((u: any) => u.role === 'student');
         const submittedAttempts = attemptsRes.data.filter((a: any) => a.status === 'submitted' || a.status === 'auto_submitted');
-        
+
         setTests(allTests);
         setRecentAttempts(submittedAttempts.slice(0, 6));
         setAnalyticsData(analyticsRes?.data || null);
 
         const avg = analyticsRes?.data?.kpis?.avgScore ?? (
-          submittedAttempts.length > 0 
-            ? Math.round(submittedAttempts.reduce((acc: number, a: any) => acc + (a.percentage || 0), 0) / submittedAttempts.length) 
+          submittedAttempts.length > 0
+            ? Math.round(submittedAttempts.reduce((acc: number, a: any) => acc + (a.percentage || 0), 0) / submittedAttempts.length)
             : 0
         );
 
@@ -76,41 +76,41 @@ export const TrainerDashboard = () => {
   }, [user]);
 
   const statCards = [
-    { 
-      title: 'Total Tests', 
-      value: stats.totalTests, 
-      subtitle: '35 Questions Created', 
-      icon: FileText, 
-      accent: 'bg-blue-50 text-blue-600', 
+    {
+      title: 'Total Tests',
+      value: stats.totalTests,
+      subtitle: '35 Questions Created',
+      icon: FileText,
+      accent: 'bg-blue-50 text-blue-600',
       border: 'hover:border-blue-300',
-      link: '/trainer/tests' 
+      link: '/trainer/tests'
     },
-    { 
-      title: 'Active Sessions', 
-      value: stats.activeTests, 
-      subtitle: '1 Scheduled Today', 
-      icon: Play, 
-      accent: 'bg-amber-50 text-amber-600', 
+    {
+      title: 'Active Sessions',
+      value: stats.activeTests,
+      subtitle: '1 Scheduled Today',
+      icon: Play,
+      accent: 'bg-amber-50 text-amber-600',
       border: 'hover:border-amber-300',
-      link: '/trainer/schedule' 
+      link: '/trainer/schedule'
     },
-    { 
-      title: 'Enrolled Students', 
-      value: stats.totalStudents, 
-      subtitle: 'Across CSE & Core Batches', 
-      icon: Users, 
-      accent: 'bg-emerald-50 text-emerald-600', 
+    {
+      title: 'Enrolled Students',
+      value: stats.totalStudents,
+      subtitle: 'Across CSE & Core Batches',
+      icon: Users,
+      accent: 'bg-emerald-50 text-emerald-600',
       border: 'hover:border-emerald-300',
-      link: '/trainer/students' 
+      link: '/trainer/students'
     },
-    { 
-      title: 'Evaluated Submissions', 
-      value: stats.testsCompleted, 
-      subtitle: `${stats.avgScore}% Avg • ${stats.passRate}% Pass Rate`, 
-      icon: CheckCircle, 
-      accent: 'bg-sky-50 text-sky-600', 
+    {
+      title: 'Evaluated Submissions',
+      value: stats.testsCompleted,
+      subtitle: `${stats.avgScore}% Avg • ${stats.passRate}% Pass Rate`,
+      icon: CheckCircle,
+      accent: 'bg-sky-50 text-sky-600',
       border: 'hover:border-sky-300',
-      link: '/trainer/analytics' 
+      link: '/trainer/analytics'
     },
   ];
 
@@ -123,7 +123,7 @@ export const TrainerDashboard = () => {
 
   return (
     <div className="space-y-6 animate-in pb-12 text-slate-800">
-      
+
       {/* ── 1. Page Header ────────────────────────────── */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
@@ -134,8 +134,8 @@ export const TrainerDashboard = () => {
       {/* ── 2. Top Interactive Stat Cards ───────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, i) => (
-          <div 
-            key={i} 
+          <div
+            key={i}
             onClick={() => navigate(stat.link)}
             className={`bg-white rounded-2xl border border-slate-200/80 hover:shadow-md transition-all p-5 cursor-pointer group ${stat.border}`}
           >
@@ -160,10 +160,10 @@ export const TrainerDashboard = () => {
 
       {/* ── 3. Main 2-Column Core Layout ─────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Left 2 Columns: Tests Management + Submissions Feed */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Active & Recent Assessments */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -171,7 +171,7 @@ export const TrainerDashboard = () => {
                 <h2 className="text-base font-bold text-slate-900">Recent Assessments</h2>
                 <p className="text-xs text-slate-400 mt-0.5">Manage published tests and scheduled examination rounds</p>
               </div>
-              <button 
+              <button
                 onClick={() => navigate('/trainer/tests')}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
               >
@@ -195,8 +195,8 @@ export const TrainerDashboard = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium">
                     {tests.map((test) => (
-                      <tr 
-                        key={test.id} 
+                      <tr
+                        key={test.id}
                         className="hover:bg-slate-50/70 transition-colors group"
                       >
                         <td className="py-3.5 px-5">
@@ -215,13 +215,12 @@ export const TrainerDashboard = () => {
                           {stats.testsCompleted}
                         </td>
                         <td className="py-3.5 px-4 text-center">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                            test.status === 'Published' || test.status === 'Live'
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${test.status === 'Published' || test.status === 'Live'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : test.status === 'Scheduled'
                                 ? 'bg-blue-50 text-blue-700 border border-blue-200'
                                 : 'bg-slate-100 text-slate-600 border border-slate-200'
-                          }`}>
+                            }`}>
                             {test.status || 'Published'}
                           </span>
                         </td>
@@ -252,7 +251,7 @@ export const TrainerDashboard = () => {
                 <h2 className="text-base font-bold text-slate-900">Recent Candidate Submissions</h2>
                 <p className="text-xs text-slate-400 mt-0.5">Live student completions & proctoring integrity scores</p>
               </div>
-              <button 
+              <button
                 onClick={() => navigate('/trainer/results')}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
               >
@@ -306,11 +305,11 @@ export const TrainerDashboard = () => {
 
         {/* Right 1 Column: Quick Shortcuts + Topic Mastery Radar/Meters + Proctoring Telemetry */}
         <div className="space-y-6">
-          
+
           {/* Quick Management Actions */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
             <h3 className="text-sm font-bold text-slate-900 mb-3">Quick Navigation</h3>
-            
+
             <div className="grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => navigate('/trainer/question-banks')}
@@ -367,12 +366,11 @@ export const TrainerDashboard = () => {
                     <span className="font-bold text-slate-900">{cat.avgScore}%</span>
                   </div>
                   <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-1.5 rounded-full ${
-                        cat.avgScore >= 80 ? 'bg-emerald-500' :
-                        cat.avgScore >= 50 ? 'bg-blue-500' :
-                        'bg-amber-500'
-                      }`} 
+                    <div
+                      className={`h-1.5 rounded-full ${cat.avgScore >= 80 ? 'bg-emerald-500' :
+                          cat.avgScore >= 50 ? 'bg-blue-500' :
+                            'bg-amber-500'
+                        }`}
                       style={{ width: `${cat.avgScore}%` }}
                     />
                   </div>

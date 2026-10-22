@@ -4,7 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart as RechartsPie, Pie, Cell
 } from 'recharts';
-import { 
+import {
   BarChart3, TrendingUp, Award, Clock, ShieldAlert,
   Download, AlertTriangle, ChevronRight, Activity, CheckCircle2
 } from 'lucide-react';
@@ -14,7 +14,7 @@ const BRAND_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4'];
 export const TrainerAnalytics = () => {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Controls & Filters
   const [timeframe, setTimeframe] = useState<'Hourly' | 'Day' | 'Week' | 'Month'>('Month');
   const [selectedStatistic, setSelectedStatistic] = useState<string>('all');
@@ -149,7 +149,7 @@ export const TrainerAnalytics = () => {
 
   return (
     <div className="space-y-6 animate-in pb-12 font-sans text-slate-800">
-      
+
       {/* ── 1. Top Header ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
@@ -162,7 +162,7 @@ export const TrainerAnalytics = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={handleExportCSV}
             title="Export CSV Telemetry"
             className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold transition-colors shadow-xs"
@@ -175,7 +175,7 @@ export const TrainerAnalytics = () => {
 
       {/* ── 2. Top 4 Metric Cards ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
+
         {/* Card 1: Cohort Avg Score + Blue Sparkline */}
         <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs hover:border-blue-200 transition-all flex flex-col justify-between">
           <div className="flex items-start justify-between">
@@ -189,12 +189,12 @@ export const TrainerAnalytics = () => {
           <div className="h-12 w-full mt-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={blueSparkline}>
-                <Line 
-                  type="monotone" 
-                  dataKey="y" 
-                  stroke="#2563eb" 
-                  strokeWidth={2} 
-                  dot={false} 
+                <Line
+                  type="monotone"
+                  dataKey="y"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  dot={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -214,12 +214,12 @@ export const TrainerAnalytics = () => {
           <div className="h-12 w-full mt-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={greenSparkline}>
-                <Line 
-                  type="monotone" 
-                  dataKey="y" 
-                  stroke="#10b981" 
-                  strokeWidth={2} 
-                  dot={false} 
+                <Line
+                  type="monotone"
+                  dataKey="y"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -235,9 +235,9 @@ export const TrainerAnalytics = () => {
 
           <div className="flex items-end gap-1 h-12 w-full mt-3 pt-2">
             {blueBars.map((val, idx) => (
-              <div 
-                key={idx} 
-                className="flex-1 bg-blue-500 rounded-t-sm transition-all hover:bg-blue-600" 
+              <div
+                key={idx}
+                className="flex-1 bg-blue-500 rounded-t-sm transition-all hover:bg-blue-600"
                 style={{ height: `${val}%` }}
                 title={`Timeline Segment ${idx + 1}: ${val}%`}
               ></div>
@@ -254,9 +254,9 @@ export const TrainerAnalytics = () => {
 
           <div className="flex items-end gap-1 h-12 w-full mt-3 pt-2">
             {purpleBars.map((val, idx) => (
-              <div 
-                key={idx} 
-                className="flex-1 bg-purple-500 rounded-t-sm transition-all hover:bg-purple-600" 
+              <div
+                key={idx}
+                className="flex-1 bg-purple-500 rounded-t-sm transition-all hover:bg-purple-600"
                 style={{ height: `${val}%` }}
                 title={`Audit Period ${idx + 1}`}
               ></div>
@@ -268,7 +268,7 @@ export const TrainerAnalytics = () => {
 
       {/* ── 3. Middle Section: Comparison Graph ────────────────────────────── */}
       <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
-        
+
         {/* Header Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -306,11 +306,10 @@ export const TrainerAnalytics = () => {
                 <button
                   key={tab}
                   onClick={() => setTimeframe(tab)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                    timeframe === tab 
-                      ? 'bg-white text-blue-600 shadow-xs font-bold' 
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${timeframe === tab
+                      ? 'bg-white text-blue-600 shadow-xs font-bold'
                       : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   {tab}
                 </button>
@@ -326,27 +325,27 @@ export const TrainerAnalytics = () => {
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: '#cbd5e1' }} />
               <YAxis tick={{ fontSize: 11, fill: '#64748b' }} domain={[0, 100]} axisLine={false} tickLine={false} unit="%" />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: '#0f172a', borderRadius: '8px', border: 'none', color: '#fff', fontSize: '12px' }}
                 labelStyle={{ fontWeight: 'bold', color: '#cbd5e1' }}
               />
-              <Line 
-                type="linear" 
-                dataKey="benchmarkScore" 
-                stroke="#f59e0b" 
-                strokeWidth={2} 
+              <Line
+                type="linear"
+                dataKey="benchmarkScore"
+                stroke="#f59e0b"
+                strokeWidth={2}
                 dot={{ r: 3.5, fill: '#f59e0b', strokeWidth: 0 }}
                 activeDot={{ r: 5 }}
-                name="Benchmark Target (%)" 
+                name="Benchmark Target (%)"
               />
-              <Line 
-                type="linear" 
-                dataKey="currentScore" 
-                stroke="#2563eb" 
-                strokeWidth={2} 
+              <Line
+                type="linear"
+                dataKey="currentScore"
+                stroke="#2563eb"
+                strokeWidth={2}
                 dot={{ r: 3.5, fill: '#2563eb', strokeWidth: 0 }}
                 activeDot={{ r: 5 }}
-                name="Cohort Average (%)" 
+                name="Cohort Average (%)"
               />
             </LineChart>
           </ResponsiveContainer>
@@ -368,7 +367,7 @@ export const TrainerAnalytics = () => {
 
       {/* ── 4. Three-Column Detailed Matrix Row ────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Left Column: Domain Concepts Table */}
         <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
@@ -419,11 +418,10 @@ export const TrainerAnalytics = () => {
                     return (
                       <span
                         key={dotIdx}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          isActive 
-                            ? 'bg-blue-600 scale-110' 
+                        className={`w-2 h-2 rounded-full transition-all ${isActive
+                            ? 'bg-blue-600 scale-110'
                             : 'bg-slate-200'
-                        }`}
+                          }`}
                       ></span>
                     );
                   })}
@@ -494,11 +492,11 @@ export const TrainerAnalytics = () => {
       {/* ── 5. Bottom Telemetry & Progress Bars Row ───────────────────────── */}
       <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          
+
           {/* Column 1: Candidate Participation */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Participation</h4>
-            
+
             <div className="space-y-3">
               <div>
                 <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
@@ -535,7 +533,7 @@ export const TrainerAnalytics = () => {
           {/* Column 2: Performance Telemetry */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Performance Index</h4>
-            
+
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-bold text-slate-700 w-8">78%</span>
@@ -563,7 +561,7 @@ export const TrainerAnalytics = () => {
           {/* Column 3: Telemetry & Demographics */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Cohort Demographics</h4>
-            
+
             <div className="space-y-2.5 text-xs font-medium text-slate-600">
               <div className="flex items-center justify-between">
                 <span>Platform (Desktop vs Mobile)</span>

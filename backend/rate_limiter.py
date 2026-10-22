@@ -26,6 +26,9 @@ ATTEMPT_CREATE_WINDOW = 60.0       # 1 minute
 MAX_SYNC_PER_ATTEMPT = 120  # per minute (2 req/sec)
 SYNC_WINDOW = 60.0          # 1 minute
 
+MAX_SNAPSHOT_UPLOADS_PER_ATTEMPT = 15  # per minute
+SNAPSHOT_UPLOAD_WINDOW = 60.0         # 1 minute
+
 RETENTION_SECONDS = 3600.0  # 1 hour event retention
 
 
@@ -362,3 +365,22 @@ def check_sync_answer_rate_limit(attempt_id: str, db: Session):
             detail="Sync rate limit exceeded. Please wait a moment before syncing again."
         )
     record_event(db, key=f"attempt:{attempt_id}", scope="sync_answer")
+
+
+def check_snapshot_upload_rate_limit(attempt_id: str, db: Session):
+    """Rate limit snapshot uploads: Max 15 uploads per minute per attempt.
+    Permits rapid legitimate proctoring triggers while preventing automated flood DoS.
+    """
+    recent = count_recent_events(
+        db,
+        key=f"attempt:{attempt_id}",
+        scope="snapshot_upload",
+        window_seconds=SNAPSHOT_UPLOAD_WINDOW
+    )
+    if recent >= MAX_SNAPSHOT_UPLOADS_PER_ATTEMPT:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Snapshot upload rate limit exceeded. Please wait a moment before uploading another snapshot."
+        )
+    record_event(db, key=f"attempt:{attempt_id}", scope="snapshot_upload")
+

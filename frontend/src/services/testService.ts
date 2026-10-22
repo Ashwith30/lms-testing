@@ -235,10 +235,38 @@ export const testService = {
     proctoringSummary?: import('../types').ProctoringSummary
   ): Promise<Attempt> => {
     // Submit to server for secure server-side scoring & completion
-    const payload: any = { isAutoSubmit };
-    if (currentAnswers) payload.answers = currentAnswers;
-    if (violations !== undefined) payload.violations = violations;
-    if (violationLogs) payload.violationLogs = violationLogs;
+    // Ensure any remaining base64 logs are offloaded before final submission
+    let cleanLogs = violationLogs;
+    if (violationLogs && violationLogs.some(l => l.snapshotUrl?.startsWith('data:'))) {
+      cleanLogs = await Promise.all(violationLogs.map(async (l) => {
+        if (l.snapshotUrl?.startsWith('data:')) {
+          try {
+            const res = await api.post(`/attempts/${attemptId}/snapshots`, { image: l.snapshotUrl });
+            if (res.data?.snapshotUrl) {
+              l.snapshotUrl = res.data.snapshotUrl;
+              return l;
+            }
+          } catch (e) {
+            console.warn('Final submit snapshot offload failed, retaining proof:', e);
+          }
+        }
+        return l;
+      }));
+    }
+
+    const payload: {
+      isAutoSubmit: boolean;
+      currentAnswers?: Record<string, any>;
+      violations?: number;
+      violationLogs?: import('../types').ViolationLog[];
+      proctoringSummary?: import('../types').ProctoringSummary;
+    } = {
+      isAutoSubmit,
+      ...(currentAnswers ? { currentAnswers } : {}),
+      ...(violations !== undefined ? { violations } : {}),
+    };
+
+    if (cleanLogs) payload.violationLogs = cleanLogs;
     if (proctoringSummary) payload.proctoringSummary = proctoringSummary;
 
     const res = await api.post(`/attempts/${attemptId}/submit`, payload);
