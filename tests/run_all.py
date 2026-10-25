@@ -23,6 +23,8 @@ SUITES = [
     ("INFO-01 Configurable JWT Lifespan & Token Expiry", "test_info_001_jwt_lifespan.py"),
     ("SEC-001 Question Protection & Answer Masking", "test_sec_001_questions.py"),
     ("SEC-002 Password Encryption & Migration", "test_sec_002_passwords.py"),
+    ("MULTI-TENANCY Multi-College Data Isolation", "test_multi_tenancy_isolation.py"),
+    ("BATCH-NOTIFICATIONS Targeted Dispatch & Filtering", "test_batch_notifications.py"),
 ]
 
 def main():
@@ -30,9 +32,16 @@ def main():
     project_root = os.path.abspath(os.path.join(base_dir, ".."))
     
     python_bin = sys.executable
-    venv_python = os.path.join(project_root, "backend", ".venv", "bin", "python3")
-    if os.path.exists(venv_python):
-        python_bin = venv_python
+    venv_candidates = [
+        os.path.join(project_root, "backend", "venv", "Scripts", "python.exe"),
+        os.path.join(project_root, "backend", ".venv", "Scripts", "python.exe"),
+        os.path.join(project_root, "backend", ".venv", "bin", "python3"),
+        os.path.join(project_root, "backend", "venv", "bin", "python3"),
+    ]
+    for cand in venv_candidates:
+        if os.path.exists(cand):
+            python_bin = cand
+            break
 
     print("=" * 70)
     print(" LMS MASTER REGRESSION TEST RUNNER")

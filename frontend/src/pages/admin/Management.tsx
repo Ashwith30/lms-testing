@@ -18,9 +18,11 @@ import {
 } from '../../components/common/DashboardModals';
 import { useToast } from '../../context/ToastContext';
 import { notificationService } from '../../services/notificationService';
+import { organizationService, InstitutionData } from '../../services/organizationService';
 import { NotificationItem } from '../../types';
 
 interface InstitutionItem {
+  id?: string;
   name: string;
   location: string;
   students: number;
@@ -140,12 +142,76 @@ export const AdminManagement = () => {
 
   const [settingsModalTab, setSettingsModalTab] = useState<'general' | 'roles' | 'tests' | 'notifications' | null>(null);
 
-  // Load backend notifications on mount
+  // Load backend institutions and notifications on mount
   useEffect(() => {
+    organizationService.getInstitutions()
+      .then((data: InstitutionData[]) => {
+        if (data && data.length > 0) {
+          setInstitutions(data.map(d => ({
+            id: d.id,
+            name: d.name,
+            location: d.address || 'Main Campus',
+            students: d.studentCount ?? 0,
+            courses: d.departmentCount ?? 0,
+            status: d.status ? (d.status.charAt(0).toUpperCase() + d.status.slice(1)) : 'Active'
+          })));
+        }
+      })
+      .catch(err => console.error('Failed to load institutions:', err));
+
     notificationService.getNotifications()
       .then(data => setNotifications(data))
       .catch(err => console.error('Failed to load notifications:', err));
   }, []);
+
+  const handleAddInstitution = async (newInst: { name: string; location: string; students: number; courses: number; status: string }) => {
+    try {
+      const email = `${newInst.name.toLowerCase().replace(/[^a-z0-9]/g, '')}@college.edu`;
+      const created = await organizationService.createInstitution({
+        name: newInst.name,
+        email,
+        address: newInst.location,
+        status: newInst.status.toLowerCase()
+      });
+      setInstitutions(prev => [{
+        id: created.id,
+        name: created.name,
+        location: created.address || newInst.location,
+        students: 0,
+        courses: 0,
+        status: newInst.status
+      }, ...prev]);
+      toast(`Institution "${newInst.name}" registered successfully!`, 'success');
+    } catch (err: any) {
+      setInstitutions(prev => [newInst, ...prev]);
+      toast(err.response?.data?.detail || `Institution "${newInst.name}" added`, 'info');
+    }
+  };
+
+  const handleToggleInstitution = async (idx: number, inst: InstitutionItem) => {
+    const nextStatus = inst.status === 'Active' ? 'Inactive' : 'Active';
+    if (inst.id) {
+      try {
+        await organizationService.updateInstitution(inst.id, { status: nextStatus.toLowerCase() });
+      } catch (err) {
+        console.error('Failed to update institution status:', err);
+      }
+    }
+    setInstitutions(prev => prev.map((item, i) => i === idx ? { ...item, status: nextStatus } : item));
+    toast(`Status for ${inst.name} switched to ${nextStatus}`, 'info');
+  };
+
+  const handleDeleteInstitution = async (idx: number, inst: InstitutionItem) => {
+    if (inst.id) {
+      try {
+        await organizationService.deleteInstitution(inst.id);
+      } catch (err) {
+        console.error('Failed to delete institution:', err);
+      }
+    }
+    setInstitutions(prev => prev.filter((_, i) => i !== idx));
+    toast(`Institution ${inst.name} removed`, 'info');
+  };
 
   // Close menus on click outside
   React.useEffect(() => {
@@ -323,8 +389,7 @@ export const AdminManagement = () => {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    setInstitutions(prev => prev.map((item, i) => i === idx ? { ...item, status: item.status === 'Active' ? 'Inactive' : 'Active' } : item));
-                                    toast(`Status for ${inst.name} switched to ${inst.status === 'Active' ? 'Inactive' : 'Active'}`, 'info');
+                                    handleToggleInstitution(idx, inst);
                                     setActiveInstMenuIndex(null);
                                   }}
                                   className="w-full px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2"
@@ -343,8 +408,7 @@ export const AdminManagement = () => {
                                 <div className="border-t border-slate-100 my-1"></div>
                                 <button
                                   onClick={() => {
-                                    setInstitutions(prev => prev.filter((_, i) => i !== idx));
-                                    toast(`Institution ${inst.name} removed`, 'info');
+                                    handleDeleteInstitution(idx, inst);
                                     setActiveInstMenuIndex(null);
                                   }}
                                   className="w-full px-3 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
@@ -894,7 +958,7 @@ export const AdminManagement = () => {
       <AddInstitutionModal
         isOpen={isAddInstOpen}
         onClose={() => setIsAddInstOpen(false)}
-        onAdd={(newInst) => setInstitutions(prev => [newInst, ...prev])}
+        onAdd={handleAddInstitution}
       />
 
       {/* 2. Institution Details Modal */}
@@ -904,13 +968,19 @@ export const AdminManagement = () => {
         institution={selectedInstForDetails}
         onToggleStatus={() => {
           if (selectedInstForDetails) {
-            setInstitutions(prev => prev.map(item => item.name === selectedInstForDetails.name ? { ...item, status: item.status === 'Active' ? 'Inactive' : 'Active' } : item));
+            const idx = institutions.findIndex(item => item.name === selectedInstForDetails.name);
+            if (idx !== -1) {
+              handleToggleInstitution(idx, selectedInstForDetails);
+            }
             setSelectedInstForDetails(prev => prev ? { ...prev, status: prev.status === 'Active' ? 'Inactive' : 'Active' } : null);
           }
         }}
         onDelete={() => {
           if (selectedInstForDetails) {
-            setInstitutions(prev => prev.filter(item => item.name !== selectedInstForDetails.name));
+            const idx = institutions.findIndex(item => item.name === selectedInstForDetails.name);
+            if (idx !== -1) {
+              handleDeleteInstitution(idx, selectedInstForDetails);
+            }
             setSelectedInstForDetails(null);
           }
         }}

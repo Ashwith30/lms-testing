@@ -24,6 +24,32 @@ import storage_service
 
 attempt_creation_lock = threading.Lock()
 
+def sync_proctoring_logs(db: Session, attempt_id: str, violation_logs: Any):
+    """Saves unstructured violation logs into structured models.ProctoringLog records."""
+    if not isinstance(violation_logs, list):
+        return
+    for item in violation_logs:
+        if not isinstance(item, dict):
+            continue
+        v_type = item.get("type") or item.get("violationType") or "unknown"
+        v_ts = item.get("timestamp") or models.get_utc_now()
+        v_shot = item.get("screenshotUrl")
+        v_sev = item.get("severity") or "warning"
+        existing = db.query(models.ProctoringLog).filter(
+            models.ProctoringLog.attemptId == attempt_id,
+            models.ProctoringLog.violationType == v_type,
+            models.ProctoringLog.timestamp == v_ts
+        ).first()
+        if not existing:
+            db.add(models.ProctoringLog(
+                id=models.generate_uuid("pl-"),
+                attemptId=attempt_id,
+                violationType=v_type,
+                timestamp=v_ts,
+                screenshotUrl=v_shot,
+                severity=v_sev
+            ))
+
 router = APIRouter(prefix="/api/attempts", tags=["attempts"])
 
 @router.get("", response_model=Union[schemas.PaginatedResponse[schemas.Attempt], List[schemas.Attempt]])
@@ -83,7 +109,36 @@ def get_attempts(
 
         if studentId:
             query = query.filter(models.Attempt.studentId == studentId)
-    elif current_user.role in ("admin", "institution"):
+    elif current_user.role == "institution":
+        inst_student_ids = db.query(models.StudentProfile.userId).filter(
+            models.StudentProfile.institutionId == current_user.id
+        ).subquery()
+        inst_test_ids = db.query(models.Test.id).filter(
+            or_(models.Test.institutionId == current_user.id, models.Test.authorId == current_user.id)
+        ).subquery()
+        inst_schedule_ids = db.query(models.Schedule.id).filter(
+            or_(models.Schedule.institutionId == current_user.id, models.Schedule.testId.in_(inst_test_ids))
+        ).subquery()
+
+        query = query.filter(
+            or_(
+                models.Attempt.studentId.in_(inst_student_ids),
+                models.Attempt.testId.in_(inst_test_ids),
+                models.Attempt.scheduleId.in_(inst_schedule_ids)
+            )
+        )
+        if studentId:
+            query = query.filter(models.Attempt.studentId == studentId)
+        if scheduleId:
+            query = query.filter(models.Attempt.scheduleId == scheduleId)
+        if testId:
+            matching_schedules = db.query(models.Schedule.id).filter(models.Schedule.testId == testId).all()
+            sched_ids = [s[0] for s in matching_schedules]
+            if sched_ids:
+                query = query.filter(models.Attempt.scheduleId.in_(sched_ids))
+            else:
+                query = query.filter(False)
+    elif current_user.role == "admin":
         if studentId:
             query = query.filter(models.Attempt.studentId == studentId)
         if scheduleId:
@@ -277,6 +332,7 @@ def create_attempt(
             id=a_id,
             studentId=st_id,
             scheduleId=schedule_id,
+            testId=test.id,
             status="in_progress",
             startedAt=now,
             violations=0
@@ -290,10 +346,15 @@ def create_attempt(
                 sel = ans_item.get("selectedOption") if isinstance(ans_item, dict) else ans_item
                 if sel is not None:
                     sel_json = json.dumps([sel] if isinstance(sel, str) else sel)
+                    opt_id = None
+                    candidate_id = sel if isinstance(sel, str) else (sel[0] if isinstance(sel, list) and sel and isinstance(sel[0], str) else None)
+                    if candidate_id and db.query(models.QuestionOption).filter(models.QuestionOption.id == candidate_id).first():
+                        opt_id = candidate_id
                     ans = models.Answer(
                         id=models.generate_uuid("ans-"),
                         attemptId=a_id,
                         questionId=qid,
+                        selectedOptionId=opt_id,
                         selectedOptionIds=sel_json
                     )
                     db.add(ans)
@@ -321,7 +382,15 @@ def get_attempt(
             test = db.query(models.Test).filter(models.Test.id == att.testId).first()
         if not check_trainer_test_access(current_user, test, db, schedule=att.schedule):
             raise HTTPException(status_code=403, detail="Access denied: You are not authorized to view attempts for this assessment.")
-    elif current_user.role in ("admin", "institution"):
+    elif current_user.role == "institution":
+        student_profile = db.query(models.StudentProfile).filter(models.StudentProfile.userId == att.studentId).first()
+        is_own_student = student_profile and student_profile.institutionId == current_user.id
+        sched = att.schedule
+        test = sched.test if sched else (db.query(models.Test).filter(models.Test.id == att.testId).first() if att.testId else None)
+        is_own_test = (sched and sched.institutionId == current_user.id) or (test and (test.institutionId == current_user.id or test.authorId == current_user.id))
+        if not (is_own_student or is_own_test):
+            raise HTTPException(status_code=403, detail="Access denied: Student does not belong to your institution.")
+    elif current_user.role == "admin":
         pass
     else:
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -346,7 +415,15 @@ def update_attempt(
             test = db.query(models.Test).filter(models.Test.id == att.testId).first()
         if not check_trainer_test_access(current_user, test, db, schedule=att.schedule):
             raise HTTPException(status_code=403, detail="Access denied: You are not authorized to modify attempts for this assessment.")
-    elif current_user.role in ("admin", "institution"):
+    elif current_user.role == "institution":
+        student_profile = db.query(models.StudentProfile).filter(models.StudentProfile.userId == att.studentId).first()
+        is_own_student = student_profile and student_profile.institutionId == current_user.id
+        sched = att.schedule
+        test = sched.test if sched else (db.query(models.Test).filter(models.Test.id == att.testId).first() if att.testId else None)
+        is_own_test = (sched and sched.institutionId == current_user.id) or (test and (test.institutionId == current_user.id or test.authorId == current_user.id))
+        if not (is_own_student or is_own_test):
+            raise HTTPException(status_code=403, detail="Access denied: Cannot modify attempt for student outside your institution.")
+    elif current_user.role == "admin":
         pass
     else:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -414,6 +491,7 @@ def update_attempt(
             att.violations = req.violations
         if "violationLogs" in provided_fields:
             att.violationLogs_json = json.dumps(req.violationLogs)
+            sync_proctoring_logs(db, attempt_id, req.violationLogs)
         if "proctoringSummary" in provided_fields:
             att.proctoringSummary_json = json.dumps(req.proctoringSummary)
         if "status" in provided_fields:
@@ -434,6 +512,11 @@ def update_attempt(
                 opt = ans_data.get("selectedOption") if isinstance(ans_data, dict) else ans_data
                 if opt is not None:
                     ans.selectedOptionIds = json.dumps([opt] if isinstance(opt, str) else opt)
+                    candidate_id = opt if isinstance(opt, str) else (opt[0] if isinstance(opt, list) and opt and isinstance(opt[0], str) else None)
+                    if candidate_id and db.query(models.QuestionOption).filter(models.QuestionOption.id == candidate_id).first():
+                        ans.selectedOptionId = candidate_id
+                    else:
+                        ans.selectedOptionId = None
         if "deviceInfo" in provided_fields:
             att.deviceInfo = req.deviceInfo
         if "ipAddress" in provided_fields:
@@ -488,11 +571,17 @@ def sync_answer(
         sel = payload.selectedOption
         if sel is not None:
             ans.selectedOptionIds = json.dumps([sel] if isinstance(sel, str) else sel)
+            candidate_id = sel if isinstance(sel, str) else (sel[0] if isinstance(sel, list) and sel and isinstance(sel[0], str) else None)
+            if candidate_id and db.query(models.QuestionOption).filter(models.QuestionOption.id == candidate_id).first():
+                ans.selectedOptionId = candidate_id
+            else:
+                ans.selectedOptionId = None
 
     if payload.violations is not None:
         att.violations = max(att.violations or 0, int(payload.violations))
     if payload.violationLogs is not None:
         att.violationLogs_json = json.dumps(payload.violationLogs)
+        sync_proctoring_logs(db, attempt_id, payload.violationLogs)
     if payload.proctoringSummary is not None:
         att.proctoringSummary_json = json.dumps(payload.proctoringSummary)
 
@@ -651,7 +740,13 @@ async def upload_attempt_snapshot(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=f"Maximum snapshot limit ({storage_service.MAX_SNAPSHOTS_PER_ATTEMPT} snapshots) reached for this assessment attempt."
             )
-        filename, relative_url = storage_service.save_snapshot(attempt_id, raw_data)
+        try:
+            filename, relative_url = storage_service.save_snapshot(attempt_id, raw_data)
+        except OSError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Storage service unavailable. Could not save snapshot."
+            )
 
     return {
         "status": "ok",
@@ -690,7 +785,18 @@ def get_attempt_snapshot(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: You are not authorized to view proctoring evidence for this assessment."
             )
-    elif current_user.role in ("admin", "institution"):
+    elif current_user.role == "institution":
+        student_profile = db.query(models.StudentProfile).filter(models.StudentProfile.userId == att.studentId).first()
+        is_own_student = student_profile and student_profile.institutionId == current_user.id
+        sched = att.schedule
+        test = sched.test if sched else (db.query(models.Test).filter(models.Test.id == att.testId).first() if att.testId else None)
+        is_own_test = (sched and sched.institutionId == current_user.id) or (test and (test.institutionId == current_user.id or test.authorId == current_user.id))
+        if not (is_own_student or is_own_test):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to view proctoring evidence for students outside your institution."
+            )
+    elif current_user.role == "admin":
         pass
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
@@ -698,6 +804,10 @@ def get_attempt_snapshot(
     file_path = storage_service.get_snapshot_path(attempt_id, filename)
     if not file_path:
         raise HTTPException(status_code=404, detail="Snapshot not found")
+
+    if file_path.startswith("http://") or file_path.startswith("https://"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=file_path)
 
     return FileResponse(file_path, media_type="image/jpeg")
 
@@ -887,6 +997,7 @@ def submit_attempt(
         att.violations = max(att.violations or 0, int(data.violations))
     if data.violationLogs is not None:
         att.violationLogs_json = json.dumps(data.violationLogs)
+        sync_proctoring_logs(db, attempt_id, data.violationLogs)
     if data.proctoringSummary is not None:
         att.proctoringSummary_json = json.dumps(data.proctoringSummary)
 
@@ -908,6 +1019,11 @@ def submit_attempt(
             opt = ans_data.get("selectedOption") if isinstance(ans_data, dict) else ans_data
             if opt is not None:
                 ans.selectedOptionIds = json.dumps([opt] if isinstance(opt, str) else opt)
+                candidate_id = opt if isinstance(opt, str) else (opt[0] if isinstance(opt, list) and opt and isinstance(opt[0], str) else None)
+                if candidate_id and db.query(models.QuestionOption).filter(models.QuestionOption.id == candidate_id).first():
+                    ans.selectedOptionId = candidate_id
+                else:
+                    ans.selectedOptionId = None
 
     db.commit()
     
@@ -993,7 +1109,14 @@ def get_attempt_review(
     elif current_user.role == "trainer":
         if not check_trainer_test_access(current_user, test, db, schedule=att.schedule):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: You are not authorized to review attempts for this assessment.")
-    elif current_user.role in ("admin", "institution"):
+    elif current_user.role == "institution":
+        student_profile = db.query(models.StudentProfile).filter(models.StudentProfile.userId == att.studentId).first()
+        is_own_student = student_profile and student_profile.institutionId == current_user.id
+        sched = att.schedule
+        is_own_test = (sched and sched.institutionId == current_user.id) or (test and (test.institutionId == current_user.id or test.authorId == current_user.id))
+        if not (is_own_student or is_own_test):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Student does not belong to your institution.")
+    elif current_user.role == "admin":
         pass
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")

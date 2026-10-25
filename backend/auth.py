@@ -175,6 +175,25 @@ def require_roles(*allowed_roles: str):
     return role_checker
 
 
+def get_user_institution_id(user: Optional[models.User], db: Session) -> Optional[str]:
+    """Retrieves the effective institution ID associated with a user."""
+    if not user:
+        return None
+    if user.role == "institution":
+        return user.id
+    if user.role == "student":
+        if user.student_profile and user.student_profile.institutionId:
+            return user.student_profile.institutionId
+        sp = db.query(models.StudentProfile).filter(models.StudentProfile.userId == user.id).first()
+        return sp.institutionId if sp else None
+    if user.role == "trainer":
+        if user.trainer_profile and user.trainer_profile.institutionId:
+            return user.trainer_profile.institutionId
+        tp = db.query(models.TrainerProfile).filter(models.TrainerProfile.userId == user.id).first()
+        return tp.institutionId if tp else None
+    return None
+
+
 def check_trainer_test_access(
     user: Optional[models.User],
     test: Optional[models.Test],
@@ -185,7 +204,8 @@ def check_trainer_test_access(
     Verifies whether a user has authorization to view or manage a test and its attempts.
     
     Authorization semantics:
-    - Admins and Institutions retain platform-wide administrative access.
+    - Admins retain platform-wide administrative access.
+    - Institutions retain access strictly to tests belonging to their institution.
     - Trainers must:
       1. Be the author of the test (test.authorId == user.id), OR
       2. Have an active TrainerAssignment specifically matching the test's courseId, topicId, or batchId.
@@ -197,8 +217,15 @@ def check_trainer_test_access(
     if user.status and user.status.lower() != "active":
         return False
         
-    if user.role in ("admin", "institution"):
+    if user.role == "admin":
         return True
+
+    if user.role == "institution":
+        if not test:
+            return False
+        if test.institutionId:
+            return test.institutionId == user.id
+        return test.authorId == user.id
         
     if user.role != "trainer":
         return False
@@ -297,8 +324,13 @@ def get_authorized_test_ids_for_trainer(user: Optional[models.User], db: Session
     if user.status and user.status.lower() != "active":
         return []
 
-    if user.role in ("admin", "institution"):
+    if user.role == "admin":
         return [row[0] for row in db.query(models.Test.id).all()]
+
+    if user.role == "institution":
+        return [row[0] for row in db.query(models.Test.id).filter(
+            (models.Test.institutionId == user.id) | (models.Test.authorId == user.id)
+        ).all()]
 
     if user.role != "trainer":
         return []
@@ -382,8 +414,17 @@ def check_trainer_question_bank_access(
     if user.status and user.status.strip().lower() != "active":
         return False
 
-    if user.role in ("admin", "institution"):
+    if user.role == "admin":
         return True
+
+    if user.role == "institution":
+        if not bank:
+            return False
+        if getattr(bank, "institutionId", None) and bank.institutionId == user.id:
+            return True
+        if bank.ownerId == user.id:
+            return True
+        return False
 
     if user.role != "trainer":
         return False
@@ -464,6 +505,7 @@ def check_student_material_access(
     6. If material has NO MaterialAssignments:
        - If courseId is set, enrolled students may view it.
        - If courseId is NULL, it is a universal platform material viewable by all students.
+    7. Multi-tenancy: Materials with an institutionId are strictly private to that institution.
     """
     if not user or not user.role:
         return False
@@ -471,8 +513,17 @@ def check_student_material_access(
     if user.status and user.status.lower() != "active":
         return False
 
-    if user.role in ("admin", "institution"):
+    if user.role == "admin":
         return True
+
+    if user.role == "institution":
+        if not material:
+            return False
+        if material.institutionId and material.institutionId == user.id:
+            return True
+        if material.authorId == user.id:
+            return True
+        return False
 
     if user.role == "trainer":
         return check_trainer_material_access(user, material, db, for_mutation=False)
@@ -482,6 +533,12 @@ def check_student_material_access(
 
     if not material:
         return False
+
+    # Multi-tenant scoping: if material is tied to an institution, student must belong to it
+    if material.institutionId:
+        student_inst = get_user_institution_id(user, db)
+        if student_inst and material.institutionId != student_inst:
+            return False
 
     # 1. Release check
     if not material.isReleased:
@@ -556,8 +613,17 @@ def check_trainer_material_access(
     if user.status and user.status.lower() != "active":
         return False
 
-    if user.role in ("admin", "institution"):
+    if user.role == "admin":
         return True
+
+    if user.role == "institution":
+        if not material:
+            return False
+        if material.institutionId and material.institutionId == user.id:
+            return True
+        if material.authorId == user.id:
+            return True
+        return False
 
     if user.role != "trainer":
         return False

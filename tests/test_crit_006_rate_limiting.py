@@ -418,6 +418,16 @@ def run_crit_006_tests():
         # ------------------------------------------------------------------
         print("\n--- SECTION 11: Legitimate Exam Lifecycle & Abuse Throttling ---")
         # Setup test & schedule
+        if not db.query(models.User).filter(models.User.id == "u-admin-1").first():
+            db.add(models.User(
+                id="u-admin-1",
+                email="admin_crit06@example.com",
+                password_hash=auth.hash_password("admin_pass_123"),
+                role="admin",
+                status="active"
+            ))
+            db.commit()
+
         test_exam = models.Test(
             id="t-crit06-1",
             title="Rate Limit Verification Exam",

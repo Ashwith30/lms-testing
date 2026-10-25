@@ -10,7 +10,8 @@ from auth import (
     get_current_user,
     require_roles,
     check_student_material_access,
-    check_trainer_material_access
+    check_trainer_material_access,
+    get_user_institution_id
 )
 
 router = APIRouter(prefix="/api/materials", tags=["materials"])
@@ -68,6 +69,9 @@ def get_materials(
     if type:
         query = query.filter(models.Material.type.ilike(type))
 
+    if current_user.role == "institution":
+        query = query.filter(or_(models.Material.institutionId == current_user.id, models.Material.authorId == current_user.id))
+
     query = query.order_by(models.Material.createdAt.desc())
 
     if page is not None:
@@ -116,6 +120,7 @@ def create_material(
     now = models.get_utc_now()
     
     is_released = material.get("isReleased", True)
+    inst_id = material.get("institutionId") or (current_user.id if current_user.role == "institution" else get_user_institution_id(current_user, db))
 
     db_mat = models.Material(
         id=m_id,
@@ -126,6 +131,7 @@ def create_material(
         topicId=material.get("topicId"),
         contentUrl=content_url,
         authorId=author_id,
+        institutionId=inst_id,
         isReleased=is_released,
         releasedAt=now if is_released else None,
         createdAt=material.get("createdAt") or now,
@@ -134,18 +140,29 @@ def create_material(
     db.add(db_mat)
     
     # Assign to batch if specified
-    assigned_batch = material.get("assignedBatch")
-    if assigned_batch and str(assigned_batch).strip().lower() != "all":
-        batch = db.query(models.Batch).filter(
-            or_(models.Batch.name == assigned_batch, models.Batch.id == assigned_batch)
-        ).first()
-        b_id = batch.id if batch else assigned_batch
-        db.add(models.MaterialAssignment(
-            id=models.generate_uuid("ma-"),
-            materialId=m_id,
-            assigneeType="batch",
-            assigneeId=b_id
-        ))
+    assigned_batches = material.get("assignedBatches")
+    if not assigned_batches:
+        single_b = material.get("assignedBatch")
+        if single_b:
+            assigned_batches = [single_b]
+    if assigned_batches and isinstance(assigned_batches, list):
+        for ab in assigned_batches:
+            if ab and str(ab).strip().lower() != "all":
+                batch = db.query(models.Batch).filter(
+                    or_(models.Batch.name == ab, models.Batch.id == ab)
+                ).first()
+                b_id = batch.id if batch else ab
+                db.add(models.MaterialAssignment(
+                    id=models.generate_uuid("ma-"),
+                    materialId=m_id,
+                    assigneeType="batch",
+                    assigneeId=b_id
+                ))
+                if batch:
+                    db.add(models.MaterialBatchTarget(
+                        materialId=m_id,
+                        batchId=batch.id
+                    ))
 
     db.commit()
     db.refresh(db_mat)
@@ -177,22 +194,30 @@ def update_material(
             db_mat.contentUrl = v
         elif k in ("content", "description"):
             db_mat.description = v
-        elif k == "assignedBatch":
+        elif k in ("assignedBatch", "assignedBatches"):
             # Update batch assignment
             for a in list(db_mat.assignments):
                 if (a.assigneeType or "").strip().lower() == "batch":
                     db.delete(a)
-            if v and str(v).strip().lower() != "all":
-                batch = db.query(models.Batch).filter(
-                    or_(models.Batch.name == v, models.Batch.id == v)
-                ).first()
-                b_id = batch.id if batch else v
-                db.add(models.MaterialAssignment(
-                    id=models.generate_uuid("ma-"),
-                    materialId=material_id,
-                    assigneeType="batch",
-                    assigneeId=b_id
-                ))
+            db.query(models.MaterialBatchTarget).filter(models.MaterialBatchTarget.materialId == material_id).delete()
+            batches_to_add = v if isinstance(v, list) else ([v] if v else [])
+            for b_entry in batches_to_add:
+                if b_entry and str(b_entry).strip().lower() != "all":
+                    batch = db.query(models.Batch).filter(
+                        or_(models.Batch.name == b_entry, models.Batch.id == b_entry)
+                    ).first()
+                    b_id = batch.id if batch else b_entry
+                    db.add(models.MaterialAssignment(
+                        id=models.generate_uuid("ma-"),
+                        materialId=material_id,
+                        assigneeType="batch",
+                        assigneeId=b_id
+                    ))
+                    if batch:
+                        db.add(models.MaterialBatchTarget(
+                            materialId=material_id,
+                            batchId=batch.id
+                        ))
         elif hasattr(db_mat, k):
             setattr(db_mat, k, v)
 

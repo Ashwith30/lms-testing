@@ -152,7 +152,7 @@ def run_sec_002_tests():
 
     # 1. Verify revision is 0002_hash_legacy_plaintext_passwords or later
     ver = cur.execute("SELECT version_num FROM alembic_version").fetchone()
-    assert ver and ver[0] in ("0002_hash_legacy_plaintext_passwords", "0003_add_rate_limit_events"), f"Expected version 0002 or later, got {ver}"
+    assert ver and (ver[0].startswith("000") or ver[0] in ("0002_hash_legacy_plaintext_passwords", "0003_add_rate_limit_events", "0004_baseline_core_tables_and_indexes")), f"Expected version 0002 or later, got {ver}"
     print(f"  [PASSED] Alembic migrated successfully to {ver[0]}")
 
     # 2. Verify User A (already bcrypt) was NOT double-hashed

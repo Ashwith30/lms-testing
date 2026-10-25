@@ -90,7 +90,12 @@ export const Games = () => {
     <div className="space-y-6 animate-in pb-16 font-sans text-slate-900">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Practice & Skill Games</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Practice & Skill Games</h1>
+          <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-semibold text-[11px]">
+            Beta
+          </span>
+        </div>
         <p className="text-slate-500 text-sm mt-1">
           Master engineering concepts, boost placement speed, and earn performance XP through interactive mini-games.
         </p>

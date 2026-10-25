@@ -57,10 +57,26 @@ def register_student(
     if existing_email:
         raise HTTPException(status_code=400, detail="A user with this email address already exists.")
         
+    college_name = student_data.get("college")
+    institution_id = student_data.get("institutionId") or student_data.get("institution_id")
+    if not institution_id and college_name:
+        inst_p = db.query(models.InstitutionProfile).filter(
+            or_(
+                models.InstitutionProfile.userId == college_name,
+                models.InstitutionProfile.institutionName.ilike(college_name.strip())
+            )
+        ).first()
+        if inst_p:
+            institution_id = inst_p.userId
+
     if student_id and isinstance(student_id, str):
         student_id = student_id.strip()
         if student_id:
-            existing_id = db.query(models.StudentProfile).filter(models.StudentProfile.studentNumber == student_id).first()
+            q_num = db.query(models.StudentProfile).filter(models.StudentProfile.studentNumber == student_id)
+            if institution_id:
+                existing_id = q_num.filter(models.StudentProfile.institutionId == institution_id).first()
+            else:
+                existing_id = q_num.first()
             if existing_id:
                 raise HTTPException(status_code=400, detail="A user with this Roll No / Student ID already exists.")
     else:
@@ -94,8 +110,8 @@ def register_student(
     first_name = parts[0]
     last_name = " ".join(parts[1:]) if len(parts) > 1 else "User"
 
-    dept_id = get_or_create_department(db, student_data.get("department"))
-    batch_id = get_or_create_batch(db, student_data.get("batch"), dept_id) if dept_id else None
+    dept_id = get_or_create_department(db, student_data.get("department"), institution_id=institution_id)
+    batch_id = get_or_create_batch(db, student_data.get("batch"), dept_id, institution_id=institution_id) if dept_id else None
 
     db_profile = models.StudentProfile(
         userId=user_id,
@@ -104,6 +120,7 @@ def register_student(
         studentNumber=student_id,
         departmentId=dept_id,
         primaryBatchId=batch_id,
+        institutionId=institution_id,
         enrollmentDate=models.get_utc_now()
     )
     db.add(db_profile)
@@ -165,14 +182,66 @@ def register_trainer(
     first_name = parts[0]
     last_name = " ".join(parts[1:]) if len(parts) > 1 else "User"
 
+    inst_id = trainer_data.get("institutionId") or trainer_data.get("institution_id")
+    dept_id = get_or_create_department(db, trainer_data.get("department"), institution_id=inst_id) if trainer_data.get("department") else None
+
     db_profile = models.TrainerProfile(
         userId=user_id,
         firstName=first_name,
-        lastName=last_name
+        lastName=last_name,
+        departmentId=dept_id,
+        institutionId=inst_id
     )
     db.add(db_profile)
     
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+@router.get("/institutions")
+def get_public_institutions(db: Session = Depends(get_db)):
+    """Public directory of registered colleges/institutions for student registration."""
+    institutions = db.query(models.InstitutionProfile).all()
+    return [
+        {
+            "id": inst.userId,
+            "name": inst.institutionName,
+            "contactPersonName": inst.contactPersonName,
+            "supportEmail": inst.supportEmail,
+            "website": inst.website
+        }
+        for inst in institutions
+    ]
+
+
+@router.get("/institutions/{institution_id}/departments")
+def get_public_departments_for_institution(institution_id: str, db: Session = Depends(get_db)):
+    """Public department list for a given institution."""
+    depts = db.query(models.Department).filter(models.Department.institutionId == institution_id).all()
+    return [
+        {
+            "id": d.id,
+            "name": d.name,
+            "code": d.code,
+            "institutionId": d.institutionId
+        }
+        for d in depts
+    ]
+
+
+@router.get("/departments/{department_id}/batches")
+def get_public_batches_for_department(department_id: str, db: Session = Depends(get_db)):
+    """Public batch list for a given department."""
+    batches = db.query(models.Batch).filter(models.Batch.departmentId == department_id).all()
+    return [
+        {
+            "id": b.id,
+            "name": b.name,
+            "departmentId": b.departmentId,
+            "institutionId": b.institutionId
+        }
+        for b in batches
+    ]
+
 

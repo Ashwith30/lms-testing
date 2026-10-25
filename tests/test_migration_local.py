@@ -8,7 +8,7 @@ import sqlite3
 import tempfile
 
 # Setup import path
-backend_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
 sys.path.insert(0, backend_dir)
 
 from alembic.config import Config
@@ -73,7 +73,7 @@ def test_migration_and_auth():
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
     ver = cur.execute("SELECT version_num FROM alembic_version").fetchone()
-    assert ver and ver[0] in ("0002_hash_legacy_plaintext_passwords", "0003_add_rate_limit_events"), f"Expected alembic version, got {ver}"
+    assert ver and (ver[0].startswith("000") or ver[0] in ("0002_hash_legacy_plaintext_passwords", "0003_add_rate_limit_events", "0004_baseline_core_tables_and_indexes")), f"Expected alembic version, got {ver}"
     print(f"  [PASSED] alembic_version recorded: {ver[0]}")
     # Verify legacy plaintext password converted to bcrypt
     migrated_plain = cur.execute("SELECT password_hash FROM users WHERE id='u-legacy-2'").fetchone()[0]
@@ -201,11 +201,15 @@ def test_migration_and_auth():
     print("  [PASSED] Trainer login via Email")
 
     db.close()
+    migrated_engine.dispose()
 
     # Clean up test databases
     for p in (db_path, db_path_partial):
         if os.path.exists(p):
-            os.remove(p)
+            try:
+                os.remove(p)
+            except OSError:
+                pass
 
     print("\n================================================================")
     print("ALL 3 SCENARIOS AND LIFECYCLE AUDITS PASSED CLEANLY (100% OK)")

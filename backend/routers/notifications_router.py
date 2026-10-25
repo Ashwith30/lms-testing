@@ -6,7 +6,7 @@ from typing import List, Optional
 import models
 import schemas
 from database import get_db
-from auth import get_current_user, require_roles
+from auth import get_current_user, require_roles, get_user_institution_id
 
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 
@@ -52,6 +52,7 @@ def create_notification(
 
     new_id = models.generate_uuid("notif-")
     now_iso = models.get_utc_now()
+    inst_id = payload.institutionId or (current_user.id if current_user.role == "institution" else get_user_institution_id(current_user, db))
 
     notification = models.Notification(
         id=new_id,
@@ -60,6 +61,7 @@ def create_notification(
         type=payload.type or "info",
         targetBatch=payload.targetBatch.strip() if payload.targetBatch else "all",
         targetRole=payload.targetRole or "student",
+        institutionId=inst_id,
         link=payload.link.strip() if payload.link else None,
         priority=payload.priority or "normal",
         sendEmail=bool(payload.sendEmail),
@@ -69,6 +71,18 @@ def create_notification(
     )
 
     db.add(notification)
+
+    t_batch = (payload.targetBatch or "").strip()
+    if t_batch and t_batch.lower() != "all":
+        batch = db.query(models.Batch).filter(
+            or_(models.Batch.name == t_batch, models.Batch.id == t_batch)
+        ).first()
+        if batch:
+            db.add(models.NotificationBatchTarget(
+                notificationId=new_id,
+                batchId=batch.id
+            ))
+
     db.commit()
     db.refresh(notification)
 
@@ -80,6 +94,7 @@ def create_notification(
         type=notification.type,
         targetBatch=notification.targetBatch,
         targetRole=notification.targetRole,
+        institutionId=notification.institutionId,
         link=notification.link,
         priority=notification.priority,
         sendEmail=notification.sendEmail,
@@ -130,10 +145,31 @@ def get_notifications(
             models.Notification.targetRole == None
         ]
 
+        student_inst = get_user_institution_id(current_user, db)
+        inst_filters = [
+            models.Notification.institutionId == None
+        ]
+        if student_inst:
+            inst_filters.append(models.Notification.institutionId == student_inst)
+
         notifications = (
             db.query(models.Notification)
             .filter(or_(*filters))
             .filter(or_(*role_filters))
+            .filter(or_(*inst_filters))
+            .order_by(models.Notification.createdAt.desc())
+            .all()
+        )
+    elif current_user.role == "institution":
+        notifications = (
+            db.query(models.Notification)
+            .filter(
+                or_(
+                    models.Notification.institutionId == current_user.id,
+                    models.Notification.senderId == current_user.id,
+                    models.Notification.institutionId == None
+                )
+            )
             .order_by(models.Notification.createdAt.desc())
             .all()
         )

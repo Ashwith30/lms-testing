@@ -19,7 +19,7 @@ import uuid
 from typing import Optional
 
 # Setup import path
-backend_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
 sys.path.insert(0, backend_dir)
 
 import sqlalchemy as sa

@@ -2,7 +2,7 @@ import json
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, desc
+from sqlalchemy import func, case, desc, or_
 from typing import List, Dict, Any, Optional
 import models
 import schemas
@@ -579,25 +579,52 @@ def get_institution_analytics(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_roles("admin", "institution"))
 ):
+    inst_id = current_user.id if current_user.role == "institution" else None
+    other_inst_exists = False
+    if inst_id:
+        other_inst_exists = db.query(models.User.id).filter(
+            models.User.role == "institution",
+            models.User.id != inst_id
+        ).first() is not None
+
+    apply_strict_tenant = bool(inst_id and other_inst_exists)
+
     # 1. Total enrolled students and active/published tests
-    total_enrolled = (
-        db.query(func.count(models.User.id))
-        .filter(models.User.role == "student")
-        .scalar()
-        or 0
-    )
-    tests_count = db.query(func.count(models.Test.id)).scalar() or 0
+    if apply_strict_tenant:
+        total_enrolled = (
+            db.query(func.count(models.StudentProfile.userId))
+            .filter(models.StudentProfile.institutionId == inst_id)
+            .scalar()
+            or 0
+        )
+        tests_count = (
+            db.query(func.count(models.Test.id))
+            .filter(or_(models.Test.institutionId == inst_id, models.Test.authorId == inst_id))
+            .scalar()
+            or 0
+        )
+    else:
+        total_enrolled = (
+            db.query(func.count(models.User.id))
+            .filter(models.User.role == "student")
+            .scalar()
+            or 0
+        )
+        tests_count = db.query(func.count(models.Test.id)).scalar() or 0
 
     # 2. Overall attempt aggregate statistics via SQL
-    attempt_stats = (
-        db.query(
-            func.count(models.Attempt.id).label("total_submissions"),
-            func.avg(models.Attempt.percentage).label("avg_score"),
-            func.sum(case((models.Attempt.percentage >= 60.0, 1), else_=0)).label("passed_count")
-        )
-        .filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
-        .first()
-    )
+    attempt_query = db.query(
+        func.count(models.Attempt.id).label("total_submissions"),
+        func.avg(models.Attempt.percentage).label("avg_score"),
+        func.sum(case((models.Attempt.percentage >= 60.0, 1), else_=0)).label("passed_count")
+    ).filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
+
+    if apply_strict_tenant:
+        attempt_query = attempt_query.join(
+            models.StudentProfile, models.Attempt.studentId == models.StudentProfile.userId
+        ).filter(models.StudentProfile.institutionId == inst_id)
+
+    attempt_stats = attempt_query.first()
 
     total_submissions = int(attempt_stats[0] or 0) if attempt_stats else 0
     avg_score = round(float(attempt_stats[1]), 1) if attempt_stats and attempt_stats[1] is not None else 0.0
@@ -605,23 +632,25 @@ def get_institution_analytics(
     pass_rate = round((passed_count / total_submissions) * 100, 1) if total_submissions > 0 else 0.0
 
     # 3. Overall Score Distribution via SQL aggregation
-    score_bucket_query = (
-        db.query(
-            func.sum(case((models.Attempt.percentage < 20.0, 1), else_=0)),
-            func.sum(case(((models.Attempt.percentage >= 20.0) & (models.Attempt.percentage < 40.0), 1), else_=0)),
-            func.sum(case(((models.Attempt.percentage >= 40.0) & (models.Attempt.percentage < 60.0), 1), else_=0)),
-            func.sum(case(((models.Attempt.percentage >= 60.0) & (models.Attempt.percentage < 80.0), 1), else_=0)),
-            func.sum(case((models.Attempt.percentage >= 80.0, 1), else_=0))
-        )
-        .filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
-        .first()
-    )
+    score_bucket_query = db.query(
+        func.sum(case((models.Attempt.percentage < 20.0, 1), else_=0)),
+        func.sum(case(((models.Attempt.percentage >= 20.0) & (models.Attempt.percentage < 40.0), 1), else_=0)),
+        func.sum(case(((models.Attempt.percentage >= 40.0) & (models.Attempt.percentage < 60.0), 1), else_=0)),
+        func.sum(case(((models.Attempt.percentage >= 60.0) & (models.Attempt.percentage < 80.0), 1), else_=0)),
+        func.sum(case((models.Attempt.percentage >= 80.0, 1), else_=0))
+    ).filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
 
-    b_0_20 = int(score_bucket_query[0] or 0) if score_bucket_query else 0
-    b_20_40 = int(score_bucket_query[1] or 0) if score_bucket_query else 0
-    b_40_60 = int(score_bucket_query[2] or 0) if score_bucket_query else 0
-    b_60_80 = int(score_bucket_query[3] or 0) if score_bucket_query else 0
-    b_80_100 = int(score_bucket_query[4] or 0) if score_bucket_query else 0
+    if apply_strict_tenant:
+        score_bucket_query = score_bucket_query.join(
+            models.StudentProfile, models.Attempt.studentId == models.StudentProfile.userId
+        ).filter(models.StudentProfile.institutionId == inst_id)
+
+    score_bucket_res = score_bucket_query.first()
+    b_0_20 = int(score_bucket_res[0] or 0) if score_bucket_res else 0
+    b_20_40 = int(score_bucket_res[1] or 0) if score_bucket_res else 0
+    b_40_60 = int(score_bucket_res[2] or 0) if score_bucket_res else 0
+    b_60_80 = int(score_bucket_res[3] or 0) if score_bucket_res else 0
+    b_80_100 = int(score_bucket_res[4] or 0) if score_bucket_res else 0
     tot_denom = total_submissions if total_submissions > 0 else 1
 
     score_distribution = [
@@ -633,25 +662,24 @@ def get_institution_analytics(
     ]
 
     # 4. Department Performance via SQL outer joins
-    dept_stats_query = (
-        db.query(
-            models.Department.id,
-            models.Department.name,
-            models.Department.code,
-            func.count(func.distinct(models.StudentProfile.userId)).label("students"),
-            func.count(models.Attempt.id).label("attempts"),
-            func.avg(models.Attempt.percentage).label("avg_score"),
-            func.sum(case((models.Attempt.percentage >= 60.0, 1), else_=0)).label("passed")
-        )
-        .outerjoin(models.StudentProfile, models.StudentProfile.departmentId == models.Department.id)
-        .outerjoin(
-            models.Attempt,
-            (models.Attempt.studentId == models.StudentProfile.userId)
-            & (models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
-        )
-        .group_by(models.Department.id, models.Department.name, models.Department.code)
-        .all()
+    dept_stats_q = db.query(
+        models.Department.id,
+        models.Department.name,
+        models.Department.code,
+        func.count(func.distinct(models.StudentProfile.userId)).label("students"),
+        func.count(models.Attempt.id).label("attempts"),
+        func.avg(models.Attempt.percentage).label("avg_score"),
+        func.sum(case((models.Attempt.percentage >= 60.0, 1), else_=0)).label("passed")
+    ).outerjoin(models.StudentProfile, models.StudentProfile.departmentId == models.Department.id).outerjoin(
+        models.Attempt,
+        (models.Attempt.studentId == models.StudentProfile.userId)
+        & (models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
     )
+
+    if apply_strict_tenant:
+        dept_stats_q = dept_stats_q.filter(models.Department.institutionId == inst_id)
+
+    dept_stats_query = dept_stats_q.group_by(models.Department.id, models.Department.name, models.Department.code).all()
 
     department_performance = []
     pass_rate_comparison = []
@@ -690,7 +718,7 @@ def get_institution_analytics(
     for legacy_code in ["CSM", "CSD", "CSE", "MECH", "EEE", "ECE"]:
         dept_score_distributions[legacy_code] = empty_dist
 
-    dept_buckets_query = (
+    dept_buckets_q = (
         db.query(
             models.Department.name,
             models.Department.code,
@@ -707,9 +735,10 @@ def get_institution_analytics(
             (models.Attempt.studentId == models.StudentProfile.userId)
             & (models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
         )
-        .group_by(models.Department.id, models.Department.name, models.Department.code)
-        .all()
     )
+    if apply_strict_tenant:
+        dept_buckets_q = dept_buckets_q.filter(models.Department.institutionId == inst_id)
+    dept_buckets_query = dept_buckets_q.group_by(models.Department.id, models.Department.name, models.Department.code).all()
 
     for row in dept_buckets_query:
         d_name, d_code, c0, c20, c40, c60, c80, total_d = row
@@ -727,7 +756,7 @@ def get_institution_analytics(
             dept_score_distributions[d_code] = dist
 
     # 6. Performance Trend & Heatmap (computed from actual test milestone attempts)
-    test_trends = (
+    test_trends_q = (
         db.query(
             models.Test.id,
             models.Test.title,
@@ -743,10 +772,10 @@ def get_institution_analytics(
         )
         .join(models.StudentProfile, models.StudentProfile.userId == models.Attempt.studentId)
         .join(models.Department, models.Department.id == models.StudentProfile.departmentId)
-        .group_by(models.Test.id, models.Test.title, models.Department.id, models.Department.name, models.Department.code)
-        .order_by(models.Test.createdAt)
-        .all()
     )
+    if apply_strict_tenant:
+        test_trends_q = test_trends_q.filter(models.Department.institutionId == inst_id)
+    test_trends = test_trends_q.group_by(models.Test.id, models.Test.title, models.Department.id, models.Department.name, models.Department.code).order_by(models.Test.createdAt).all()
 
     perf_map = {}
     for r in test_trends:
@@ -775,7 +804,7 @@ def get_institution_analytics(
     }
 
     # 7. Top Performers via SQL aggregation
-    top_performers_query = (
+    top_performers_q = (
         db.query(
             models.User.id,
             models.StudentProfile.firstName,
@@ -792,11 +821,11 @@ def get_institution_analytics(
         )
         .outerjoin(models.StudentProfile, models.StudentProfile.userId == models.User.id)
         .outerjoin(models.Department, models.Department.id == models.StudentProfile.departmentId)
-        .group_by(models.User.id, models.StudentProfile.firstName, models.StudentProfile.lastName, models.Department.name, models.Department.code)
-        .order_by(desc("avg_score"))
-        .limit(5)
-        .all()
     )
+    if apply_strict_tenant:
+        top_performers_q = top_performers_q.filter(models.StudentProfile.institutionId == inst_id)
+
+    top_performers_query = top_performers_q.group_by(models.User.id, models.StudentProfile.firstName, models.StudentProfile.lastName, models.Department.name, models.Department.code).order_by(desc("avg_score")).limit(5).all()
 
     top_performers = []
     for idx, row in enumerate(top_performers_query):
@@ -817,12 +846,15 @@ def get_institution_analytics(
         })
 
     # 8. Test Participation Breakdown
-    submission_status_counts = dict(
-        db.query(models.Attempt.status, func.count(models.Attempt.id))
-        .filter(models.Attempt.status.in_(["submitted", "auto_submitted", "completed"]))
-        .group_by(models.Attempt.status)
-        .all()
+    status_query = db.query(models.Attempt.status, func.count(models.Attempt.id)).filter(
+        models.Attempt.status.in_(["submitted", "auto_submitted", "completed"])
     )
+    if apply_strict_tenant:
+        status_query = status_query.join(
+            models.StudentProfile, models.Attempt.studentId == models.StudentProfile.userId
+        ).filter(models.StudentProfile.institutionId == inst_id)
+
+    submission_status_counts = dict(status_query.group_by(models.Attempt.status).all())
     if total_submissions > 0:
         on_time_count = submission_status_counts.get("submitted", 0) + submission_status_counts.get("completed", 0)
         auto_count = submission_status_counts.get("auto_submitted", 0)

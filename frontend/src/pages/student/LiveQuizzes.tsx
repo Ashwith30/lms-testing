@@ -80,9 +80,14 @@ export const LiveQuizzes = () => {
       {/* ── Page Header ────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1a1d23]">
-            Live Quizzes
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-[#1a1d23]">
+              Live Quizzes
+            </h1>
+            <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 font-semibold text-[11px]">
+              Beta
+            </span>
+          </div>
           <p className="text-slate-500 text-sm mt-0.5">
             Compete in real-time speed rounds with your batchmates and test your placement readiness.
           </p>

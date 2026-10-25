@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { authService } from '../../services/authService';
+import { organizationService } from '../../services/organizationService';
 import { useToast } from '../../context/ToastContext';
 import { Logo } from '../../components/ui/Logo';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
@@ -15,12 +16,61 @@ export const StudentRegister = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [college, setCollege] = useState('');
+  const [selectedInstId, setSelectedInstId] = useState<string>('');
   const [rollNo, setRollNo] = useState('');
   const [department, setDepartment] = useState('');
   const [batch, setBatch] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Dynamic discovery lists
+  const [institutionsList, setInstitutionsList] = useState<{ id: string; name: string }[]>([]);
+  const [departmentList, setDepartmentList] = useState<{ id: string; name: string; code: string }[]>([]);
+  const [batchList, setBatchList] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    organizationService.getPublicInstitutions()
+      .then(list => setInstitutionsList(list))
+      .catch(err => console.error('Failed to load institutions list', err));
+  }, []);
+
+  const handleSelectInstitution = async (instId: string) => {
+    setSelectedInstId(instId);
+    setDepartment('');
+    setBatch('');
+    setDepartmentList([]);
+    setBatchList([]);
+
+    const found = institutionsList.find(i => i.id === instId);
+    if (found) {
+      setCollege(found.name);
+      try {
+        const depts = await organizationService.getPublicDepartments(instId);
+        setDepartmentList(depts);
+      } catch (err) {
+        console.error('Failed to load departments', err);
+      }
+    } else {
+      setCollege('');
+    }
+  };
+
+  const handleSelectDepartment = async (deptNameOrCode: string) => {
+    setDepartment(deptNameOrCode);
+    setBatch('');
+    setBatchList([]);
+
+    const found = departmentList.find(d => d.name === deptNameOrCode || d.code === deptNameOrCode);
+    if (found) {
+      try {
+        const batches = await organizationService.getPublicBatches(found.id);
+        setBatchList(batches);
+      } catch (err) {
+        console.error('Failed to load batches', err);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +90,8 @@ export const StudentRegister = () => {
         department,
         batch,
         password,
-      });
+        institutionId: selectedInstId || undefined,
+      } as any);
       toast('Registration successful. Please log in.', 'success');
       navigate('/student/login');
     } catch (err: any) {
@@ -122,14 +173,47 @@ export const StudentRegister = () => {
               required
             />
 
-            <Input
-              label="College"
-              type="text"
-              value={college}
-              onChange={(e) => setCollege(e.target.value)}
-              placeholder="e.g. Apex Institute of Technology"
-              required
-            />
+            {/* College Selection */}
+            {institutionsList.length > 0 ? (
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  College / Institution <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedInstId}
+                  onChange={(e) => handleSelectInstitution(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-slate-900 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/15 transition-all"
+                  required
+                >
+                  <option value="">-- Select Your College --</option>
+                  {institutionsList.map((inst) => (
+                    <option key={inst.id} value={inst.id}>
+                      {inst.name}
+                    </option>
+                  ))}
+                  <option value="OTHER">Other (Enter Manually)</option>
+                </select>
+                {selectedInstId === 'OTHER' && (
+                  <Input
+                    label="Custom College Name"
+                    type="text"
+                    value={college}
+                    onChange={(e) => setCollege(e.target.value)}
+                    placeholder="Enter full college name"
+                    required
+                  />
+                )}
+              </div>
+            ) : (
+              <Input
+                label="College"
+                type="text"
+                value={college}
+                onChange={(e) => setCollege(e.target.value)}
+                placeholder="e.g. Apex Institute of Technology"
+                required
+              />
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <Input
@@ -140,24 +224,67 @@ export const StudentRegister = () => {
                 placeholder="e.g. 21CS001"
                 required
               />
-              <Input
-                label="Department"
-                type="text"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                placeholder="CSE"
-                required
-              />
+
+              {departmentList.length > 0 ? (
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Department <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={department}
+                    onChange={(e) => handleSelectDepartment(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-slate-900 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/15 transition-all"
+                    required
+                  >
+                    <option value="">-- Dept --</option>
+                    {departmentList.map((d) => (
+                      <option key={d.id} value={d.code || d.name}>
+                        {d.code ? `${d.code} - ${d.name}` : d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <Input
+                  label="Department"
+                  type="text"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="CSE"
+                  required
+                />
+              )}
             </div>
 
-            <Input
-              label="Batch year"
-              type="text"
-              value={batch}
-              onChange={(e) => setBatch(e.target.value)}
-              placeholder="2026"
-              required
-            />
+            {batchList.length > 0 ? (
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Batch <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={batch}
+                  onChange={(e) => setBatch(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-slate-900 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/15 transition-all"
+                  required
+                >
+                  <option value="">-- Select Batch --</option>
+                  {batchList.map((b) => (
+                    <option key={b.id} value={b.name}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <Input
+                label="Batch year"
+                type="text"
+                value={batch}
+                onChange={(e) => setBatch(e.target.value)}
+                placeholder="2026"
+                required
+              />
+            )}
 
             <Input
               label="Password"

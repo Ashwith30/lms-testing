@@ -97,58 +97,205 @@ def save_snapshot(attempt_id: str, data: bytes) -> Tuple[str, str]:
     clean_attempt_id = validate_attempt_id(attempt_id)
     mime_type = validate_image_bytes(data)
     ext = "jpg" if mime_type == "image/jpeg" else "png"
+class LocalStorageBackend:
+    """Local filesystem storage backend for snapshots."""
 
-    storage_root = get_storage_root()
-    attempt_dir = os.path.join(storage_root, clean_attempt_id)
-    
-    # Path traversal assertion
-    real_attempt_dir = os.path.realpath(attempt_dir)
-    if not real_attempt_dir.startswith(storage_root):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Path traversal detected."
+    def __init__(self, root_dir: Optional[str] = None):
+        self.root_dir = root_dir or get_storage_root()
+
+    def save(self, attempt_id: str, data: bytes, ext: str) -> Tuple[str, str]:
+        attempt_dir = os.path.join(self.root_dir, attempt_id)
+        real_attempt_dir = os.path.realpath(attempt_dir)
+        if not real_attempt_dir.startswith(self.root_dir):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Path traversal detected."
+            )
+
+        try:
+            os.makedirs(real_attempt_dir, exist_ok=True)
+            safe_filename = f"viol-{uuid.uuid4().hex[:12]}.{ext}"
+            target_path = os.path.join(real_attempt_dir, safe_filename)
+
+            with open(target_path, "wb") as f:
+                f.write(data)
+        except (OSError, PermissionError):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Snapshot storage service unavailable: unable to persist file."
+            )
+
+        relative_url = f"/api/attempts/{attempt_id}/snapshots/{safe_filename}"
+        return safe_filename, relative_url
+
+    def get_path(self, attempt_id: str, filename: str) -> Optional[str]:
+        target_path = os.path.join(self.root_dir, attempt_id, filename)
+        real_target = os.path.realpath(target_path)
+        if not real_target.startswith(self.root_dir):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Path traversal attempt blocked."
+            )
+        if not os.path.isfile(real_target):
+            return None
+        return real_target
+
+    def delete_all(self, attempt_id: str) -> int:
+        attempt_dir = os.path.join(self.root_dir, attempt_id)
+        real_attempt_dir = os.path.realpath(attempt_dir)
+        if not real_attempt_dir.startswith(self.root_dir) or not os.path.isdir(real_attempt_dir):
+            return 0
+
+        deleted_count = 0
+        try:
+            for fname in os.listdir(real_attempt_dir):
+                fpath = os.path.join(real_attempt_dir, fname)
+                if os.path.isfile(fpath):
+                    os.remove(fpath)
+                    deleted_count += 1
+            os.rmdir(real_attempt_dir)
+        except Exception:
+            pass
+        return deleted_count
+
+    def list_all(self, attempt_id: str) -> list:
+        attempt_dir = os.path.join(self.root_dir, attempt_id)
+        real_attempt_dir = os.path.realpath(attempt_dir)
+        if not real_attempt_dir.startswith(self.root_dir) or not os.path.isdir(real_attempt_dir):
+            return []
+        return [f for f in os.listdir(real_attempt_dir) if os.path.isfile(os.path.join(real_attempt_dir, f))]
+
+
+class S3StorageBackend:
+    """AWS S3 / S3-compatible cloud object storage backend."""
+
+    def __init__(self):
+        try:
+            import boto3
+            from botocore.config import Config
+        except ImportError:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="S3 storage configured but boto3 package is not installed."
+            )
+
+        self.bucket = os.getenv("AWS_S3_BUCKET")
+        if not self.bucket:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="AWS_S3_BUCKET environment variable must be set for S3 storage."
+            )
+        self.region = os.getenv("AWS_REGION", "us-east-1")
+        self.endpoint_url = os.getenv("AWS_S3_ENDPOINT_URL")
+        
+        config = Config(signature_version="s3v4")
+        self.client = boto3.client(
+            "s3",
+            region_name=self.region,
+            endpoint_url=self.endpoint_url,
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            config=config
         )
 
-    try:
-        os.makedirs(real_attempt_dir, exist_ok=True)
+    def _get_key(self, attempt_id: str, filename: str) -> str:
+        return f"snapshots/{attempt_id}/{filename}"
+
+    def save(self, attempt_id: str, data: bytes, ext: str) -> Tuple[str, str]:
         safe_filename = f"viol-{uuid.uuid4().hex[:12]}.{ext}"
-        target_path = os.path.join(real_attempt_dir, safe_filename)
+        content_type = "image/jpeg" if ext == "jpg" else "image/png"
+        key = self._get_key(attempt_id, safe_filename)
 
-        with open(target_path, "wb") as f:
-            f.write(data)
-    except (OSError, PermissionError):
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Snapshot storage service unavailable: unable to persist file."
-        )
+        try:
+            self.client.put_object(
+                Bucket=self.bucket,
+                Key=key,
+                Body=data,
+                ContentType=content_type
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Cloud storage upload error: {str(e)}"
+            )
 
-    relative_url = f"/api/attempts/{clean_attempt_id}/snapshots/{safe_filename}"
-    return safe_filename, relative_url
+        # In S3 mode, the relative or proxy URL continues through the API endpoint
+        # which can serve via presigned redirection or stream
+        relative_url = f"/api/attempts/{attempt_id}/snapshots/{safe_filename}"
+        return safe_filename, relative_url
+
+    def get_path(self, attempt_id: str, filename: str) -> Optional[str]:
+        # For S3, returns a presigned URL or None if object doesn't exist
+        key = self._get_key(attempt_id, filename)
+        try:
+            self.client.head_object(Bucket=self.bucket, Key=key)
+            presigned_url = self.client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": self.bucket, "Key": key},
+                ExpiresIn=3600
+            )
+            return presigned_url
+        except Exception:
+            return None
+
+    def delete_all(self, attempt_id: str) -> int:
+        prefix = f"snapshots/{attempt_id}/"
+        deleted = 0
+        try:
+            paginator = self.client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+                objects = [{"Key": obj["Key"]} for obj in page.get("Contents", [])]
+                if objects:
+                    self.client.delete_objects(Bucket=self.bucket, Delete={"Objects": objects})
+                    deleted += len(objects)
+        except Exception:
+            pass
+        return deleted
+
+    def list_all(self, attempt_id: str) -> list:
+        prefix = f"snapshots/{attempt_id}/"
+        keys = []
+        try:
+            paginator = self.client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+                for obj in page.get("Contents", []):
+                    keys.append(os.path.basename(obj["Key"]))
+        except Exception:
+            pass
+        return keys
+
+
+def get_storage_backend():
+    """Factory to get the configured storage backend singleton."""
+    backend_type = os.getenv("STORAGE_BACKEND", "").lower()
+    if backend_type == "s3" or (not backend_type and os.getenv("AWS_S3_BUCKET")):
+        return S3StorageBackend()
+    return LocalStorageBackend()
+
+
+def save_snapshot(attempt_id: str, data: bytes) -> Tuple[str, str]:
+    """
+    Saves a snapshot byte stream safely for a given attempt.
+    Returns a tuple of (filename, relative_url).
+    """
+    clean_attempt_id = validate_attempt_id(attempt_id)
+    mime_type = validate_image_bytes(data)
+    ext = "jpg" if mime_type == "image/jpeg" else "png"
+
+    backend = get_storage_backend()
+    return backend.save(clean_attempt_id, data, ext)
 
 
 def get_snapshot_path(attempt_id: str, filename: str) -> Optional[str]:
     """
-    Resolves the physical absolute path for a snapshot file with strict path traversal checks.
+    Resolves the physical absolute path (or URL) for a snapshot file with strict path traversal checks.
     Returns None if the file does not exist.
     """
     clean_attempt_id = validate_attempt_id(attempt_id)
     clean_filename = validate_filename(filename)
 
-    storage_root = get_storage_root()
-    target_path = os.path.join(storage_root, clean_attempt_id, clean_filename)
-    real_target = os.path.realpath(target_path)
-
-    # Guard against symlinks or directory escapes
-    if not real_target.startswith(storage_root):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Path traversal attempt blocked."
-        )
-
-    if not os.path.isfile(real_target):
-        return None
-
-    return real_target
+    backend = get_storage_backend()
+    return backend.get_path(clean_attempt_id, clean_filename)
 
 
 def delete_attempt_snapshots(attempt_id: str) -> int:
@@ -157,44 +304,19 @@ def delete_attempt_snapshots(attempt_id: str) -> int:
     Returns the number of deleted files.
     """
     clean_attempt_id = validate_attempt_id(attempt_id)
-    storage_root = get_storage_root()
-    attempt_dir = os.path.join(storage_root, clean_attempt_id)
-    real_attempt_dir = os.path.realpath(attempt_dir)
-
-    if not real_attempt_dir.startswith(storage_root):
-        return 0
-
-    if not os.path.isdir(real_attempt_dir):
-        return 0
-
-    deleted_count = 0
-    try:
-        for fname in os.listdir(real_attempt_dir):
-            fpath = os.path.join(real_attempt_dir, fname)
-            if os.path.isfile(fpath):
-                os.remove(fpath)
-                deleted_count += 1
-        os.rmdir(real_attempt_dir)
-    except Exception:
-        pass
-
-    return deleted_count
+    backend = get_storage_backend()
+    return backend.delete_all(clean_attempt_id)
 
 
 def list_attempt_snapshots(attempt_id: str) -> list:
     """Returns a list of snapshot filenames belonging to an attempt."""
     clean_attempt_id = validate_attempt_id(attempt_id)
-    storage_root = get_storage_root()
-    attempt_dir = os.path.join(storage_root, clean_attempt_id)
-    real_attempt_dir = os.path.realpath(attempt_dir)
-
-    if not real_attempt_dir.startswith(storage_root) or not os.path.isdir(real_attempt_dir):
-        return []
-
-    return [f for f in os.listdir(real_attempt_dir) if os.path.isfile(os.path.join(real_attempt_dir, f))]
+    backend = get_storage_backend()
+    return backend.list_all(clean_attempt_id)
 
 
 def get_attempt_snapshot_count(attempt_id: str) -> int:
     """Returns the count of snapshots stored for an attempt."""
     return len(list_attempt_snapshots(attempt_id))
+
 

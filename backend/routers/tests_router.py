@@ -2,6 +2,7 @@ import json
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List, Dict, Any, Optional, Union
 import models
 import schemas
@@ -10,7 +11,8 @@ from auth import (
     get_current_user,
     require_roles,
     check_trainer_test_access,
-    get_authorized_test_ids_for_trainer
+    get_authorized_test_ids_for_trainer,
+    get_user_institution_id
 )
 import storage_service
 
@@ -29,6 +31,25 @@ def get_tests(
     target_author = createdBy or authorId
     if target_author:
         query = query.filter(models.Test.authorId == target_author)
+
+    if current_user.role == "institution":
+        query = query.filter(
+            or_(
+                models.Test.institutionId == current_user.id,
+                models.Test.authorId == current_user.id
+            )
+        )
+    elif current_user.role == "trainer" and not target_author:
+        trainer_inst = get_user_institution_id(current_user, db)
+        auth_test_ids = get_authorized_test_ids_for_trainer(current_user, db)
+        query = query.filter(
+            or_(
+                models.Test.id.in_(auth_test_ids),
+                models.Test.authorId == current_user.id,
+                (models.Test.institutionId == trainer_inst) if trainer_inst else False
+            )
+        )
+
     if page is not None:
         p = max(1, page)
         l = max(1, limit) if limit else 50
@@ -46,6 +67,18 @@ def get_test(
     test = db.query(models.Test).filter(models.Test.id == test_id).first()
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
+
+    if current_user.role == "institution":
+        if test.institutionId and test.institutionId != current_user.id and test.authorId != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Assessment belongs to another institution.")
+    elif current_user.role == "trainer":
+        if not check_trainer_test_access(current_user, test, db):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Assessment belongs to another institution or you are not authorized.")
+    elif current_user.role == "student":
+        student_inst = get_user_institution_id(current_user, db)
+        if test.institutionId and student_inst and test.institutionId != student_inst:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Assessment belongs to another institution.")
+
     return test
 
 @router.post("/tests", response_model=schemas.Test)
@@ -58,6 +91,13 @@ def create_test(
     author_id = test.get("createdBy") or test.get("authorId") or current_user.id
     now = models.get_utc_now()
     
+    inst_id = test.get("institutionId")
+    if not inst_id:
+        if current_user.role == "institution":
+            inst_id = current_user.id
+        elif current_user.role == "trainer":
+            inst_id = get_user_institution_id(current_user, db)
+
     profile = db.query(models.ProctoringProfile).first()
     
     settings_data = test.get("settings")
@@ -72,6 +112,7 @@ def create_test(
         passingPercentage=test.get("passingPercentage"),
         totalMarks=float(test.get("totalMarks", 0.0)),
         authorId=author_id,
+        institutionId=inst_id,
         status=test.get("status", "Draft"),
         proctoringProfileId=test.get("proctoringProfileId") or (profile.id if profile else None),
         settings_json=settings_json,
@@ -234,9 +275,11 @@ def reconduct_test(
 
     # Create schedule
     s_id = models.generate_uuid("sch-")
+    sched_inst = (cloned_test_obj.institutionId if cloned_test_obj else orig.institutionId) or (current_user.id if current_user.role == "institution" else get_user_institution_id(current_user, db))
     sched = models.Schedule(
         id=s_id,
         testId=target_test_id,
+        institutionId=sched_inst,
         startTime=payload.get("startTime", models.get_utc_now()),
         endTime=payload.get("endTime", models.get_utc_now()),
         durationMinutes=payload.get("durationMinutes", 60),
@@ -248,7 +291,9 @@ def reconduct_test(
     assigned_students = payload.get("assignedStudents", [])
 
     if assigned_batch and assigned_batch != "all":
-        batch = db.query(models.Batch).filter(models.Batch.name == assigned_batch).first()
+        batch = db.query(models.Batch).filter(
+            or_(models.Batch.name == assigned_batch, models.Batch.id == assigned_batch)
+        ).first()
         b_id = batch.id if batch else assigned_batch
         db.add(models.ScheduleAssignment(
             id=models.generate_uuid("sa-"),
@@ -256,6 +301,11 @@ def reconduct_test(
             assigneeType="batch",
             assigneeId=b_id
         ))
+        if batch:
+            db.add(models.ScheduleBatchTarget(
+                scheduleId=s_id,
+                batchId=batch.id
+            ))
 
     if assigned_students:
         for st_id in assigned_students:
@@ -265,6 +315,12 @@ def reconduct_test(
                 assigneeType="student",
                 assigneeId=st_id
             ))
+            st_user = db.query(models.User).filter(models.User.id == st_id).first()
+            if st_user:
+                db.add(models.ScheduleStudentTarget(
+                    scheduleId=s_id,
+                    studentId=st_id
+                ))
 
     db.commit()
     db.refresh(sched)
@@ -294,6 +350,33 @@ def get_schedules(
     current_user: models.User = Depends(get_current_user)
 ):
     query = db.query(models.Schedule)
+    if current_user.role == "institution":
+        query = query.filter(
+            or_(
+                models.Schedule.institutionId == current_user.id,
+                models.Schedule.test.has(models.Test.institutionId == current_user.id),
+                models.Schedule.test.has(models.Test.authorId == current_user.id)
+            )
+        )
+    elif current_user.role == "trainer":
+        trainer_inst = get_user_institution_id(current_user, db)
+        query = query.filter(
+            or_(
+                (models.Schedule.institutionId == trainer_inst) if trainer_inst else False,
+                models.Schedule.test.has(models.Test.institutionId == trainer_inst) if trainer_inst else False,
+                models.Schedule.test.has(models.Test.authorId == current_user.id)
+            )
+        )
+    elif current_user.role == "student":
+        student_inst = get_user_institution_id(current_user, db)
+        if student_inst:
+            query = query.filter(
+                or_(
+                    models.Schedule.institutionId == student_inst,
+                    models.Schedule.test.has(models.Test.institutionId == student_inst)
+                )
+            )
+
     if page is not None:
         p = max(1, page)
         l = max(1, limit) if limit else 50
@@ -311,6 +394,19 @@ def get_schedule(
     sched = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
     if not sched:
         raise HTTPException(status_code=404, detail="Schedule not found")
+
+    if current_user.role == "institution":
+        if sched.institutionId and sched.institutionId != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied: Schedule belongs to another institution.")
+    elif current_user.role == "trainer":
+        trainer_inst = get_user_institution_id(current_user, db)
+        if sched.institutionId and trainer_inst and sched.institutionId != trainer_inst:
+            raise HTTPException(status_code=403, detail="Access denied: Schedule belongs to another institution.")
+    elif current_user.role == "student":
+        student_inst = get_user_institution_id(current_user, db)
+        if sched.institutionId and student_inst and sched.institutionId != student_inst:
+            raise HTTPException(status_code=403, detail="Access denied: Schedule belongs to another institution.")
+
     return sched
 
 @router.post("/schedules", response_model=schemas.Schedule)
@@ -332,9 +428,11 @@ def create_schedule(
             )
 
     s_id = sched.get("id") or models.generate_uuid("sch-")
+    sched_inst = sched.get("institutionId") or test.institutionId or (current_user.id if current_user.role == "institution" else get_user_institution_id(current_user, db))
     db_sched = models.Schedule(
         id=s_id,
         testId=test_id,
+        institutionId=sched_inst,
         startTime=sched.get("startTime"),
         endTime=sched.get("endTime"),
         durationMinutes=sched.get("durationMinutes"),
@@ -346,7 +444,9 @@ def create_schedule(
     assigned_students = sched.get("assignedStudents", [])
     
     if assigned_batch and assigned_batch != "all":
-        batch = db.query(models.Batch).filter(models.Batch.name == assigned_batch).first()
+        batch = db.query(models.Batch).filter(
+            or_(models.Batch.name == assigned_batch, models.Batch.id == assigned_batch)
+        ).first()
         b_id = batch.id if batch else assigned_batch
         db.add(models.ScheduleAssignment(
             id=models.generate_uuid("sa-"),
@@ -354,6 +454,11 @@ def create_schedule(
             assigneeType="batch",
             assigneeId=b_id
         ))
+        if batch:
+            db.add(models.ScheduleBatchTarget(
+                scheduleId=s_id,
+                batchId=batch.id
+            ))
             
     if assigned_students:
         for st_id in assigned_students:
@@ -363,6 +468,12 @@ def create_schedule(
                 assigneeType="student",
                 assigneeId=st_id
             ))
+            st_user = db.query(models.User).filter(models.User.id == st_id).first()
+            if st_user:
+                db.add(models.ScheduleStudentTarget(
+                    scheduleId=s_id,
+                    studentId=st_id
+                ))
 
     db.commit()
     db.refresh(db_sched)
@@ -392,10 +503,14 @@ def update_schedule(
             
     if "assignedBatch" in payload or "assignedStudents" in payload:
         db.query(models.ScheduleAssignment).filter(models.ScheduleAssignment.scheduleId == schedule_id).delete()
+        db.query(models.ScheduleBatchTarget).filter(models.ScheduleBatchTarget.scheduleId == schedule_id).delete()
+        db.query(models.ScheduleStudentTarget).filter(models.ScheduleStudentTarget.scheduleId == schedule_id).delete()
         assigned_batch = payload.get("assignedBatch")
         assigned_students = payload.get("assignedStudents", [])
         if assigned_batch and assigned_batch != "all":
-            batch = db.query(models.Batch).filter(models.Batch.name == assigned_batch).first()
+            batch = db.query(models.Batch).filter(
+                or_(models.Batch.name == assigned_batch, models.Batch.id == assigned_batch)
+            ).first()
             b_id = batch.id if batch else assigned_batch
             db.add(models.ScheduleAssignment(
                 id=models.generate_uuid("sa-"),
@@ -403,6 +518,11 @@ def update_schedule(
                 assigneeType="batch",
                 assigneeId=b_id
             ))
+            if batch:
+                db.add(models.ScheduleBatchTarget(
+                    scheduleId=schedule_id,
+                    batchId=batch.id
+                ))
         if assigned_students:
             for st_id in assigned_students:
                 db.add(models.ScheduleAssignment(
@@ -411,6 +531,12 @@ def update_schedule(
                     assigneeType="student",
                     assigneeId=st_id
                 ))
+                st_user = db.query(models.User).filter(models.User.id == st_id).first()
+                if st_user:
+                    db.add(models.ScheduleStudentTarget(
+                        scheduleId=schedule_id,
+                        studentId=st_id
+                    ))
 
     db.commit()
     db.refresh(db_sched)

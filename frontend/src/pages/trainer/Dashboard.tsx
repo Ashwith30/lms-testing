@@ -57,13 +57,13 @@ export const TrainerDashboard = () => {
         const flags = submittedAttempts.reduce((acc: number, a: any) => acc + (a.violations || 0), 0);
 
         setStats({
-          totalTests: allTests.length || 1,
-          activeTests: allTests.filter((t: any) => t.status === 'Live' || t.status === 'Scheduled').length || 1,
-          totalStudents: students.length || 25,
-          testsCompleted: submittedAttempts.length || 20,
-          avgScore: avg || 71.5,
-          passRate: pass || 75,
-          totalFlags: flags || 15
+          totalTests: allTests.length,
+          activeTests: allTests.filter((t: any) => t.status === 'Live' || t.status === 'Scheduled').length,
+          totalStudents: students.length,
+          testsCompleted: submittedAttempts.length,
+          avgScore: avg,
+          passRate: pass,
+          totalFlags: flags
         });
       } catch (e) {
         console.error('Failed to load trainer dashboard data', e);

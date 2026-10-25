@@ -1,6 +1,7 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List, Optional, Any, Union
 import models
 import schemas
@@ -9,7 +10,8 @@ from auth import (
     get_current_user,
     require_roles,
     check_trainer_question_bank_access,
-    check_trainer_question_access
+    check_trainer_question_access,
+    get_user_institution_id
 )
 
 router = APIRouter(prefix="/api", tags=["questions"])
@@ -25,6 +27,25 @@ def get_question_banks(
     query = db.query(models.QuestionBank)
     if uploadedBy:
         query = query.filter(models.QuestionBank.ownerId == uploadedBy)
+
+    if current_user.role == "institution":
+        query = query.filter(
+            or_(
+                models.QuestionBank.isPublic == True,
+                models.QuestionBank.institutionId == current_user.id,
+                models.QuestionBank.ownerId == current_user.id
+            )
+        )
+    elif current_user.role == "trainer" and not uploadedBy:
+        trainer_inst = get_user_institution_id(current_user, db)
+        query = query.filter(
+            or_(
+                models.QuestionBank.isPublic == True,
+                models.QuestionBank.ownerId == current_user.id,
+                (models.QuestionBank.institutionId == trainer_inst) if trainer_inst else False
+            )
+        )
+
     if page is not None:
         p = max(1, page)
         l = max(1, limit) if limit else 50
@@ -46,6 +67,7 @@ def create_question_bank(
     else:
         owner_id = bank.get("uploadedBy") or bank.get("ownerId") or current_user.id
     now = models.get_utc_now()
+    inst_id = bank.get("institutionId") or (current_user.id if current_user.role == "institution" else get_user_institution_id(current_user, db))
     
     db_bank = models.QuestionBank(
         id=bank_id,
@@ -54,6 +76,7 @@ def create_question_bank(
         courseId=bank.get("courseId"),
         topicId=bank.get("topicId"),
         ownerId=owner_id,
+        institutionId=inst_id,
         isPublic=bank.get("isPublic", False),
         createdAt=bank.get("createdAt") or now,
         updatedAt=now

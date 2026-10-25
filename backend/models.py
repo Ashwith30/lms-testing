@@ -1,7 +1,7 @@
 import datetime
 import json
 import uuid
-from sqlalchemy import Column, String, Integer, Boolean, Float, ForeignKey, Text, DateTime, Index
+from sqlalchemy import Column, String, Integer, Boolean, Float, ForeignKey, Text, DateTime, Index, UniqueConstraint
 from sqlalchemy.orm import relationship, object_session
 try:
     from .database import Base
@@ -20,8 +20,8 @@ class User(Base):
     id = Column(String(64), primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    role = Column(String(50), nullable=False) # 'admin', 'institution', 'trainer', 'student'
-    status = Column(String(50), default='active') # 'active', 'suspended', 'archived'
+    role = Column(String(50), nullable=False, index=True) # 'admin', 'institution', 'trainer', 'student'
+    status = Column(String(50), default='active', index=True) # 'active', 'suspended', 'archived'
     lastLoginAt = Column(String(64), nullable=True)
     createdAt = Column(String(64), default=get_utc_now)
     updatedAt = Column(String(64), default=get_utc_now, onupdate=get_utc_now)
@@ -81,24 +81,34 @@ class InstitutionProfile(Base):
 class Department(Base):
     __tablename__ = "departments"
     id = Column(String(64), primary_key=True, index=True)
-    institutionId = Column(String(64), ForeignKey("institution_profiles.userId"), nullable=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId"), nullable=True, index=True)
     name = Column(String(255), nullable=False)
     code = Column(String(64), nullable=True)
 
     institution = relationship("InstitutionProfile", back_populates="departments")
     batches = relationship("Batch", back_populates="department")
 
+    __table_args__ = (
+        UniqueConstraint("institutionId", "name", name="uq_department_institution_name"),
+    )
+
 
 class Batch(Base):
     __tablename__ = "batches"
     id = Column(String(64), primary_key=True, index=True)
-    departmentId = Column(String(64), ForeignKey("departments.id"))
+    departmentId = Column(String(64), ForeignKey("departments.id"), index=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId", ondelete="CASCADE"), nullable=True, index=True)
     name = Column(String(255), nullable=False)
     startDate = Column(String(64), nullable=True)
     endDate = Column(String(64), nullable=True)
 
     department = relationship("Department", back_populates="batches")
+    institution = relationship("InstitutionProfile", foreign_keys=[institutionId])
     students = relationship("StudentProfile", back_populates="primaryBatch")
+
+    __table_args__ = (
+        UniqueConstraint("departmentId", "name", name="uq_batch_department_name"),
+    )
 
 
 class StudentProfile(Base):
@@ -106,16 +116,22 @@ class StudentProfile(Base):
     userId = Column(String(64), ForeignKey("users.id"), primary_key=True)
     firstName = Column(String(100), nullable=False)
     lastName = Column(String(100), nullable=False)
-    studentNumber = Column(String(100), unique=True, index=True, nullable=True)
+    studentNumber = Column(String(100), index=True, nullable=True)
     phoneNumber = Column(String(50), nullable=True)
     dateOfBirth = Column(String(64), nullable=True)
-    departmentId = Column(String(64), ForeignKey("departments.id"), nullable=True)
-    primaryBatchId = Column(String(64), ForeignKey("batches.id"), nullable=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId"), nullable=True, index=True)
+    departmentId = Column(String(64), ForeignKey("departments.id"), nullable=True, index=True)
+    primaryBatchId = Column(String(64), ForeignKey("batches.id"), nullable=True, index=True)
     enrollmentDate = Column(String(64), nullable=True)
 
     user = relationship("User", back_populates="student_profile")
     primaryBatch = relationship("Batch", back_populates="students")
     department = relationship("Department")
+    institution = relationship("InstitutionProfile", foreign_keys=[institutionId])
+
+    __table_args__ = (
+        UniqueConstraint("institutionId", "studentNumber", name="uq_institution_student_number"),
+    )
 
 
 class TrainerProfile(Base):
@@ -127,6 +143,8 @@ class TrainerProfile(Base):
     specialization = Column(String(255), nullable=True)
     phoneNumber = Column(String(50), nullable=True)
     hireDate = Column(String(64), nullable=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId"), nullable=True, index=True)
+    departmentId = Column(String(64), ForeignKey("departments.id"), nullable=True, index=True)
 
     user = relationship("User", back_populates="trainer_profile")
 
@@ -144,7 +162,7 @@ class Course(Base):
 class Topic(Base):
     __tablename__ = "topics"
     id = Column(String(64), primary_key=True, index=True)
-    courseId = Column(String(64), ForeignKey("courses.id"))
+    courseId = Column(String(64), ForeignKey("courses.id"), index=True)
     name = Column(String(255), nullable=False)
     orderIndex = Column(Integer, default=0)
 
@@ -154,11 +172,11 @@ class Topic(Base):
 class TrainerAssignment(Base):
     __tablename__ = "trainer_assignments"
     id = Column(String(64), primary_key=True, index=True)
-    trainerId = Column(String(64), ForeignKey("users.id"), nullable=False)
-    batchId = Column(String(64), ForeignKey("batches.id"), nullable=True)
-    institutionId = Column(String(64), ForeignKey("users.id"), nullable=True)
-    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True)
-    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True)
+    trainerId = Column(String(64), ForeignKey("users.id"), nullable=False, index=True)
+    batchId = Column(String(64), ForeignKey("batches.id"), nullable=True, index=True)
+    institutionId = Column(String(64), ForeignKey("users.id"), nullable=True, index=True)
+    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True, index=True)
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True, index=True)
     startDate = Column(String(64), nullable=True)
     endDate = Column(String(64), nullable=True)
 
@@ -166,11 +184,15 @@ class TrainerAssignment(Base):
 class StudentEnrollment(Base):
     __tablename__ = "student_enrollments"
     id = Column(String(64), primary_key=True, index=True)
-    studentId = Column(String(64), ForeignKey("users.id"), nullable=False)
-    courseId = Column(String(64), ForeignKey("courses.id"), nullable=False)
+    studentId = Column(String(64), ForeignKey("users.id"), nullable=False, index=True)
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=False, index=True)
     status = Column(String(50), default="Enrolled") # Enrolled, In Progress, Completed, Dropped
     enrollmentDate = Column(String(64), default=get_utc_now)
     completionDate = Column(String(64), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("studentId", "courseId", name="uq_enrollment_student_course"),
+    )
 
 
 class QuestionBank(Base):
@@ -178,13 +200,16 @@ class QuestionBank(Base):
     id = Column(String(64), primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True)
-    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True)
-    ownerId = Column(String(64), ForeignKey("users.id"), nullable=False)
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True, index=True)
+    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True, index=True)
+    ownerId = Column(String(64), ForeignKey("users.id"), nullable=False, index=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId", ondelete="CASCADE"), nullable=True, index=True)
     isPublic = Column(Boolean, default=False)
     createdAt = Column(String(64), default=get_utc_now)
     updatedAt = Column(String(64), default=get_utc_now, onupdate=get_utc_now)
     
+    owner = relationship("User", foreign_keys=[ownerId])
+    institution = relationship("InstitutionProfile", foreign_keys=[institutionId])
     questions = relationship("Question", back_populates="bank", cascade="all, delete-orphan")
 
     @property
@@ -199,11 +224,11 @@ class QuestionBank(Base):
 class Question(Base):
     __tablename__ = "questions"
     id = Column(String(64), primary_key=True, index=True)
-    questionBankId = Column(String(64), ForeignKey("question_banks.id"))
+    questionBankId = Column(String(64), ForeignKey("question_banks.id"), index=True)
     type = Column(String(50), default="MCQ") # MCQ, MULTI_SELECT, TRUE_FALSE, SUBJECTIVE
     text = Column(Text, nullable=False)
     mediaUrl = Column(Text, nullable=True)
-    difficulty = Column(String(50), nullable=False)
+    difficulty = Column(String(50), nullable=False, index=True)
     marks = Column(Float, default=1.0)
     explanation = Column(Text, nullable=True)
     tags = Column(Text, nullable=True) # JSON array of tags
@@ -251,7 +276,7 @@ class Question(Base):
 class QuestionOption(Base):
     __tablename__ = "question_options"
     id = Column(String(64), primary_key=True, index=True)
-    questionId = Column(String(64), ForeignKey("questions.id"))
+    questionId = Column(String(64), ForeignKey("questions.id", ondelete="CASCADE"), index=True)
     optionText = Column(Text, nullable=False)
     isCorrect = Column(Boolean, default=False)
     orderIndex = Column(Integer, default=0)
@@ -274,17 +299,20 @@ class Test(Base):
     __tablename__ = "tests"
     id = Column(String(64), primary_key=True, index=True)
     title = Column(String(255), nullable=False)
-    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True)
-    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True)
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True, index=True)
+    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True, index=True)
     description = Column(Text, nullable=True)
     passingPercentage = Column(Float, nullable=True)
     totalMarks = Column(Float, default=0.0)
-    authorId = Column(String(64), ForeignKey("users.id"))
-    status = Column(String(50), nullable=False, default="Draft") # 'Draft', 'Published', 'Archived'
+    authorId = Column(String(64), ForeignKey("users.id"), index=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId", ondelete="CASCADE"), nullable=True, index=True)
+    status = Column(String(50), nullable=False, default="Draft", index=True) # 'Draft', 'Published', 'Archived'
     proctoringProfileId = Column(String(64), ForeignKey("proctoring_profiles.id"), nullable=True)
     settings_json = Column(Text, nullable=True)
     createdAt = Column(String(64), default=get_utc_now)
     
+    author = relationship("User", foreign_keys=[authorId])
+    institution = relationship("InstitutionProfile", foreign_keys=[institutionId])
     test_questions = relationship("TestQuestion", backref="test", cascade="all, delete-orphan", order_by="TestQuestion.orderIndex")
     schedules = relationship("Schedule", back_populates="test", cascade="all, delete-orphan")
     
@@ -323,30 +351,48 @@ class Test(Base):
 
 class TestQuestion(Base):
     __tablename__ = "test_questions"
-    testId = Column(String(64), ForeignKey("tests.id"), primary_key=True)
-    questionId = Column(String(64), ForeignKey("questions.id"), primary_key=True)
+    testId = Column(String(64), ForeignKey("tests.id", ondelete="CASCADE"), primary_key=True)
+    questionId = Column(String(64), ForeignKey("questions.id", ondelete="CASCADE"), primary_key=True)
     orderIndex = Column(Integer, default=0)
+    marks = Column(Float, nullable=True) # Overrides question.marks when set (2NF-01)
+
+    __table_args__ = (
+        Index("ix_test_questions_questionId", "questionId"),
+    )
 
 
 class Schedule(Base):
     __tablename__ = "schedules"
     id = Column(String(64), primary_key=True, index=True)
-    testId = Column(String(64), ForeignKey("tests.id"))
+    testId = Column(String(64), ForeignKey("tests.id", ondelete="CASCADE"), index=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId", ondelete="CASCADE"), nullable=True, index=True)
     startTime = Column(String(64), nullable=False)
     endTime = Column(String(64), nullable=False)
     durationMinutes = Column(Integer, nullable=True)
     attemptsAllowed = Column(Integer, default=1)
     
     test = relationship("Test", back_populates="schedules")
+    institution = relationship("InstitutionProfile", foreign_keys=[institutionId])
     assignments = relationship("ScheduleAssignment", back_populates="schedule", cascade="all, delete-orphan")
+    batch_targets = relationship("ScheduleBatchTarget", backref="schedule", cascade="all, delete-orphan")
+    student_targets = relationship("ScheduleStudentTarget", backref="schedule", cascade="all, delete-orphan")
     attempts = relationship("Attempt", back_populates="schedule")
 
     @property
     def assignedBatch(self):
+        # Check normalized batch targets first
+        if self.batch_targets:
+            db = object_session(self)
+            first_target = self.batch_targets[0]
+            if db:
+                batch = db.query(Batch).filter(Batch.id == first_target.batchId).first()
+                if batch:
+                    return batch.name
+            return first_target.batchId
+
         if self.assignments:
             for a in self.assignments:
-                if a.assigneeType.lower() == "batch":
-                    # Check if there is an associated batch name or return assigneeId
+                if (a.assigneeType or "").lower() == "batch":
                     db = object_session(self)
                     if db:
                         batch = db.query(Batch).filter(Batch.id == a.assigneeId).first()
@@ -358,29 +404,47 @@ class Schedule(Base):
     @property
     def assignedStudents(self):
         students = []
+        if self.student_targets:
+            students.extend([st.studentId for st in self.student_targets])
         if self.assignments:
             for a in self.assignments:
-                if a.assigneeType.lower() == "student":
-                    students.append(a.assigneeId)
+                if (a.assigneeType or "").lower() == "student":
+                    if a.assigneeId not in students:
+                        students.append(a.assigneeId)
         return students
 
 
 class ScheduleAssignment(Base):
     __tablename__ = "schedule_assignments"
     id = Column(String(64), primary_key=True, index=True)
-    scheduleId = Column(String(64), ForeignKey("schedules.id"))
+    scheduleId = Column(String(64), ForeignKey("schedules.id", ondelete="CASCADE"), index=True)
     assigneeType = Column(String(50), nullable=False) # 'Student', 'Batch', 'Institution'
     assigneeId = Column(String(64), nullable=False)
 
     schedule = relationship("Schedule", back_populates="assignments")
 
 
+class ScheduleBatchTarget(Base):
+    __tablename__ = "schedule_batch_targets"
+    scheduleId = Column(String(64), ForeignKey("schedules.id", ondelete="CASCADE"), primary_key=True)
+    batchId = Column(String(64), ForeignKey("batches.id", ondelete="CASCADE"), primary_key=True)
+
+
+class ScheduleStudentTarget(Base):
+    __tablename__ = "schedule_student_targets"
+    scheduleId = Column(String(64), ForeignKey("schedules.id", ondelete="CASCADE"), primary_key=True)
+    studentId = Column(String(64), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+
+    student = relationship("User", foreign_keys=[studentId])
+
+
 class Attempt(Base):
     __tablename__ = "attempts"
     id = Column(String(64), primary_key=True, index=True)
-    studentId = Column(String(64), ForeignKey("users.id"))
-    scheduleId = Column(String(64), ForeignKey("schedules.id"), nullable=True)
-    status = Column(String(50), nullable=False, default="in_progress") # 'in_progress', 'submitted', 'auto_submitted', 'terminated_violation'
+    studentId = Column(String(64), ForeignKey("users.id"), index=True)
+    scheduleId = Column(String(64), ForeignKey("schedules.id", ondelete="SET NULL"), nullable=True, index=True)
+    testId = Column(String(64), ForeignKey("tests.id", ondelete="CASCADE"), nullable=True, index=True)
+    status = Column(String(50), nullable=False, default="in_progress", index=True) # 'in_progress', 'submitted', 'auto_submitted', 'terminated_violation'
     startedAt = Column(String(64), nullable=False, default=get_utc_now)
     submittedAt = Column(String(64), nullable=True)
     score = Column(Float, nullable=True)
@@ -393,12 +457,9 @@ class Attempt(Base):
     
     schedule = relationship("Schedule", back_populates="attempts")
     student = relationship("User", foreign_keys=[studentId])
+    test = relationship("Test", foreign_keys=[testId])
     answers_records = relationship("Answer", back_populates="attempt", cascade="all, delete-orphan")
-    proctoring_logs = relationship("ProctoringLog", back_populates="attempt")
-    
-    @property
-    def testId(self):
-        return self.schedule.testId if self.schedule else None
+    proctoring_logs = relationship("ProctoringLog", back_populates="attempt", cascade="all, delete-orphan")
 
     @property
     def expiresAt(self):
@@ -407,6 +468,8 @@ class Attempt(Base):
             duration = self.schedule.durationMinutes
         elif self.schedule and self.schedule.test and self.schedule.test.settings:
             duration = self.schedule.test.settings.get("duration", 60)
+        elif self.test and self.test.settings:
+            duration = self.test.settings.get("duration", 60)
         try:
             if not self.startedAt:
                 return None
@@ -444,6 +507,16 @@ class Attempt(Base):
 
     @property
     def violationLogs(self):
+        if self.proctoring_logs:
+            return [
+                {
+                    "type": log.violationType,
+                    "timestamp": log.timestamp,
+                    "screenshotUrl": log.screenshotUrl,
+                    "severity": log.severity
+                }
+                for log in sorted(self.proctoring_logs, key=lambda x: x.timestamp or "")
+            ]
         if self.violationLogs_json:
             try:
                 return json.loads(self.violationLogs_json)
@@ -476,7 +549,7 @@ class Attempt(Base):
 class ProctoringLog(Base):
     __tablename__ = "proctoring_logs"
     id = Column(String(64), primary_key=True, index=True)
-    attemptId = Column(String(64), ForeignKey("attempts.id"))
+    attemptId = Column(String(64), ForeignKey("attempts.id", ondelete="CASCADE"), index=True)
     timestamp = Column(String(64), nullable=False)
     violationType = Column(String(100), nullable=False)
     screenshotUrl = Column(Text, nullable=True)
@@ -484,12 +557,17 @@ class ProctoringLog(Base):
 
     attempt = relationship("Attempt", back_populates="proctoring_logs")
 
+    __table_args__ = (
+        Index("ix_proctoring_logs_attempt_type_ts", "attemptId", "violationType", "timestamp"),
+    )
+
 
 class Answer(Base):
     __tablename__ = "answers"
     id = Column(String(64), primary_key=True, index=True)
-    attemptId = Column(String(64), ForeignKey("attempts.id"))
-    questionId = Column(String(64), ForeignKey("questions.id"))
+    attemptId = Column(String(64), ForeignKey("attempts.id", ondelete="CASCADE"), index=True)
+    questionId = Column(String(64), ForeignKey("questions.id"), index=True)
+    selectedOptionId = Column(String(64), ForeignKey("question_options.id", ondelete="SET NULL"), nullable=True, index=True)
     selectedOptionIds = Column(Text, nullable=True) # JSON array or string
     subjectiveText = Column(Text, nullable=True)
     timeTakenSeconds = Column(Integer, nullable=True)
@@ -498,6 +576,10 @@ class Answer(Base):
     attempt = relationship("Attempt", back_populates="answers_records")
     question = relationship("Question")
 
+    __table_args__ = (
+        UniqueConstraint("attemptId", "questionId", name="uq_answer_attempt_question"),
+    )
+
 
 class Material(Base):
     __tablename__ = "materials"
@@ -505,17 +587,20 @@ class Material(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     type = Column(String(50), nullable=False) # 'PDF', 'Video', 'Link', 'Note'
-    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True)
-    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True)
+    courseId = Column(String(64), ForeignKey("courses.id"), nullable=True, index=True)
+    topicId = Column(String(64), ForeignKey("topics.id"), nullable=True, index=True)
     contentUrl = Column(Text, nullable=True)
-    authorId = Column(String(64), ForeignKey("users.id"), nullable=False)
-    isReleased = Column(Boolean, default=True)
+    authorId = Column(String(64), ForeignKey("users.id"), nullable=False, index=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId", ondelete="CASCADE"), nullable=True, index=True)
+    isReleased = Column(Boolean, default=True, index=True)
     releasedAt = Column(String(64), nullable=True)
     createdAt = Column(String(64), default=get_utc_now)
     updatedAt = Column(String(64), default=get_utc_now, onupdate=get_utc_now)
 
     author = relationship("User", foreign_keys=[authorId])
+    institution = relationship("InstitutionProfile", foreign_keys=[institutionId])
     assignments = relationship("MaterialAssignment", back_populates="material", cascade="all, delete-orphan")
+    batch_targets = relationship("MaterialBatchTarget", backref="material", cascade="all, delete-orphan")
 
     @property
     def uploadedBy(self):
@@ -531,6 +616,9 @@ class Material(Base):
 
     @property
     def assignedBatch(self):
+        # Support normalized batch targets
+        if self.batch_targets:
+            return self.batch_targets[0].batchId
         if not self.assignments:
             return "all"
         for a in self.assignments:
@@ -538,16 +626,33 @@ class Material(Base):
                 return a.assigneeId
         return "all"
 
+    @property
+    def assignedBatches(self):
+        batches = []
+        if self.batch_targets:
+            batches.extend([bt.batchId for bt in self.batch_targets])
+        if self.assignments:
+            for a in self.assignments:
+                if (a.assigneeType or "").strip().lower() == "batch" and a.assigneeId not in batches:
+                    batches.append(a.assigneeId)
+        return batches or ["all"]
+
 
 class MaterialAssignment(Base):
     __tablename__ = "material_assignments"
     id = Column(String(64), primary_key=True, index=True)
-    materialId = Column(String(64), ForeignKey("materials.id"))
+    materialId = Column(String(64), ForeignKey("materials.id", ondelete="CASCADE"), index=True)
     assigneeType = Column(String(50), nullable=False) # 'Student', 'Batch', 'Institution', 'Course'
     assigneeId = Column(String(64), nullable=False)
     releaseDate = Column(String(64), nullable=True)
 
     material = relationship("Material", back_populates="assignments")
+
+
+class MaterialBatchTarget(Base):
+    __tablename__ = "material_batch_targets"
+    materialId = Column(String(64), ForeignKey("materials.id", ondelete="CASCADE"), primary_key=True)
+    batchId = Column(String(64), ForeignKey("batches.id", ondelete="CASCADE"), primary_key=True)
 
 
 class Notification(Base):
@@ -557,31 +662,44 @@ class Notification(Base):
     message = Column(Text, nullable=False)
     type = Column(String(50), default="info")  # 'info', 'alert', 'success', 'warning', 'announcement'
     targetBatch = Column(String(100), default="all")  # 'all' or batch name or batch id (e.g. 'Class of 2026', 'batch-2026')
-    targetRole = Column(String(50), default="student")  # 'all', 'student', 'trainer', 'institution'
+    targetRole = Column(String(50), default="student", index=True)  # 'all', 'student', 'trainer', 'institution'
     link = Column(String(255), nullable=True)
     priority = Column(String(20), default="normal")  # 'normal', 'high', 'urgent'
     sendEmail = Column(Boolean, default=False)
-    senderId = Column(String(64), ForeignKey("users.id"), nullable=True)
+    senderId = Column(String(64), ForeignKey("users.id"), nullable=True, index=True)
+    institutionId = Column(String(64), ForeignKey("institution_profiles.userId", ondelete="CASCADE"), nullable=True, index=True)
     senderName = Column(String(255), nullable=True)
-    createdAt = Column(String(64), default=get_utc_now)
+    createdAt = Column(String(64), default=get_utc_now, index=True)
 
     sender = relationship("User", foreign_keys=[senderId])
+    institution = relationship("InstitutionProfile", foreign_keys=[institutionId])
     reads = relationship("NotificationRead", back_populates="notification", cascade="all, delete-orphan")
+    batch_targets = relationship("NotificationBatchTarget", backref="notification", cascade="all, delete-orphan")
 
     @property
     def description(self):
         return self.message
 
 
+class NotificationBatchTarget(Base):
+    __tablename__ = "notification_batch_targets"
+    notificationId = Column(String(64), ForeignKey("notifications.id", ondelete="CASCADE"), primary_key=True)
+    batchId = Column(String(64), ForeignKey("batches.id", ondelete="CASCADE"), primary_key=True)
+
+
 class NotificationRead(Base):
     __tablename__ = "notification_reads"
     id = Column(String(64), primary_key=True, index=True)
-    notificationId = Column(String(64), ForeignKey("notifications.id", ondelete="CASCADE"), nullable=False)
-    userId = Column(String(64), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    notificationId = Column(String(64), ForeignKey("notifications.id", ondelete="CASCADE"), nullable=False, index=True)
+    userId = Column(String(64), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     readAt = Column(String(64), default=get_utc_now)
 
     notification = relationship("Notification", back_populates="reads")
     user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("notificationId", "userId", name="uq_notification_read_user"),
+    )
 
 
 class RateLimitEvent(Base):

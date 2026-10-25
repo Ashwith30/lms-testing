@@ -41,6 +41,7 @@ class StudentRegisterRequest(BaseModel):
     studentId: Optional[str] = None
     rollNo: Optional[str] = None
     college: Optional[str] = None
+    institutionId: Optional[str] = None
     department: Optional[str] = None
     batch: Optional[str] = None
     id: Optional[str] = None
@@ -156,6 +157,7 @@ class Department(DepartmentBase):
 class BatchBase(BaseModel):
     id: str
     departmentId: str
+    institutionId: Optional[str] = None
     name: str
     startDate: Optional[str] = None
     endDate: Optional[str] = None
@@ -218,6 +220,7 @@ class QuestionBankBase(BaseModel):
     courseId: Optional[str] = None
     topicId: Optional[str] = None
     ownerId: str
+    institutionId: Optional[str] = None
     isPublic: bool = False
     createdAt: Optional[str] = None
     updatedAt: Optional[str] = None
@@ -333,6 +336,7 @@ class TestBase(BaseModel):
     passingPercentage: Optional[float] = None
     totalMarks: float = 0.0
     authorId: str
+    institutionId: Optional[str] = None
     status: str = "Draft"
     proctoringProfileId: Optional[str] = None
     createdAt: Optional[str] = None
@@ -347,6 +351,7 @@ class Test(TestBase):
 class ScheduleBase(BaseModel):
     id: str
     testId: str
+    institutionId: Optional[str] = None
     startTime: str
     endTime: str
     durationMinutes: Optional[int] = None
@@ -479,6 +484,7 @@ class MaterialBase(BaseModel):
     topicId: Optional[str] = None
     contentUrl: Optional[str] = None
     authorId: str
+    institutionId: Optional[str] = None
     isReleased: Optional[bool] = True
     releasedAt: Optional[str] = None
     createdAt: Optional[str] = None
@@ -499,6 +505,7 @@ class NotificationCreate(BaseModel):
     type: Optional[str] = "info"  # 'info', 'alert', 'success', 'warning', 'announcement'
     targetBatch: Optional[str] = "all"
     targetRole: Optional[str] = "student"
+    institutionId: Optional[str] = None
     link: Optional[str] = None
     priority: Optional[str] = "normal"
     sendEmail: Optional[bool] = False
@@ -511,6 +518,7 @@ class NotificationResponse(BaseModel):
     type: str
     targetBatch: Optional[str] = "all"
     targetRole: Optional[str] = "student"
+    institutionId: Optional[str] = None
     link: Optional[str] = None
     priority: Optional[str] = "normal"
     sendEmail: Optional[bool] = False

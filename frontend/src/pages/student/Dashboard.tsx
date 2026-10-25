@@ -163,8 +163,8 @@ export const StudentDashboard = () => {
   }, [user]);
 
   const stats = dashboardData?.stats;
-  const completedCount = stats?.totalCompleted && stats.totalCompleted > 0 ? stats.totalCompleted : 15;
-  const avgScore = stats?.averageScore && stats.averageScore > 0 ? stats.averageScore : 88.4;
+  const completedCount = stats?.totalCompleted ?? 0;
+  const avgScore = stats?.averageScore ?? 0;
 
   return (
     <div className="space-y-6 animate-in pb-12 font-sans text-slate-800">
@@ -172,7 +172,7 @@ export const StudentDashboard = () => {
       <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-700 p-5 sm:p-6 rounded-2xl border border-blue-600/30 shadow-md text-white">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            Hey, {user?.name ? user.name.split(' ')[0] : 'Ashwith'}
+            Hey, {user?.name ? user.name.split(' ')[0] : 'Student'}
           </h1>
           <p className="text-blue-100/90 text-sm mt-1 font-medium">
             Welcome back! Here's your personalized learning summary & performance matrix.

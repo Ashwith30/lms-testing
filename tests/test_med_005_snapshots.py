@@ -510,8 +510,10 @@ def run_tests():
         print(f"  [{passed_count}/{total_tests}] Canonical in-place log mutation prevents duplicate re-uploads")
 
         # 22. REV-05: Storage failure handling returns HTTP 503 Service Unavailable
-        # Temporarily make storage directory read-only to trigger OSError/PermissionError
-        os.chmod(test_storage_dir, 0o444)
+        orig_save = storage_service.save_snapshot
+        def failing_save(aid, data):
+            raise OSError("Disk write failure (simulated)")
+        storage_service.save_snapshot = failing_save
         try:
             res_fail = requests.post(
                 f"{base_url}/attempts/{att_active_id}/snapshots",
@@ -525,7 +527,7 @@ def run_tests():
             passed_count += 1
             print(f"  [{passed_count}/{total_tests}] Storage failure handled safely with HTTP 503 (zero path disclosure)")
         finally:
-            os.chmod(test_storage_dir, 0o777)
+            storage_service.save_snapshot = orig_save
 
         # 23. Controlled file cleanup
         attempt_files = storage_service.list_attempt_snapshots(att_active_id)
@@ -558,7 +560,10 @@ def run_tests():
         if os.path.exists(test_storage_dir):
             shutil.rmtree(test_storage_dir, ignore_errors=True)
         if os.path.exists(db_path):
-            os.remove(db_path)
+            try:
+                os.remove(db_path)
+            except OSError:
+                pass
 
 if __name__ == "__main__":
     run_tests()

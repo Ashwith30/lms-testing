@@ -1,26 +1,63 @@
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 from typing import List, Optional, Union
 import models
 import schemas
 from database import get_db
-from auth import get_current_user, require_roles
+from auth import get_current_user, require_roles, get_user_institution_id
 
 router = APIRouter(prefix="/api/users", tags=["users"])
+
+USER_EAGER_LOAD = (
+    joinedload(models.User.student_profile).joinedload(models.StudentProfile.department),
+    joinedload(models.User.student_profile).joinedload(models.StudentProfile.primaryBatch),
+    joinedload(models.User.trainer_profile),
+    joinedload(models.User.institution_profile)
+)
 
 @router.get("", response_model=Union[schemas.PaginatedResponse[schemas.User], List[schemas.User]])
 @router.get("/all", response_model=Union[schemas.PaginatedResponse[schemas.User], List[schemas.User]])
 def get_all_users(
     role: Optional[str] = None,
+    institutionId: Optional[str] = None,
     page: Optional[int] = None,
     limit: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_roles("admin", "institution", "trainer"))
 ):
-    query = db.query(models.User)
+    query = db.query(models.User).options(*USER_EAGER_LOAD)
     if role:
         query = query.filter(models.User.role == role)
+
+    if current_user.role == "institution":
+        query = query.filter(
+            or_(
+                models.User.id == current_user.id,
+                models.User.student_profile.has(models.StudentProfile.institutionId == current_user.id),
+                models.User.trainer_profile.has(models.TrainerProfile.institutionId == current_user.id)
+            )
+        )
+    elif current_user.role == "trainer":
+        trainer_inst = get_user_institution_id(current_user, db)
+        if trainer_inst:
+            query = query.filter(
+                or_(
+                    models.User.id == current_user.id,
+                    models.User.student_profile.has(models.StudentProfile.institutionId == trainer_inst),
+                    models.User.trainer_profile.has(models.TrainerProfile.institutionId == trainer_inst)
+                )
+            )
+    elif current_user.role == "admin" and institutionId:
+        query = query.filter(
+            or_(
+                models.User.id == institutionId,
+                models.User.student_profile.has(models.StudentProfile.institutionId == institutionId),
+                models.User.trainer_profile.has(models.TrainerProfile.institutionId == institutionId)
+            )
+        )
+
     if page is not None:
         p = max(1, page)
         l = max(1, limit) if limit else 50
@@ -38,9 +75,15 @@ def get_user(
     if current_user.role not in ("admin", "institution", "trainer") and current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
         
-    user = db.query(models.User).filter(models.User.id == user_id).first()
+    user = db.query(models.User).options(*USER_EAGER_LOAD).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if current_user.role == "institution" and current_user.id != user_id:
+        target_inst = get_user_institution_id(user, db)
+        if target_inst is not None and target_inst != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: User belongs to another institution.")
+
     return user
 
 @router.put("/{user_id}", response_model=schemas.User)
@@ -56,6 +99,16 @@ def update_user(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if current_user.role == "institution" and current_user.id != user_id:
+        target_inst = get_user_institution_id(user, db)
+        if target_inst is not None and target_inst != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Cannot update user from another institution.")
+        if target_inst is None:
+            if user.student_profile:
+                user.student_profile.institutionId = current_user.id
+            elif user.trainer_profile:
+                user.trainer_profile.institutionId = current_user.id
 
     # 1. Role-based field allowlist and authorization enforcement
     if current_user.role == "student":
