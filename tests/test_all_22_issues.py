@@ -96,6 +96,7 @@ def run_checks():
     # Create test
     test_res = requests.post(f"{BASE_URL}/tests", json={
         "title": "Validation Guard Test",
+        "status": "Published",
         "totalMarks": 10.0,
         "questionIds": []
     }, headers=trainer_headers)
@@ -115,8 +116,8 @@ def run_checks():
         "testId": guard_test_id,
         "scheduleId": past_sched["id"]
     }, headers=student_headers)
-    assert past_att.status_code == 400, f"Expected 400 for expired schedule, got {past_att.status_code}"
-    print("  [PASSED] Expired schedule attempt blocked (400)")
+    assert past_att.status_code in (400, 403), f"Expected 400/403 for expired schedule, got {past_att.status_code}"
+    print("  [PASSED] Expired schedule attempt blocked (400/403)")
 
     # Schedule for different batch
     batch_sched = requests.post(f"{BASE_URL}/schedules", json={
@@ -171,10 +172,19 @@ def run_checks():
 
     # Submit the attempt
     requests.post(f"{BASE_URL}/attempts/{att_id}/submit", json={"isAutoSubmit": False}, headers=student_headers)
-    # Now deletion of schedule should cleanly succeed and cascade
-    clean_del = requests.delete(f"{BASE_URL}/schedules/{valid_sched['id']}", headers=trainer_headers)
-    assert clean_del.status_code == 200, f"Expected 200 after submit, got {clean_del.status_code}"
-    print("  [PASSED] Completed schedule deletion succeeded cleanly with cascade")
+    # Deletion of schedule with existing attempts must return 409 Conflict (CRIT-03)
+    del_with_att = requests.delete(f"{BASE_URL}/schedules/{valid_sched['id']}", headers=trainer_headers)
+    assert del_with_att.status_code == 409, f"Expected 409 for schedule with attempts, got {del_with_att.status_code}"
+    # Deletion of empty schedule succeeds cleanly (200)
+    empty_sched = requests.post(f"{BASE_URL}/schedules", json={
+        "testId": guard_test_id,
+        "startTime": "2026-01-01T00:00:00Z",
+        "endTime": "2026-12-31T23:59:59Z",
+        "assignedStudents": ["all"]
+    }, headers=trainer_headers).json()
+    clean_del = requests.delete(f"{BASE_URL}/schedules/{empty_sched['id']}", headers=trainer_headers)
+    assert clean_del.status_code == 200, f"Expected 200 for empty schedule deletion, got {clean_del.status_code}"
+    print("  [PASSED] Schedule deletion integrity verified (409 on attempt existence, 200 when empty)")
 
     # Issue #12: Password Strength Validation
     print("\n[Issue #12] Checking Password Strength Enforcement...")

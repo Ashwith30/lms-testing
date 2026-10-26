@@ -58,7 +58,7 @@ def main():
             results.append((name, "SKIPPED", "File not found", 0.0))
             continue
 
-        print(f"\n[RUNNING] {name} ({script})...")
+        print(f"\n[RUNNING] {name} ({script})...", flush=True)
         t0 = time.time()
         proc = subprocess.run(
             [python_bin, script_path],
@@ -69,10 +69,10 @@ def main():
         elapsed = time.time() - t0
 
         if proc.returncode == 0:
-            print(f"  -> PASSED ({elapsed:.2f}s)")
+            print(f"  -> PASSED ({elapsed:.2f}s)", flush=True)
             results.append((name, "PASSED", "", elapsed))
         else:
-            print(f"  -> FAILED (exit {proc.returncode})")
+            print(f"  -> FAILED (exit {proc.returncode})", flush=True)
             error_tail = "\n".join(proc.stderr.splitlines()[-5:]) or "\n".join(proc.stdout.splitlines()[-5:])
             results.append((name, "FAILED", error_tail, elapsed))
 

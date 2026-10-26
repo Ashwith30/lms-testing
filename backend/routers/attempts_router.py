@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials
 import jwt
+from sqlalchemy import or_, and_, select
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional, Union
 import models
@@ -110,15 +111,15 @@ def get_attempts(
         if studentId:
             query = query.filter(models.Attempt.studentId == studentId)
     elif current_user.role == "institution":
-        inst_student_ids = db.query(models.StudentProfile.userId).filter(
+        inst_student_ids = select(models.StudentProfile.userId).filter(
             models.StudentProfile.institutionId == current_user.id
-        ).subquery()
-        inst_test_ids = db.query(models.Test.id).filter(
+        )
+        inst_test_ids = select(models.Test.id).filter(
             or_(models.Test.institutionId == current_user.id, models.Test.authorId == current_user.id)
-        ).subquery()
-        inst_schedule_ids = db.query(models.Schedule.id).filter(
+        )
+        inst_schedule_ids = select(models.Schedule.id).filter(
             or_(models.Schedule.institutionId == current_user.id, models.Schedule.testId.in_(inst_test_ids))
-        ).subquery()
+        )
 
         query = query.filter(
             or_(

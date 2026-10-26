@@ -101,6 +101,7 @@ def run_tests():
         test_data = {
             "title": "E2E Math Test",
             "description": "Simple Math Test",
+            "status": "Published",
             "passingPercentage": 50.0,
             "totalMarks": 2.0,
             "questionIds": [q_id]

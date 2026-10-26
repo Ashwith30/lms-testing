@@ -134,7 +134,12 @@ export const Navbar = () => {
 
   // Initialize notifications from backend, fallback to initial list
   useEffect(() => {
-    const role = user?.role || 'student';
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+
+    const role = user.role || 'student';
     const fallbackList = mockNotifications[role] || mockNotifications.student;
 
     notificationService.getNotifications()

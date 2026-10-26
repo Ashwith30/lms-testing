@@ -144,6 +144,9 @@ export const AdminManagement = () => {
 
   // Load backend institutions and notifications on mount
   useEffect(() => {
+    const token = localStorage.getItem('lms_token');
+    if (!token) return;
+
     organizationService.getInstitutions()
       .then((data: InstitutionData[]) => {
         if (data && data.length > 0) {

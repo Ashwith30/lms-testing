@@ -1,6 +1,7 @@
 import time
 from typing import Union, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from sqlalchemy import or_, and_
 from sqlalchemy.orm import Session
 import models
 import schemas
